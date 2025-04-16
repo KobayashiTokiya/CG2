@@ -2,7 +2,10 @@
 #include <cstdint>
 #include <string>
 #include <format>
- 
+#include <filesystem>
+#include <fstream>
+#include <chrono>
+
 std::wstring ConvertString(const std::string& str) {
 	if (str.empty()) {
 		return std::wstring();
@@ -31,8 +34,9 @@ std::string ConvertString(const std::wstring& str) {
 	return result;
 }
 
-void Log(const std::string& message)
+void Log(std::ostream& os, const std::string& message)
 {
+	os << message << std::endl;
 	OutputDebugStringA(message.c_str());
 }
 
@@ -50,6 +54,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
+	std::filesystem::create_directory("logs");
+
+	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+	std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
+	std::chrono::zoned_time localTime{ std::chrono::current_zone(),nowSeconds };
+	std::string dateString = std::format("{:%Y%m%d_%H%M%S}", localTime);
+	std::string logFilePath = std::string("logs/") + dateString + ".log";
+	std::ofstream logStream(logFilePath);
+
 	WNDCLASS wc{};
 	wc.lpfnWndProc = WindowProc;
 	wc.lpszClassName = L"CGWindowsClass";
@@ -79,8 +92,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		nullptr);
 
 	ShowWindow(hwnd, SW_SHOW);
-	Log("Hello,DirectX!\n");
-	Log(
+	Log(logStream,"Hello,DirectX!\n");
+	Log(logStream,
 		ConvertString
 		(
 			std::format
