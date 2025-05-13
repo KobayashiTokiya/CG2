@@ -304,19 +304,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//FenceのSignalを待つためのイベントを作成する
 	HANDLE fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	assert(fenceEvent != nullptr);
-	
-	//Fenceの値を更新
-	fanceValue++;
-
-	//GPUがここまでたどり着いたときに、Fenceの値を指定した値に代入
-	commandQueue->Signal(fence, fanceValue);
-	if (fence->GetCompletedValue()<fanceValue)
-	{
-		
-		fence->SetEventOnCompletion(fanceValue, fenceEvent);
-		//イベント待つ
-		WaitForSingleObject(fenceEvent, INFINITE);
-	}
 
 	MSG msg{};
 	while (msg.message != WM_QUIT)
@@ -329,7 +316,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		{
 			//書き込むバックバッファのインデックスを取得
 			UINT backBufferIndex = swapChain->GetCurrentBackBufferIndex();
-			
+
 			//TransitionBarrerの設定
 			D3D12_RESOURCE_BARRIER barrier{};
 			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -339,14 +326,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 			commandList->ResourceBarrier(1, &barrier);
 
-			
-			
+
+
 			//描画先のRTVを設定する。
 			commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, nullptr);
 			//指定した色で画面全体をクリアする
 			float clearColor[] = { 0.1f,0.25f,0.5f,1.0f };
 			commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
-			
+
 			//画面に描く処理は全て終わり、画面に移すので、状態を遷移
 			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
@@ -365,13 +352,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			swapChain->Present(1, 0);
 			//次のフレーム用のコマンドリストを準備する
 
+			//Fenceの値を更新
+			fanceValue++;
+
+			//GPUがここまでたどり着いたときに、Fenceの値を指定した値に代入
+			commandQueue->Signal(fence, fanceValue);
+
+			if (fence->GetCompletedValue() < fanceValue)
+			{
+				fence->SetEventOnCompletion(fanceValue, fenceEvent);
+				//イベント待つ
+				WaitForSingleObject(fenceEvent, INFINITE);
+			}
+
 			hr = commandAllocator->Reset();
 			assert(SUCCEEDED(hr));
 			hr = commandList->Reset(commandAllocator, nullptr);
 			assert(SUCCEEDED(hr));
 
-			
-		
+
+
 		}
 	}
 
