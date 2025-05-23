@@ -13,6 +13,9 @@
 #include <dxgidebug.h>
 #include <dxcapi.h>
 
+#include "Matrix.h"
+#include "Vector.h"
+
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
 #pragma comment(lib,"Dbghelp.lib")
@@ -429,14 +432,31 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 	//RootParameter作成
-	D3D12_ROOT_PARAMETER rootParamenters[1] = {};
+	D3D12_ROOT_PARAMETER rootParamenters[2] = {};
 	rootParamenters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParamenters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParamenters[0].Descriptor.ShaderRegister = 0;
+	
+	rootParamenters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParamenters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	rootParamenters[1].Descriptor.ShaderRegister = 0;
+
 	descriptionRootSignature.pParameters = rootParamenters;
 	descriptionRootSignature.NumParameters = _countof(rootParamenters);
 
-	//ID3D12Resource* CreateBufferResource(ID3D12Device* device, size_t sizeInBytes);
+	
+	//WVP用のリソースを作る。
+	ID3D12Resource* wvpResource = CreateBufferResource(device, sizeof(Matrix4x4));
+	//データを書き込む
+	Matrix4x4* wvpData = nullptr;
+	//書き込むためのアドレスを取得
+	wvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
+	//単位行列
+	*wvpData = MatrixMath::MakeIdentity4x4();
+
+
+
+
 
 	ID3DBlob* signatureBlob = nullptr;
 	ID3DBlob* errorBlob = nullptr;
@@ -622,6 +642,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			//マテリアルCBufferの場所を設定
 			commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
 
+			commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
 
 			//描画!(DrawCall/ドローコール)。3頂点で1つのインスタンス。インスタンスについては今後
 			commandList->DrawInstanced(3, 1, 0, 0);
