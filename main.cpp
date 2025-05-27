@@ -461,9 +461,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	*wvpData = MatrixMath::MakeIdentity4x4();
 
 
-
-
-
 	ID3DBlob* signatureBlob = nullptr;
 	ID3DBlob* errorBlob = nullptr;
 
@@ -480,7 +477,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(),
 		IID_PPV_ARGS(&rootSignature));
 	assert(SUCCEEDED(hr));
-
 
 
 	//インプットレイアウト
