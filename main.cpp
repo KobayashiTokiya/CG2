@@ -15,7 +15,6 @@
 
 #include "Matrix.h"
 #include "Vector.h"
-
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
 #pragma comment(lib,"Dbghelp.lib")
@@ -735,6 +734,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	{
 		errorBlob->Release();
 	}
+	wvpResource->Release();
 	rootSignature->Release();
 	pixelShaderBlob->Release();
 	vertexShaderBlob->Release();
@@ -744,11 +744,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug))))
 	{
 		debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
-		debug->ReportLiveObjects(DXGI_DEBUG_APP, DXGI_DEBUG_RLO_ALL);
 		debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
 		debug->Release();
 	}
-
+	 
 
 	return 0;
 }
