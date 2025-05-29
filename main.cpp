@@ -11,6 +11,7 @@
 #include <dbghelp.h>
 #include <strsafe.h>
 #include <dxgidebug.h>
+
 #include <dxcapi.h>
 
 #include "Matrix.h"
@@ -21,11 +22,14 @@
 #include "externals/imgui/imgui_impl_win32.h"
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM IParam);
 
+
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
 #pragma comment(lib,"Dbghelp.lib")
 #pragma comment(lib,"dxguid.lib")
+
 #pragma comment(lib,"dxcompiler.lib")
+
 
 //ヴェクター４を作る
 struct Vector4
@@ -787,7 +791,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	swapChainResorces[1]->Release();
 	swapChain->Release();
 	commandList->Release();
+
 	commandAllocator->Release();
+
+	CommandAllocator->Release();
+
 	commandQueue->Release();
 	device->Release();
 	useAdarter->Release();
@@ -796,6 +804,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	debugController->Release();
 #endif // _DEBUG
 	CloseWindow(hwnd);
+
 
 	vertexResorce->Release();
 	graphicsPipelineState->Release();
@@ -815,8 +824,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	srvDscriptorHeap->Release();
 
 
+
+
 	IDXGIDebug1* debug;
-	if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug))))
+	if (SUCCEEDED(DXGIGetDebugInterface1(0,IID_PPV_ARGS(&debug))))
 	{
 		debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
 		debug->ReportLiveObjects(DXGI_DEBUG_APP, DXGI_DEBUG_RLO_ALL);
