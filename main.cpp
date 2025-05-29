@@ -30,7 +30,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 //ヴェクター４を作る
 struct Vector4
 {
-	float w, x, y, z;
+	float  x, y, z, w;
 };
 //
 static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception)
@@ -328,7 +328,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	ID3D12Device* device = nullptr;
 	D3D_FEATURE_LEVEL featureLevels[] =
 	{
-		D3D_FEATURE_LEVEL_12_2,D3D_FEATURE_LEVEL_12_1,D3D_FEATURE_LEVEL_12_0
+		D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1,D3D_FEATURE_LEVEL_12_0
 	};
 	const char* featureLevelStrings[] = { "12.2","12.1","12.0" };
 	for (size_t i = 0; i < _countof(featureLevels); ++i)
@@ -356,6 +356,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
 
+		infoQueue->Release();
+
 		D3D12_MESSAGE_ID denyIds[] =
 		{
 			D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE
@@ -370,7 +372,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		infoQueue->PushStorageFilter(&filter);
 
-		infoQueue->Release();
 	}
 #endif // _DEBUG
 
@@ -549,7 +550,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	vertexShaderBlob->GetBufferSize() };
 	graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(),
 	pixelShaderBlob->GetBufferSize() };
-	
+
 	graphicsPipelineStateDesc.BlendState = blendDesc;
 	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
 	//
@@ -597,7 +598,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//VertexBufferView
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
 
-	vertexBufferView.BufferLocation = vertexResorce->GetGPUVirtualAddress();
+	vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
 
 	vertexBufferView.SizeInBytes = sizeof(Vector4) * 3;
 
@@ -606,7 +607,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//Resourceにデータを書き込む
 	Vector4* vertexData = nullptr;
 
-	vertexResorce->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
+	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
 
 	vertexData[0] = { -0.5f,-0.5f,0.0f,1.0f };
 	vertexData[1] = { 0.0f,0.5f,0.0f,1.0f };
@@ -799,6 +800,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	vertexResorce->Release();
 	graphicsPipelineState->Release();
 	signatureBlob->Release();
+
+	vertexResource->Release();
+
 	if (errorBlob)
 	{
 		errorBlob->Release();
@@ -809,7 +813,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	materialResource->Release();
 	wvpResource->Release();
 	srvDscriptorHeap->Release();
-	
+
 
 	IDXGIDebug1* debug;
 	if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug))))
