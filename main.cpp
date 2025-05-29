@@ -794,7 +794,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	commandAllocator->Release();
 
-	CommandAllocator->Release();
+
 
 	commandQueue->Release();
 	device->Release();
