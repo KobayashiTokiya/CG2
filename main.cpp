@@ -551,36 +551,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	descriptionRootSignature.NumParameters = _countof(rootParamenters);
 
 
-	//WVP用のリソースを作る。
-	ID3D12Resource* wvpResource = CreateBufferResource(device, sizeof(Matrix4x4));
-	//データを書き込む
-	Matrix4x4* wvpData = nullptr;
-	//書き込むためのアドレスを取得
-	wvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
-	//単位行列
-	*wvpData = MatrixMath::MakeIdentity4x4();
-
-	//組み合わせて使う
-	DirectX::ScratchImage mipImages = LoadTexture("Resource/uvChecker.png");
-	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
-	ID3D12Resource* textureResource = CreateTextureResource(device, metadata);
-	UploadTextureData(textureResource, mipImages);
-
-	//metaDataを基にSRVを設定
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-	srvDesc.Format = metadata.format;
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MipLevels = UINT(metadata.mipLevels);
-	
-	//SRVを作成するDescriptorHeapの場所を決める
-	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = srvDscriptorHeap->GetCPUDescriptorHandleForHeapStart();
-	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = srvDscriptorHeap->GetGPUDescriptorHandleForHeapStart();
-	//先頭はImGuiが使っているのでその次を使う
-	textureSrvHandleCPU.ptr += device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	textureSrvHandleGPU.ptr += device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	//SRVの生成
-	device->CreateShaderResourceView(textureResource, &srvDesc, textureSrvHandleCPU);
 
 	ID3DBlob* signatureBlob = nullptr;
 	ID3DBlob* errorBlob = nullptr;
@@ -736,6 +706,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
 	*materialData = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
 
+	//WVP用のリソースを作る。
+	ID3D12Resource* wvpResource = CreateBufferResource(device, sizeof(Matrix4x4));
+	//データを書き込む
+	Matrix4x4* wvpData = nullptr;
+	//書き込むためのアドレスを取得
+	wvpResource->Map(0, nullptr, reinterpret_cast<void**>(&wvpData));
+	//単位行列
+	*wvpData = MatrixMath::MakeIdentity4x4();
+
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -748,6 +727,27 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		srvDscriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		srvDscriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
+	//組み合わせて使う
+	DirectX::ScratchImage mipImages = LoadTexture("Resource/uvChecker.png");
+	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
+	ID3D12Resource* textureResource = CreateTextureResource(device, metadata);
+	UploadTextureData(textureResource, mipImages);
+
+	//metaDataを基にSRVを設定
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+	srvDesc.Format = metadata.format;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = UINT(metadata.mipLevels);
+
+	//SRVを作成するDescriptorHeapの場所を決める
+	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = srvDscriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = srvDscriptorHeap->GetGPUDescriptorHandleForHeapStart();
+	//先頭はImGuiが使っているのでその次を使う
+	textureSrvHandleCPU.ptr += device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	textureSrvHandleGPU.ptr += device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	//SRVの生成
+	device->CreateShaderResourceView(textureResource, &srvDesc, textureSrvHandleCPU);
 
 
 	MSG msg{};
