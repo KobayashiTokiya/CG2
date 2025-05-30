@@ -16,6 +16,6 @@ PixelShaderOutput main(VertexShaderOutput input)
 {
     PixelShaderOutput output;
     output.color = gMaterial.color;
-    output.texcoord = input.texcoord;
+   // output.texcoord = input.texcoord;
     return output;
 }
