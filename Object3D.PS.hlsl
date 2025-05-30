@@ -13,9 +13,10 @@ struct PixelShaderOutput
 
 
 PixelShaderOutput main(VertexShaderOutput input)
-{
+{ 
+    output.texcoord = input.texcoord;
     PixelShaderOutput output;
     output.color = gMaterial.color;
-   // output.texcoord = input.texcoord;
+  
     return output;
 }
