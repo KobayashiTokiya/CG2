@@ -906,6 +906,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	OutputDebugStringA("Hello,DirectX!\n");
 
 	CloseHandle(fenceEvent);
+	textureResource->Release();
 	fence->Release();
 	rtvDescriptorHeap->Release();
 	swapChainResorces[0]->Release();
