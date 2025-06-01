@@ -906,7 +906,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	OutputDebugStringA("Hello,DirectX!\n");
 
 	CloseHandle(fenceEvent);
-	textureResource->Release();
 	fence->Release();
 	rtvDescriptorHeap->Release();
 	swapChainResorces[0]->Release();
@@ -921,10 +920,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #ifdef _DEBUG
 	debugController->Release();
 #endif // _DEBUG
-	CloseWindow(hwnd);
-
-	vertexResorce->Release();
+	vertexResource->Release();
 	graphicsPipelineState->Release();
+	signatureBlob->Release();
 	if (errorBlob)
 	{
 		errorBlob->Release();
@@ -933,11 +931,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	pixelShaderBlob->Release();
 	vertexShaderBlob->Release();
 	materialResource->Release();
+	wvpResource->Release();
+	srvDscriptorHeap->Release();
+	CloseWindow(hwnd);
 
-	vertexResource->Release();
-	signatureBlob->Release();
-	infoQueue->Release();
+	textureResource->Release();
 	dxcUtils->Release();
+	vertexResorce->Release();
 
 
 	//COMの終了処理
