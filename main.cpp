@@ -12,7 +12,10 @@
 #include <strsafe.h>
 #include <dxgidebug.h>
 #include <dxcapi.h>
+#include <vector>
+
 #include "externals/DirectXTex/DirectXTex.h"
+#include "externals/DirectXTex/d3dx12.h"
 
 #include "Matrix.h"
 #include "Vector.h"
@@ -135,41 +138,40 @@ ID3D12Resource* CreateTextureResource(ID3D12Device* device, const DirectX::TexMe
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION(metadata.dimension);
 
 	D3D12_HEAP_PROPERTIES heapProperties{};
-	heapProperties.Type = D3D12_HEAP_TYPE_CUSTOM;
-	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_BACK;
-	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_L0;
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;//カスタムからデフォルトに
+	//heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_BACK;
+	//heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_L0;
 
 	ID3D12Resource* resource = nullptr;
 	HRESULT hr = device->CreateCommittedResource(
 		&heapProperties,
 		D3D12_HEAP_FLAG_NONE,
 		&resourceDesc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
+		D3D12_RESOURCE_STATE_COPY_DEST,//GENERIC_READからCOPY_DEST
 		nullptr,
 		IID_PPV_ARGS(&resource));
 	assert(SUCCEEDED(hr));
 	return resource;
 }
 
-void UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImage)
-{
-	const DirectX::TexMetadata& metadata = mipImage.GetMetadata();
-
-	for (size_t mipLevel = 0; mipLevel < metadata.mipLevels; ++mipLevel)
-	{
-		const DirectX::Image* img = mipImage.GetImage(mipLevel, 0, 0);
-
-		HRESULT hr = texture->WriteToSubresource(
-			UINT(mipLevel),
-			nullptr,
-			img->pixels,
-			UINT(img->rowPitch),
-			UINT(img->slicePitch)
-		);
-		assert(SUCCEEDED(hr));
-	}
-}
-
+//void UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImage)
+//{
+//	const DirectX::TexMetadata& metadata = mipImage.GetMetadata();
+//
+//	for (size_t mipLevel = 0; mipLevel < metadata.mipLevels; ++mipLevel)
+//	{
+//		const DirectX::Image* img = mipImage.GetImage(mipLevel, 0, 0);
+//
+//		HRESULT hr = texture->WriteToSubresource(
+//			UINT(mipLevel),
+//			nullptr,
+//			img->pixels,
+//			UINT(img->rowPitch),
+//			UINT(img->slicePitch)
+//		);
+//		assert(SUCCEEDED(hr));
+//	}
+//}
 
 
 //
@@ -290,6 +292,26 @@ IDxcBlob* CompileShader(
 Transform transform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 
 Transform cameraTransform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,-5.0f} };
+
+[[nodiscard]]
+ID3D12Resource* UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImage,ID3D12Device* device,ID3D12GraphicsCommandList* commandList)
+{
+	std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+	DirectX::PrepareUpload(device, mipImage.GetImages(), mipImage.GetImageCount(), mipImage.GetMetadata(), subresources);
+	uint64_t intermediateSize = GetRequiredIntermediateSize(texture, 0, UINT(subresources.size()));
+	ID3D12Resource* intermediateResource = CreateBufferResource(device, intermediateSize);
+	UpdateSubresources(commandList, texture, intermediateResource, 0, 0, UINT(subresources.size()), subresources.data());
+	//Tetureへの転送後は利用できるよう、D3D12_RESOURCE_STATE_COPY_DESTからD3D12_RESOURCE_STATE_GENERIC_READへResourceStateを変更する
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = texture;
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+	commandList->ResourceBarrier(1, &barrier);
+	return intermediateResource;
+}
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -753,7 +775,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	DirectX::ScratchImage mipImages = LoadTexture("Resource/uvChecker.png");
 	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
 	ID3D12Resource* textureResource = CreateTextureResource(device, metadata);
-	UploadTextureData(textureResource, mipImages);
+	ID3D12Resource* intermediateResource = UploadTextureData(textureResource, mipImages,device,commandList);
 
 	//metaDataを基にSRVを設定
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
@@ -938,8 +960,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	textureResource->Release();
 	dxcUtils->Release();
 	vertexResorce->Release();
-
-
+	intermediateResource->Release();
+	
 	//COMの終了処理
 	CoUninitialize();
 
