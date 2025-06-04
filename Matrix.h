@@ -6,6 +6,7 @@ struct  Matrix4x4
 {
 	float m[4][4];
 };
+
 namespace MatrixMath
 {
 	Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio, float nearClip, float farClip);

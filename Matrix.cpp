@@ -9,7 +9,7 @@
 Matrix4x4 MatrixMath::MakePerspectiveFovMatrix(float fovY, float aspectRatio, float nearClip, float farClip) {
 	float cot = (1.0f / tanf(fovY / 2.0f));
 	Matrix4x4 result = {};
-	result.m[0][0] = 1.0f / aspectRatio * cot;
+	result.m[0][0] = cot / aspectRatio;
 	result.m[1][1] = cot;
 	result.m[2][2] = farClip / (farClip - nearClip);
 	result.m[2][3] = 1.0f;
@@ -21,10 +21,10 @@ Matrix4x4 MatrixMath::MakePerspectiveFovMatrix(float fovY, float aspectRatio, fl
 Matrix4x4 MatrixMath::MakeOrthographicMatrix(float left, float top, float right, float bottom, float nearClip, float farClip) {
 	Matrix4x4 result = {};
 	result.m[0][0] = 2.0f / (right - left);
-	result.m[1][1] = 2.0f / (top - bottom);
+	result.m[1][1] = 2.0f / (bottom - top);
 	result.m[2][2] = 1.0f / (farClip - nearClip);
 	result.m[0][3] = (left + right) / (left - right);
-	result.m[1][3] = (top + bottom) / (bottom - top);
+	result.m[1][3] = (top + bottom) / ( top- bottom);
 	result.m[2][3] = nearClip / (nearClip - farClip);
 	result.m[3][3] = 1.0f;
 
@@ -37,8 +37,8 @@ Matrix4x4 MatrixMath::MakeViewportMatrix(float left, float top, float width, flo
 	result.m[0][0] = width / 2.0f;
 	result.m[1][1] = -height / 2.0f;
 	result.m[2][2] = maxDepth - minDepth;
-	result.m[3][0] = left + (width / 2.0f);
-	result.m[3][1] = top + (height / 2.0f);
+	result.m[3][0] = left + width / 2.0f;
+	result.m[3][1] = top + height / 2.0f;
 	result.m[3][2] = minDepth;
 	result.m[3][3] = 1.0f;
 	return result;
@@ -87,7 +87,7 @@ Matrix4x4 MatrixMath::MakeRotateYMatrix(float radian) {
 Matrix4x4 MatrixMath::MakeRotateZMatrix(float radian) {
 	Matrix4x4 result = { {
 
-		{ std::cos(radian),std::sin(radian),0.0f,0.0f},
+		{ std::cos(radian),-std::sin(radian),0.0f,0.0f},
 		{-std::sin(radian),std::cos(radian),0.0f,0.0f},
 		{0.0f,0.0f,1.0f,0.0f},
 		{0.0f,0.0f,0.0f,1.0f}
@@ -233,6 +233,7 @@ Vector3 MatrixMath::Transform(const Vector3& vector, const Matrix4x4& matrix) {
 
 	return result;
 }
+
 //単位行列
 Matrix4x4 MatrixMath::MakeIdentity4x4() {
 	Matrix4x4 result;
