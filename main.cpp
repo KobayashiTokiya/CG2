@@ -154,6 +154,37 @@ ID3D12Resource* CreateTextureResource(ID3D12Device* device, const DirectX::TexMe
 	return resource;
 }
 
+ID3D12Resource* CreateDepthSteencilTextureResource(ID3D12Device* device, int32_t width, int32_t height)
+{
+	//生成するResourceの設定
+	D3D12_RESOURCE_DESC resourceDesc{};
+	resourceDesc.Width = width;
+	resourceDesc.Height = height;
+	resourceDesc.MipLevels = 1;
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+	//利用するHeapの設定
+	D3D12_HEAP_PROPERTIES heapProperties{};
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+	//深度値のクリア設定
+	D3D12_CLEAR_VALUE depthClearValue{};
+	depthClearValue.DepthStencil.Depth = 1.0f;
+	depthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	//Resourceの生成
+	ID3D12Resource* resource = nullptr;
+	HRESULT hr = device->CreateCommittedResource(
+		&heapProperties,//heapの設定
+		D3D12_HEAP_FLAG_NONE,//heapの特殊な設定。特になし。
+		&resourceDesc,//Resouceの設定
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,//深度値を書き込む状態にしておく
+		&depthClearValue,//Clear最適値
+		IID_PPV_ARGS(&resource));//作成するResouceポインタへのポインタ
+	assert(SUCCEEDED(hr));
+	return resource;
+};
 //void UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImage)
 //{
 //	const DirectX::TexMetadata& metadata = mipImage.GetMetadata();
@@ -294,7 +325,7 @@ Transform transform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 Transform cameraTransform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,-5.0f} };
 
 [[nodiscard]]
-ID3D12Resource* UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImage,ID3D12Device* device,ID3D12GraphicsCommandList* commandList)
+ID3D12Resource* UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImage, ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
 {
 	std::vector<D3D12_SUBRESOURCE_DATA> subresources;
 	DirectX::PrepareUpload(device, mipImage.GetImages(), mipImage.GetImageCount(), mipImage.GetMetadata(), subresources);
@@ -532,6 +563,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	rtvHandles[1].ptr = rtvHandles[0].ptr + device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	device->CreateRenderTargetView(swapChainResorces[1], &rtvDesc, rtvHandles[1]);
 
+
+
 	//初期値0でFenceを作る
 	ID3D12Fence* fence = nullptr;
 	uint64_t fanceValue = 0;
@@ -642,7 +675,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//RasterizerState
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	//裏面
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	//ShaderをCompileする
@@ -685,7 +720,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	D3D12_RESOURCE_DESC vertexResourceDesc{};
 
 	vertexResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	vertexResourceDesc.Width = sizeof(VertexData) * 3;//リソースのサイズ。今回はVector4を3頂点
+	vertexResourceDesc.Width = sizeof(VertexData) * 6;//リソースのサイズ。今回はVector4を3頂点
 
 	vertexResourceDesc.Height = 1;
 	vertexResourceDesc.DepthOrArraySize = 1;
@@ -701,14 +736,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	assert(SUCCEEDED(hr));
 
 	//Resource作成の関数化
-	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * 3);
+	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * 6);
 
 	//VertexBufferView
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
 
 	vertexBufferView.BufferLocation = vertexResorce->GetGPUVirtualAddress();
 
-	vertexBufferView.SizeInBytes = sizeof(VertexData) * 3;
+	vertexBufferView.SizeInBytes = sizeof(VertexData) * 6;
 
 	vertexBufferView.StrideInBytes = sizeof(VertexData);
 
@@ -718,6 +753,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	VertexData* vertexData = nullptr;
 
 	vertexResorce->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
+	//一枚目
 	//左下
 	vertexData[0].position = { -0.5f,-0.5f,0.0f,1.0f };
 	vertexData[0].texcoord = { 0.0f,1.0f };
@@ -728,6 +764,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	vertexData[2].position = { 0.5f,-0.5f,0.0f,1.0f };
 	vertexData[2].texcoord = { 1.0f,1.0f };
 
+	//二枚目
+	vertexData[3].position = { -0.5f,-0.5f,0.5f,1.0f };
+	vertexData[3].texcoord = { 0.0f,1.0f };
+
+	vertexData[4].position = { 0.0f,0.0f,0.0f,1.0f };
+	vertexData[4].texcoord = { 0.5f,0.0f };
+
+	vertexData[5].position = { 0.5f,-0.5f,-0.5f,1.0f };
+	vertexData[5].texcoord = { 1.0f,1.0f };
 	//Viewport
 	D3D12_VIEWPORT viewport{};
 	viewport.Width = kClientWindth;
@@ -775,8 +820,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	DirectX::ScratchImage mipImages = LoadTexture("Resource/uvChecker.png");
 	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
 	ID3D12Resource* textureResource = CreateTextureResource(device, metadata);
-	ID3D12Resource* intermediateResource = UploadTextureData(textureResource, mipImages,device,commandList);
-
+	ID3D12Resource* intermediateResource = UploadTextureData(textureResource, mipImages, device, commandList);
+	
+	//DepthSteencilTextureをウィンドウのサイズで作成
+	ID3D12Resource* depthStencilResource = CreateDepthSteencilTextureResource(device, kClientWindth, kClientHeight);
+	
 	//metaDataを基にSRVを設定
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 	srvDesc.Format = metadata.format;
@@ -793,6 +841,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//SRVの生成
 	device->CreateShaderResourceView(textureResource, &srvDesc, textureSrvHandleCPU);
 
+	
 
 	MSG msg{};
 	while (msg.message != WM_QUIT)
@@ -875,7 +924,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
 
 			//描画!(DrawCall/ドローコール)。3頂点で1つのインスタンス。インスタンスについては今後
-			commandList->DrawInstanced(3, 1, 0, 0);
+			commandList->DrawInstanced(6, 1, 0, 0);
 
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
 
@@ -961,7 +1010,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	dxcUtils->Release();
 	vertexResorce->Release();
 	intermediateResource->Release();
-	
+
+	depthStencilResource->Release();
+
 	//COMの終了処理
 	CoUninitialize();
 
