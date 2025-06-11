@@ -14,6 +14,8 @@
 #include <dxcapi.h>
 #include <vector>
 
+#include <numbers>
+
 #include "externals/DirectXTex/DirectXTex.h"
 #include "externals/DirectXTex/d3dx12.h"
 
@@ -786,6 +788,24 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//１頂点あたりのサイズ
 	vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
 
+	//05_00
+	//Resource作成の関数化
+	
+	ID3D12Resource* vertexResourceSphere = CreateBufferResource(device, sizeof(VertexData) * 6);
+
+	uint32_t kSubdivisionSphere = 16;
+
+	//VertexBufferView
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSphere{};
+
+	vertexBufferViewSphere.BufferLocation = vertexResourceSphere->GetGPUVirtualAddress();
+
+	vertexBufferViewSphere.SizeInBytes = sizeof(VertexData) * 6;
+
+	vertexBufferViewSphere.StrideInBytes = sizeof(VertexData);
+
+
+
 	//03_00 30pでVector4からVectorDataに変える
 	//Resourceにデータを書き込む
 	VertexData* vertexData = nullptr;
@@ -846,6 +866,90 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	transformationMatrixResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixDataSprite));
 	//単位行列を書き込んでおく
 	*transformationMatrixDataSprite = MatrixMath::MakeIdentity4x4();
+
+	/*//丸〇
+	VertexData* vertexDataSphere = nullptr;
+
+	vertexResourceSphere->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
+
+	//latが緯度
+	const float kLonEvery = std::numbers::pi * 2.0f / float(kSubdivisionSphere);
+
+	const float kLatEvery = std::numbers::pi / float(kSubdivisionSphere);
+
+	for (int latIndex = 0; latIndex < kSubdivisionSphere; ++latIndex)
+	{
+		float lat = -std::numbers::pi / 2.0f + kLatEvery * latIndex;
+		for (int lonIndex = 0; lonIndex < kSubdivisionSphere; ++lonIndex)
+		{
+
+			float lon = lonIndex * kLonEvery;
+			VertexData vertA = {
+				{
+					std::cosf(lat) * std::cosf(lon),
+					std::sinf(lat),
+					std::cosf(lat) * std::sinf(lon),
+					1.0f
+			},
+			{
+				float(lonIndex) / float(kSubdivisionSphere),
+					1.0f - float(latIndex) / float(kSubdivisionSphere)
+			}
+			};
+
+			VertexData vertB = {
+				{
+					std::cosf(lat + kLatEvery) * std::cosf(lon),
+					std::sinf(lat + kLatEvery),
+					std::cosf(lat + kLatEvery) * std::sinf(lon),
+					1.0f
+				},
+			{
+				float(lonIndex) / float(kSubdivisionSphere),
+					1.0f - float(latIndex + 1.0f) / float(kSubdivisionSphere)
+			}
+			};
+
+			VertexData vertC = {
+				{
+				std::cosf(lat) * std::cosf(lon * kLonEvery),
+				std::sinf(lat),
+				std::cosf(lat) * std::sinf(lon * kLonEvery),
+				1.0f
+			},
+			{
+			float(lonIndex + 1.0f) / float(kSubdivisionSphere),
+				1.0f - float(latIndex) / float(kSubdivisionSphere)
+			}
+			};
+
+
+			VertexData vertD = {
+				{
+				std::cosf(lat + kLatEvery) * std::cosf(lon * kLonEvery),
+				std::sinf(lat + kLatEvery),
+				std::cosf(lat + kLatEvery) * std::sinf(lon * kLonEvery),
+				1.0f
+			},
+			{
+			float(lonIndex + 1.0f) / float(kSubdivisionSphere),
+				1.0f - float(latIndex + 1.0f) / float(kSubdivisionSphere)
+			}
+			};
+
+			uint32_t start = (latIndex * kSubdivisionSphere + lonIndex) * 6;
+			vertexDataSphere[start + 0] = vertA;
+			vertexDataSphere[start + 1] = vertB;
+			vertexDataSphere[start + 2] = vertC;
+
+			vertexDataSphere[start + 3] = vertC;
+			vertexDataSphere[start + 4] = vertB;
+			vertexDataSphere[start + 5] = vertD;
+		}
+	}
+
+	*/
+
 
 	//Viewport
 	D3D12_VIEWPORT viewport{};
@@ -1117,6 +1221,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	vertexResourceSprite->Release();
 
 	transformationMatrixResourceSprite->Release();
+
+	vertexResourceSphere->Release();
+
 	//COMの終了処理
 	CoUninitialize();
 
