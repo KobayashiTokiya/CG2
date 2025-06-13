@@ -348,6 +348,86 @@ ID3D12Resource* UploadTextureData(ID3D12Resource* texture, const DirectX::Scratc
 	return intermediateResource;
 }
 
+//球体描画関数
+void GenerateSphereVertices(VertexData* vertexData, int kSubdivisionSphere, float radius)
+{
+	const float kLonEvery = std::numbers::pi_v<float> *2.0f / kSubdivisionSphere;
+	const float kLatEvery = std::numbers::pi_v<float> / kSubdivisionSphere;
+
+	for (int latIndex = 0; latIndex < kSubdivisionSphere; ++latIndex)
+	{
+		float lat = -std::numbers::pi_v<float> / 2.0f + kLatEvery * latIndex;
+
+		for (int lonIndex = 0; lonIndex < kSubdivisionSphere; ++lonIndex)
+		{
+			float lon = lonIndex * kLonEvery;
+
+			VertexData vertA = {
+				{
+					std::cosf(lat) * std::cosf(lon),
+					std::sinf(lat),
+					std::cosf(lat) * std::sinf(lon),
+					1.0f
+				},
+				{
+					float(lonIndex) / kSubdivisionSphere,
+					1.0f - float(latIndex) / kSubdivisionSphere
+				}
+			};
+
+			VertexData vertB = {
+				{
+					std::cosf(lat + kLatEvery) * std::cosf(lon),
+					std::sinf(lat + kLatEvery),
+					std::cosf(lat + kLatEvery) * std::sinf(lon),
+					1.0f
+				},
+				{
+					float(lonIndex) / kSubdivisionSphere,
+					1.0f - float(latIndex + 1) / kSubdivisionSphere
+				}
+			};
+
+			float lonNext = (lonIndex + 1) * kLonEvery;
+
+			VertexData vertC = {
+				{
+					std::cosf(lat) * std::cosf(lonNext),
+					std::sinf(lat),
+					std::cosf(lat) * std::sinf(lonNext),
+					1.0f
+				},
+				{
+					float(lonIndex + 1) / kSubdivisionSphere,
+					1.0f - float(latIndex) / kSubdivisionSphere
+				}
+			};
+
+			VertexData vertD = {
+				{
+					std::cosf(lat + kLatEvery) * std::cosf(lonNext),
+					std::sinf(lat + kLatEvery),
+					std::cosf(lat + kLatEvery) * std::sinf(lonNext),
+					1.0f
+				},
+				{
+					float(lonIndex + 1) / kSubdivisionSphere,
+					1.0f - float(latIndex + 1) / kSubdivisionSphere
+				}
+			};
+
+			uint32_t start = (latIndex * kSubdivisionSphere + lonIndex) * 6;
+			vertexData[start + 0] = vertA;
+			vertexData[start + 1] = vertB;
+			vertexData[start + 2] = vertC;
+
+			vertexData[start + 3] = vertC;
+			vertexData[start + 4] = vertB;
+			vertexData[start + 5] = vertD;
+		}
+	}
+}
+
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
 	//COM初期化
@@ -788,6 +868,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//１頂点あたりのサイズ
 	vertexBufferViewSprite.StrideInBytes = sizeof(VertexData);
 
+
+	//05_00
+	//Resource作成の関数化
+	ID3D12Resource* vertexResourceSphere = CreateBufferResource(device, sizeof(VertexData) * 6);
+
+	uint32_t kSubdivisionSphere = 16;
+
+	//VertexBufferView
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSphere{};
+
+	vertexBufferViewSphere.BufferLocation = vertexResourceSphere->GetGPUVirtualAddress();
+
+	vertexBufferViewSphere.SizeInBytes = sizeof(VertexData) * 6;
+
+	vertexBufferViewSphere.StrideInBytes = sizeof(VertexData);
+
+
 	//03_00 30pでVector4からVectorDataに変える
 	//Resourceにデータを書き込む
 	VertexData* vertexData = nullptr;
@@ -848,6 +945,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	transformationMatrixResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixDataSprite));
 	//単位行列を書き込んでおく
 	*transformationMatrixDataSprite = MatrixMath::MakeIdentity4x4();
+
+	VertexData* vertexDataSphere = nullptr;
+	vertexResourceSphere->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataSphere));
 
 	//Viewport
 	D3D12_VIEWPORT viewport{};
@@ -1028,6 +1128,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			//Sprite描画!(DrawCall/ドローコール)。
 			commandList->DrawInstanced(6, 1, 0, 0);
 
+
+			//球
+			commandList->DrawInstanced(6,1, 0, 0);
+
+
+
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
 
 			//画面に描く処理は全て終わり、画面に移すので、状態を遷移
@@ -1120,6 +1226,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	transformationMatrixResourceSprite->Release();
 
+	vertexResourceSphere->Release();
 
 	//COMの終了処理
 	CoUninitialize();
