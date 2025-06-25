@@ -941,12 +941,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		srvDscriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		srvDscriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
+	
+
 	//組み合わせて使う
 	DirectX::ScratchImage mipImages = LoadTexture("Resource/uvChecker.png");
 	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
 	ID3D12Resource* textureResource = CreateTextureResource(device, metadata);
 	ID3D12Resource* intermediateResource = UploadTextureData(textureResource, mipImages, device, commandList);
 
+	//二枚目のTextureを読んで転送する
+	DirectX::ScratchImage mipImages2 = LoadTexture("Resource/monsterBall.png");
+	const DirectX::TexMetadata& metadata2 = mipImages2.GetMetadata();
+	ID3D12Resource* textureResource2 = CreateTextureResource(device, metadata2);
+	ID3D12Resource* intermediateResource2= UploadTextureData(textureResource2, mipImages2, device, commandList);
+	
 	//DepthSteencilTextureをウィンドウのサイズで作成
 	ID3D12Resource* depthStencilResource = CreateDepthSteencilTextureResource(device, kClientWindth, kClientHeight);
 
@@ -1180,8 +1188,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	transformationMatrixResourceSprite->Release();
 
-	//vertexResourceSphere->Release();
-
+	textureResource2->Release();
+	intermediateResource2->Release();
 
 	//COMの終了処理
 	CoUninitialize();
