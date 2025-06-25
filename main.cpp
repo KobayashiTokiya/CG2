@@ -43,6 +43,7 @@ struct VertexData
 {
 	Vector4 position;
 	Vector2 texcoord;
+	Vector3 normal;
 };
 //
 static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception)
@@ -679,7 +680,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 	//インプットレイアウト
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
 	inputElementDescs[0].SemanticName = "POSITION";
 	inputElementDescs[0].SemanticIndex = 0;
 	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -689,6 +690,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	inputElementDescs[1].SemanticIndex = 0;
 	inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
 	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+
+	inputElementDescs[2].SemanticName = "NOMAL";
+	inputElementDescs[2].SemanticIndex = 0;
+	inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
 	inputLayoutDesc.pInputElementDescs = inputElementDescs;
@@ -789,13 +795,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//05_00
 	//Resource作成の関数
 	//VertexData* vertexDataSphere = nullptr;
-	constexpr uint32_t kSubdivision = 16; 
+	constexpr uint32_t kSubdivision = 16;
 	constexpr uint32_t kVertexCount = kSubdivision * kSubdivision * 6;
-	
+
 
 	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * kVertexCount);
 
-	
+
 	// 頂点バッファビューを作成する
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
 	// リソースの先頭のアドレスから使う
@@ -810,10 +816,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// 書き込むためのアドレスを取得
 	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
 
-	
+
 	const float kLonEvery = 2.0f * std::numbers::pi_v<float> / kSubdivision;
 	const float kLatEvery = std::numbers::pi_v<float> / kSubdivision;
-	
+
 	// 球体を生成
 	for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex) {
 		float lat = -std::numbers::pi_v<float> / 2.0f + kLatEvery * latIndex;
@@ -839,28 +845,40 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			// 1つ目の三角形
 			vertexData[startIndex + 0].position = { a.x, a.y, a.z, 1.0f };
 			vertexData[startIndex + 0].texcoord = uv0;
-
+			vertexData[startIndex + 0].normal.x = vertexData[startIndex].position.x;
+			vertexData[startIndex + 0].normal.y = vertexData[startIndex].position.y;
+			vertexData[startIndex + 0].normal.z = vertexData[startIndex].position.z;
 
 			vertexData[startIndex + 1].position = { b.x, b.y, b.z, 1.0f };
 			vertexData[startIndex + 1].texcoord = uv1;
-
+			vertexData[startIndex + 1].normal.x = vertexData[startIndex].position.x;
+			vertexData[startIndex + 1].normal.y = vertexData[startIndex].position.y;
+			vertexData[startIndex + 1].normal.z = vertexData[startIndex].position.z;
 
 			vertexData[startIndex + 2].position = { c.x, c.y, c.z, 1.0f };
 			vertexData[startIndex + 2].texcoord = uv2;
-
+			vertexData[startIndex + 2].normal.x = vertexData[startIndex].position.x;
+			vertexData[startIndex + 2].normal.y = vertexData[startIndex].position.y;
+			vertexData[startIndex + 2].normal.z = vertexData[startIndex].position.z;
 
 			// 2つ目の三角形
 			vertexData[startIndex + 3].position = { a.x, a.y, a.z, 1.0f };
 			vertexData[startIndex + 3].texcoord = uv0;
-
+			vertexData[startIndex + 3].normal.x = vertexData[startIndex].position.x;
+			vertexData[startIndex + 3].normal.y = vertexData[startIndex].position.y;
+			vertexData[startIndex + 3].normal.z = vertexData[startIndex].position.z;
 
 			vertexData[startIndex + 4].position = { c.x, c.y, c.z, 1.0f };
 			vertexData[startIndex + 4].texcoord = uv2;
-
+			vertexData[startIndex + 4].normal.x = vertexData[startIndex].position.x;
+			vertexData[startIndex + 4].normal.y = vertexData[startIndex].position.y;
+			vertexData[startIndex + 4].normal.z = vertexData[startIndex].position.z;
 
 			vertexData[startIndex + 5].position = { d.x, d.y, d.z, 1.0f };
 			vertexData[startIndex + 5].texcoord = uv3;
-
+			vertexData[startIndex + 5].normal.x = vertexData[startIndex].position.x;
+			vertexData[startIndex + 5].normal.y = vertexData[startIndex].position.y;
+			vertexData[startIndex + 5].normal.z = vertexData[startIndex].position.z;
 		}
 	}
 
@@ -870,23 +888,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//１枚目の三角形
 	vertexDataSprite[0].position = { 0.0f,360.0f,0.0f,1.0f };
 	vertexDataSprite[0].texcoord = { 0.0f,1.0f };
+	vertexDataSprite[0].normal = { 0.0f,0.0f,-1.0f };
 
 	vertexDataSprite[1].position = { 0.0f,0.0f,0.0f,1.0f };
 	vertexDataSprite[1].texcoord = { 0.0f,0.0f };
+	vertexDataSprite[1].normal = { 0.0f,0.0f,-1.0f };
 
 	vertexDataSprite[2].position = { 640.0f,360.0f,0.0f,1.0f };
 	vertexDataSprite[2].texcoord = { 1.0f,1.0f };
-
+	vertexDataSprite[2].normal = { 0.0f,0.0f,-1.0f };
 
 	//２枚目の三角形
 	vertexDataSprite[3].position = { 0.0f,0.0f,0.0f,1.0f };
 	vertexDataSprite[3].texcoord = { 0.0f,0.0f };
+	vertexDataSprite[3].normal = { 0.0f,0.0f,-1.0f };
 
 	vertexDataSprite[4].position = { 640.0f,0.0f,0.0f,1.0f };
 	vertexDataSprite[4].texcoord = { 1.0f,0.0f };
+	vertexDataSprite[4].normal = { 0.0f,0.0f,-1.0f };
 
 	vertexDataSprite[5].position = { 640.0f,360.0f,0.0f,1.0f };
 	vertexDataSprite[5].texcoord = { 1.0f,1.0f };
+	vertexDataSprite[5].normal = { 0.0f,0.0f,-1.0f };
 
 	//Sprite用のTransformationMatrix用のリソースを作る。Matrix4x4 １つ分のサイズを用意する
 	ID3D12Resource* transformationMatrixResourceSprite = CreateBufferResource(device, sizeof(Matrix4x4));
@@ -946,7 +969,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		srvDscriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		srvDscriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
-	
+
 
 	//組み合わせて使う
 	DirectX::ScratchImage mipImages = LoadTexture("Resource/uvChecker.png");
@@ -958,8 +981,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	DirectX::ScratchImage mipImages2 = LoadTexture("Resource/monsterBall.png");
 	const DirectX::TexMetadata& metadata2 = mipImages2.GetMetadata();
 	ID3D12Resource* textureResource2 = CreateTextureResource(device, metadata2);
-	ID3D12Resource* intermediateResource2= UploadTextureData(textureResource2, mipImages2, device, commandList);
-	
+	ID3D12Resource* intermediateResource2 = UploadTextureData(textureResource2, mipImages2, device, commandList);
+
 	//DepthSteencilTextureをウィンドウのサイズで作成
 	ID3D12Resource* depthStencilResource = CreateDepthSteencilTextureResource(device, kClientWindth, kClientHeight);
 
@@ -1031,8 +1054,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			ImGui::Checkbox("useMonsterBall", &useMonsterBall);
 			ImGui::End();
 
-			
-			
+
+
 
 			//ゲーム処理
 
@@ -1104,9 +1127,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			//Table
 
 			commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
-			
+
 			//テクスチャの切り替えるか
-			commandList->SetGraphicsRootDescriptorTable(2,useMonsterBall? textureSrvHandleGPU2:textureSrvHandleGPU);
+			commandList->SetGraphicsRootDescriptorTable(2, useMonsterBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
 
 
 			//描画!(DrawCall/ドローコール)。3頂点で1つのインスタンス。インスタンスについては今後
