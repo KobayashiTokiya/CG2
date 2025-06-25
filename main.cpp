@@ -1223,6 +1223,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	textureResource2->Release();
 	intermediateResource2->Release();
+	materialResourceSprite->Release();
 
 	//COMの終了処理
 	CoUninitialize();
