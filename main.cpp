@@ -328,6 +328,8 @@ Transform cameraTransform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,-5.0f} }
 
 Transform transformSprite{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 
+Transform transformSphere{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
+
 [[nodiscard]]
 ID3D12Resource* UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImage, ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
 {
@@ -349,84 +351,10 @@ ID3D12Resource* UploadTextureData(ID3D12Resource* texture, const DirectX::Scratc
 }
 
 //球体描画関数
-void GenerateSphereVertices(VertexData* vertexData, int kSubdivisionSphere, float radius)
-{
-	const float kLonEvery = std::numbers::pi_v<float> *2.0f / kSubdivisionSphere;
-	const float kLatEvery = std::numbers::pi_v<float> / kSubdivisionSphere;
-
-	for (int latIndex = 0; latIndex < kSubdivisionSphere; ++latIndex)
-	{
-		float lat = -std::numbers::pi_v<float> / 2.0f + kLatEvery * latIndex;
-
-		for (int lonIndex = 0; lonIndex < kSubdivisionSphere; ++lonIndex)
-		{
-			float lon = lonIndex * kLonEvery;
-
-			VertexData vertA = {
-				{
-					std::cosf(lat) * std::cosf(lon),
-					std::sinf(lat),
-					std::cosf(lat) * std::sinf(lon),
-					1.0f
-				},
-				{
-					float(lonIndex) / kSubdivisionSphere,
-					1.0f - float(latIndex) / kSubdivisionSphere
-				}
-			};
-
-			VertexData vertB = {
-				{
-					std::cosf(lat + kLatEvery) * std::cosf(lon),
-					std::sinf(lat + kLatEvery),
-					std::cosf(lat + kLatEvery) * std::sinf(lon),
-					1.0f
-				},
-				{
-					float(lonIndex) / kSubdivisionSphere,
-					1.0f - float(latIndex + 1) / kSubdivisionSphere
-				}
-			};
-
-			float lonNext = (lonIndex + 1) * kLonEvery;
-
-			VertexData vertC = {
-				{
-					std::cosf(lat) * std::cosf(lonNext),
-					std::sinf(lat),
-					std::cosf(lat) * std::sinf(lonNext),
-					1.0f
-				},
-				{
-					float(lonIndex + 1) / kSubdivisionSphere,
-					1.0f - float(latIndex) / kSubdivisionSphere
-				}
-			};
-
-			VertexData vertD = {
-				{
-					std::cosf(lat + kLatEvery) * std::cosf(lonNext),
-					std::sinf(lat + kLatEvery),
-					std::cosf(lat + kLatEvery) * std::sinf(lonNext),
-					1.0f
-				},
-				{
-					float(lonIndex + 1) / kSubdivisionSphere,
-					1.0f - float(latIndex + 1) / kSubdivisionSphere
-				}
-			};
-
-			uint32_t start = (latIndex * kSubdivisionSphere + lonIndex) * 6;
-			vertexData[start + 0] = vertA;
-			vertexData[start + 1] = vertB;
-			vertexData[start + 2] = vertC;
-
-			vertexData[start + 3] = vertC;
-			vertexData[start + 4] = vertB;
-			vertexData[start + 5] = vertD;
-		}
-	}
-}
+//void GenerateSphereVertices(VertexData* vertexDataSphere, int kSubdivisionSphere, float radius)
+//{
+//	
+//}
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -623,11 +551,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//DSV用のヒープでディスクリプタの数は１。DSVはShader内で触るものではないので、ShaderVisibleはfalse
 	ID3D12DescriptorHeap* dsvDescriptorHeap = CreateDescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
-
-
-
-
-
 
 	ID3D12DescriptorHeap* rtvDescriptorHeap = CreateDescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
 
@@ -834,27 +757,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
-	ID3D12Resource* vertexResorce = nullptr;
-	hr = device->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE,
-		&vertexResourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
-		IID_PPV_ARGS(&vertexResorce));
-	assert(SUCCEEDED(hr));
-
-
-
-	//Resource作成の関数化
-	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * 6);
-
-
-	//VertexBufferView
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
-
-	vertexBufferView.BufferLocation = vertexResorce->GetGPUVirtualAddress();
-
-	vertexBufferView.SizeInBytes = sizeof(VertexData) * 6;
-
-	vertexBufferView.StrideInBytes = sizeof(VertexData);
-
 
 	//Sprite用の頂点リリースを作る
 	ID3D12Resource* vertexResourceSprite = CreateBufferResource(device, sizeof(VertexData) * 6);
@@ -870,46 +772,108 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 	//05_00
-	//Resource作成の関数化
-	ID3D12Resource* vertexResourceSphere = CreateBufferResource(device, sizeof(VertexData) * 6);
+	//Resource作成の関数
+	//VertexData* vertexDataSphere = nullptr;
+	constexpr uint32_t kSubdivision = 16; 
+	constexpr uint32_t kVertexCount = kSubdivision * kSubdivision * 6;
+	
 
-	uint32_t kSubdivisionSphere = 16;
+	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * kVertexCount);
 
-	//VertexBufferView
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferViewSphere{};
+	
+	// 頂点バッファビューを作成する
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
+	// リソースの先頭のアドレスから使う
+	vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
+	// 使用するリソースのサイズは頂点3つ分のサイズ
+	vertexBufferView.SizeInBytes = sizeof(VertexData) * kVertexCount;
+	// 1頂点当たりのサイズ
+	vertexBufferView.StrideInBytes = sizeof(VertexData);
 
-	vertexBufferViewSphere.BufferLocation = vertexResourceSphere->GetGPUVirtualAddress();
+	// Resourceにデータを書き込む
+	VertexData* vertexData = nullptr;
+	// 書き込むためのアドレスを取得
+	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
 
-	vertexBufferViewSphere.SizeInBytes = sizeof(VertexData) * 6;
+	
+	const float kLonEvery = 2.0f * std::numbers::pi_v<float> / kSubdivision;
+	const float kLatEvery = std::numbers::pi_v<float> / kSubdivision;
+	
+	// 球体を生成
+	for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex) {
+		float lat = -std::numbers::pi_v<float> / 2.0f + kLatEvery * latIndex;
+		float nextLat = lat + kLatEvery;
 
-	vertexBufferViewSphere.StrideInBytes = sizeof(VertexData);
+		for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex) {
 
+			float lon = lonIndex * kLonEvery;
+			float nextLon = lon + kLonEvery;
+
+			Vector3 a = { cosf(lat) * cosf(lon), sinf(lat), cosf(lat) * sinf(lon) };
+			Vector3 b = { cosf(nextLat) * cosf(lon), sinf(nextLat), cosf(nextLat) * sinf(lon) };
+			Vector3 c = { cosf(nextLat) * cosf(nextLon), sinf(nextLat), cosf(nextLat) * sinf(nextLon) };
+			Vector3 d = { cosf(lat) * cosf(nextLon), sinf(lat), cosf(lat) * sinf(nextLon) };
+
+			uint32_t startIndex = (latIndex * kSubdivision + lonIndex) * 6;
+
+			Vector2 uv0 = { lonIndex / static_cast<float>(kSubdivision), 1.0f - latIndex / static_cast<float>(kSubdivision) };
+			Vector2 uv1 = { lonIndex / static_cast<float>(kSubdivision), 1.0f - (latIndex + 1) / static_cast<float>(kSubdivision) };
+			Vector2 uv2 = { (lonIndex + 1) / static_cast<float>(kSubdivision), 1.0f - (latIndex + 1) / static_cast<float>(kSubdivision) };
+			Vector2 uv3 = { (lonIndex + 1) / static_cast<float>(kSubdivision), 1.0f - latIndex / static_cast<float>(kSubdivision) };
+
+			// 1つ目の三角形
+			vertexData[startIndex + 0].position = { a.x, a.y, a.z, 1.0f };
+			vertexData[startIndex + 0].texcoord = uv0;
+
+
+			vertexData[startIndex + 1].position = { b.x, b.y, b.z, 1.0f };
+			vertexData[startIndex + 1].texcoord = uv1;
+
+
+			vertexData[startIndex + 2].position = { c.x, c.y, c.z, 1.0f };
+			vertexData[startIndex + 2].texcoord = uv2;
+
+
+			// 2つ目の三角形
+			vertexData[startIndex + 3].position = { a.x, a.y, a.z, 1.0f };
+			vertexData[startIndex + 3].texcoord = uv0;
+
+
+			vertexData[startIndex + 4].position = { c.x, c.y, c.z, 1.0f };
+			vertexData[startIndex + 4].texcoord = uv2;
+
+
+			vertexData[startIndex + 5].position = { d.x, d.y, d.z, 1.0f };
+			vertexData[startIndex + 5].texcoord = uv3;
+
+		}
+	}
 
 	//03_00 30pでVector4からVectorDataに変える
 	//Resourceにデータを書き込む
-	VertexData* vertexData = nullptr;
 
-	vertexResorce->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
+
+
 	//一枚目
 	//左下
-	vertexData[0].position = { -0.5f,-0.5f,0.0f,1.0f };
-	vertexData[0].texcoord = { 0.0f,1.0f };
-	//上
-	vertexData[1].position = { 0.0f,0.5f,0.0f,1.0f };
-	vertexData[1].texcoord = { 0.5f,0.0f };
-	//右下
-	vertexData[2].position = { 0.5f,-0.5f,0.0f,1.0f };
-	vertexData[2].texcoord = { 1.0f,1.0f };
-
-	//二枚目
-	vertexData[3].position = { -0.5f,-0.5f,0.5f,1.0f };
-	vertexData[3].texcoord = { 0.0f,1.0f };
-
-	vertexData[4].position = { 0.0f,0.0f,0.0f,1.0f };
-	vertexData[4].texcoord = { 0.5f,0.0f };
-
-	vertexData[5].position = { 0.5f,-0.5f,-0.5f,1.0f };
-	vertexData[5].texcoord = { 1.0f,1.0f };
+	//vertexData[0].position = { -0.5f,-0.5f,0.0f,1.0f };
+	//vertexData[0].texcoord = { 0.0f,1.0f };
+	////上
+	//vertexData[1].position = { 0.0f,0.5f,0.0f,1.0f };
+	//vertexData[1].texcoord = { 0.5f,0.0f };
+	////右下
+	//vertexData[2].position = { 0.5f,-0.5f,0.0f,1.0f };
+	//vertexData[2].texcoord = { 1.0f,1.0f };
+	//
+	////二枚目
+	//vertexData[3].position = { -0.5f,-0.5f,0.5f,1.0f };
+	//vertexData[3].texcoord = { 0.0f,1.0f };
+	//
+	//vertexData[4].position = { 0.0f,0.0f,0.0f,1.0f };
+	//vertexData[4].texcoord = { 0.5f,0.0f };
+	//
+	//vertexData[5].position = { 0.5f,-0.5f,-0.5f,1.0f };
+	//vertexData[5].texcoord = { 1.0f,1.0f };
 
 
 
@@ -946,8 +910,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//単位行列を書き込んでおく
 	*transformationMatrixDataSprite = MatrixMath::MakeIdentity4x4();
 
-	VertexData* vertexDataSphere = nullptr;
-	vertexResourceSphere->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataSphere));
 
 	//Viewport
 	D3D12_VIEWPORT viewport{};
@@ -1024,8 +986,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	//DSVHeapの先頭にDSVをつくる
 	device->CreateDepthStencilView(depthStencilResource, &dsvDesc, dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	//03_01_p24
-	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+
 
 	MSG msg{};
 	while (msg.message != WM_QUIT)
@@ -1088,11 +1049,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			ImGui::Render();
 
 
-			//描画先のRTVとDSVを設定する
-			commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
+
 
 			ID3D12DescriptorHeap* descriptorHeaps[] = { srvDscriptorHeap };
 			commandList->SetDescriptorHeaps(1, descriptorHeaps);
+
+			//03_01_p24
+			D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+			//描画先のRTVとDSVを設定する
+			commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
 
 			//指定した色で画面全体をクリアする
 			float clearColor[] = { 0.1f,0.25f,0.5f,1.0f };
@@ -1114,12 +1079,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			//マテリアルCBufferの場所を設定
 			commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
 			//Table
-			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
 
 			commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
+			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+
 
 			//描画!(DrawCall/ドローコール)。3頂点で1つのインスタンス。インスタンスについては今後
-			commandList->DrawInstanced(6, 1, 0, 0);
+			commandList->DrawInstanced(kVertexCount, 1, 0, 0);
+
+
+
 
 			//Spriteの描画。変更が必要なものだけ変更する
 			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
@@ -1128,11 +1097,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			//Sprite描画!(DrawCall/ドローコール)。
 			commandList->DrawInstanced(6, 1, 0, 0);
 
-
 			//球
-			commandList->DrawInstanced(6,1, 0, 0);
-
-
+			//commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSphere);
+			//commandList->SetGraphicsRootConstantBufferView(1, vertexResourceSphere->GetGPUVirtualAddress());
+			//commandList->DrawInstanced(, 1, 0, 0);
 
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
 
@@ -1199,7 +1167,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #ifdef _DEBUG
 	debugController->Release();
 #endif // _DEBUG
-	vertexResource->Release();
 	graphicsPipelineState->Release();
 	signatureBlob->Release();
 	if (errorBlob)
@@ -1216,7 +1183,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	textureResource->Release();
 	dxcUtils->Release();
-	vertexResorce->Release();
+	vertexResource->Release();
 	intermediateResource->Release();
 
 	depthStencilResource->Release();
@@ -1226,7 +1193,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	transformationMatrixResourceSprite->Release();
 
-	vertexResourceSphere->Release();
+	//vertexResourceSphere->Release();
+
 
 	//COMの終了処理
 	CoUninitialize();
