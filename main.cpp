@@ -365,11 +365,11 @@ D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(ID3D12DescriptorHeap* descrip
 	return handleGPU;
 }
 
-
+//マテリアル
 struct Material
 {
 	Vector4 color;
-	int32_t enableLightion;
+	int32_t enableLighting;
 };
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
@@ -946,15 +946,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//マテリアル用のリソース
 	ID3D12Resource* materialResource = CreateBufferResource(device, sizeof(Vector4));
+	//Mapしてデータを書き込む。
 	Vector4* materialData = nullptr;
 	materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
-	*materialData = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
+	*materialData = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 
-	ID3D12Resource* materialResourceSprite = CreateBufferResource(device, sizeof(Vector4));
-	Vector4* materialDataSprite = nullptr;
+	//Sprite用のマテリアルリソースを作る
+	ID3D12Resource* materialResourceSprite = CreateBufferResource(device, sizeof(Material));
+	//Mapしてデータを書き込む。
+	Material* materialDataSprite = nullptr;
 	materialResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&materialDataSprite));
-	*materialDataSprite = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
-
+	*materialDataSprite = Material(1.0f, 1.0f, 1.0f, 1.0f);
+	//Sprite用のマテリアルリソースを
+	materialDataSprite->enableLighting = false;
+	
 	//WVP用のリソースを作る。
 	ID3D12Resource* wvpResource = CreateBufferResource(device, sizeof(Matrix4x4));
 	//データを書き込む
