@@ -322,6 +322,7 @@ IDxcBlob* CompileShader(
 	return shaderBlob;
 }
 
+//初期化
 //Transform変数を作る
 Transform transform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 
@@ -330,6 +331,8 @@ Transform cameraTransform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,-5.0f} }
 Transform transformSprite{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 
 Transform transformSphere{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
+
+
 
 [[nodiscard]]
 ID3D12Resource* UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImage, ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
@@ -372,11 +375,25 @@ struct Material
 	int32_t enableLighting;
 };
 
+//TransformationMatrix
+struct TransformationMatrix
+{
+	Matrix4x4 WVP;
+	Matrix4x4 World;
+};
+
+//平行光源
+struct DirectionalLight
+{
+	Vector4 color;
+	Vector3 direction;
+	float intensity;
+};
+
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
 	//COM初期化
 	CoInitializeEx(0, COINIT_MULTITHREADED);
-
 
 	SetUnhandledExceptionFilter(ExportDump);
 
@@ -650,6 +667,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	rootParamenters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParamenters[2].DescriptorTable.pDescriptorRanges = descriptorRange;
 	rootParamenters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);
+
+	rootParamenters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParamenters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParamenters[3].Descriptor.ShaderRegister = 1;
 
 	descriptionRootSignature.pParameters = rootParamenters;
 	descriptionRootSignature.NumParameters = _countof(rootParamenters);
@@ -956,7 +977,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//Mapしてデータを書き込む。
 	Material* materialDataSprite = nullptr;
 	materialResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&materialDataSprite));
-	*materialDataSprite = Material(1.0f, 1.0f, 1.0f, 1.0f);
+	*materialDataSprite = Material(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 	//Sprite用のマテリアルリソースを
 	materialDataSprite->enableLighting = false;
 	
@@ -1042,6 +1063,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//切り替え用
 	bool useMonsterBall = true;
+
+	//平行光源のデフォルト値
+	DirectionalLight directionalLightData;
+	directionalLightData.color = { 1.0f };
+	directionalLightData.direction = { 0.0f,-1.0f,0.0f };
+	directionalLightData.intensity = 1.0f;
 
 	MSG msg{};
 	while (msg.message != WM_QUIT)
