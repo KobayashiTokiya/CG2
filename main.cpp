@@ -1017,7 +1017,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	mappedLight->color = { 1.0f,1.0f,1.0f,1.0f };
 	mappedLight->direction= { 0.0f,-1.0f,0.0f };
 	mappedLight->intensity= 1.0f;
+	
+	//index用のResourceを作成
+	ID3D12Resource* indexResourceSprite = CreateBufferResource(device, sizeof(uint32_t) * 6);
+	
+	//indexに対応したView
+	D3D12_INDEX_BUFFER_VIEW indexBufferViewSprite{};
+	//リソースの先頭のアドレスから使う
+	indexBufferViewSprite.BufferLocation = indexResourceSprite->GetGPUVirtualAddress();
+	//使用するリソースのサイズはインデックス6つ分のサイズ
+	indexBufferViewSprite.SizeInBytes = sizeof(uint32_t) * 6;
+	//インデックスはuint32_tとする
+	indexBufferViewSprite.Format = DXGI_FORMAT_R32_UINT;
 
+	//indexResourceにデータを書き込む
+	uint32_t* indexDateSprite = nullptr;
+	indexResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&indexDateSprite));
+	indexDateSprite[0] = 0;
+	indexDateSprite[1] = 1;
+	indexDateSprite[2] = 2;
+	indexDateSprite[3] = 1;
+	indexDateSprite[4] = 3;
+	indexDateSprite[5] = 2;
 
 	//Viewport	
 	D3D12_VIEWPORT viewport{};
@@ -1278,6 +1299,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			//Sprite描画!(DrawCall/ドローコール)。
 			commandList->DrawInstanced(6, 1, 0, 0);
 
+			//IndexBufferViewを設定
+			commandList->IASetIndexBuffer(&indexBufferViewSprite);
+			//描画！(DrawCall/ドローコール)6個のインデックスを使用し1つのインスタンスを描画。その他は当面0で良い
+			commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+
 			//球
 			//commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSphere);
 			//commandList->SetGraphicsRootConstantBufferView(1, vertexResourceSphere->GetGPUVirtualAddress());
@@ -1379,6 +1405,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	materialResourceSprite->Release();
 
 	directionalLightResource->Release();
+	indexResourceSprite->Release();
 
 	//COMの終了処理
 	CoUninitialize();
