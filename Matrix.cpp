@@ -252,3 +252,13 @@ Matrix4x4 MatrixMath::MakeIdentity4x4() {
 	}
 	return result;
 }
+
+Vector3 MatrixMath::Normalize(const Vector3& v)
+{
+	Vector3 result = {};
+	result.x = v.x / sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+	result.y = v.y / sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+	result.z = v.z / sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+
+	return result;
+};

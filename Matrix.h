@@ -37,8 +37,7 @@ namespace MatrixMath
 
 	Matrix4x4 MakeIdentity4x4();
 
-
-
+	Vector3 Normalize(const Vector3& v);
 };
 
 
