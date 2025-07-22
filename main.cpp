@@ -45,6 +45,8 @@ struct VertexData
 	Vector2 texcoord;
 	Vector3 normal;
 };
+
+
 //
 static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception)
 {
@@ -826,7 +828,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//Resource作成の関数
 	//VertexData* vertexDataSphere = nullptr;
 	//分裂数
-	const uint32_t kSubdivision = 16;
+	const uint32_t kSubdivision = 4;
 
 	//経度分割1つ分の角度
 	const float kLonEvery = 2.0f * std::numbers::pi_v<float> / float(kSubdivision);
@@ -835,7 +837,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	const float kLatEvery = std::numbers::pi_v<float> / float(kSubdivision);
 
 	//必要な頂点数
-	const uint32_t vertexCount = kSubdivision * kSubdivision * 6;
+	const uint32_t vertexCount = (kSubdivision+1) * (kSubdivision+1)* 6;
 
 	//頂点リソースを作成
 	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * vertexCount);
@@ -966,7 +968,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		}
 	}
 
-
+	
 	//画像
 	VertexData* vertexDataSprite = nullptr;
 	vertexResourceSprite->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataSprite));
@@ -1303,6 +1305,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			commandList->IASetIndexBuffer(&indexBufferViewSprite);
 			//描画！(DrawCall/ドローコール)6個のインデックスを使用し1つのインスタンスを描画。その他は当面0で良い
 			commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+
+			//commandList->DrawInstanced();
 
 			//球
 			//commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSphere);
