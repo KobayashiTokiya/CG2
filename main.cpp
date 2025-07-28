@@ -935,8 +935,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	indexResourceSphere->Unmap(0, nullptr);
 #pragma endregion
 
-	
-
 #pragma region Spriteの描画
 	//Sprite用の頂点リリースを作る
 	ID3D12Resource* vertexResourceSprite = CreateBufferResource(device, sizeof(VertexData) * 4);
