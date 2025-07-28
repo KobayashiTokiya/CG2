@@ -39,6 +39,11 @@ struct Vector4
 	float x, y, z, w;
 };
 
+struct Matrix3x3
+{
+	float m[3][3];
+};
+
 struct VertexData
 {
 	Vector4 position;
@@ -381,6 +386,7 @@ struct Material
 {
 	Vector4 color;
 	int32_t enableLighting;
+	Matrix3x3 uvTransform;
 };
 
 //TransformationMatrix
