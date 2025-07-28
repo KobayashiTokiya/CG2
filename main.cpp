@@ -821,7 +821,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//Resource作成の関数
 		//VertexData* vertexDataSphere = nullptr;
 		//分裂数
-	const uint32_t kSubdivision = 4;
+	const uint32_t kSubdivision = 16;
 
 	const uint32_t vertexCount = (kSubdivision + 1) * (kSubdivision + 1);
 	const uint32_t indexCount = kSubdivision * kSubdivision * 6;
@@ -854,14 +854,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
 
 	//緯度の方向に分割 -π/2 ~ π/2
-	for (uint32_t latIndex = 0; latIndex < kSubdivision; latIndex++)
+	for (uint32_t latIndex = 0; latIndex <= kSubdivision; latIndex++)
 	{
 		float lat = -std::numbers::pi_v<float> / 2.0f + kLatEvery * latIndex;
 
 		//経度の方向に分割 0 ~ 2π
-		for (uint32_t lonIndex = 0; lonIndex < kSubdivision; lonIndex++)
+		for (uint32_t lonIndex = 0; lonIndex <= kSubdivision; lonIndex++)
 		{
-			uint32_t start = (latIndex * kSubdivision + lonIndex);
+			uint32_t start = latIndex * (kSubdivision+1) + lonIndex;
 
 			//現在の経度
 			float lon = lonIndex * kLonEvery;
@@ -910,7 +910,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex)
 	{
-		float lat = -std::numbers::pi_v<float> / 2.0f + kLatEvery * latIndex;
+		//float lat = -std::numbers::pi_v<float> / 2.0f + kLatEvery * latIndex;
 
 		//経度の方向に分割 0 ~ 2π
 		for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex)
