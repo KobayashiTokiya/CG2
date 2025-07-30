@@ -13,6 +13,7 @@
 #include <dxgidebug.h>
 #include <dxcapi.h>
 #include <vector>
+#include <sstream>
 
 #include <numbers>
 
@@ -411,6 +412,58 @@ struct DirectionalLight
 	Vector3 direction;
 	float intensity;
 };
+
+struct ModelData
+{
+	std::vector<VertexData> vertices;
+};
+
+ModelData LoadObjFile(const std::string& directoryPath, const std::string& filename)
+{
+	//1.中に必要となる変数の宣言
+	ModelData modelData;           //構築するModelData
+	std::vector<Vector4>positions; //位置
+	std::vector<Vector3>normals;   //法線
+	std::vector<Vector2>texcoords; //テクスチャ座標
+	std::string line;              //ファイルから読んだ1行を格納するもの
+	
+	//2.ファイルを開く
+	std::ifstream file(directoryPath + "/" + filename);//ファイルを開く
+	assert(file.is_open());//とりあえず開けなかったら止める
+	
+	//3.実際のファイルを読み、ModelDataを構築していく
+	while (std::getline(file,line))
+	{
+		std::string identifier;
+		std::istringstream s(line);
+		s >> identifier;//先頭の識別子を読む
+
+		//identifierに応じた処理
+		if (identifier=="v")
+		{
+			Vector4 position;
+			s >> position.x >> position.y >> position.z;
+			position.w = 1.0f;
+			positions.push_back(position);
+		}
+		else if (identifier=="vt")
+		{
+			Vector2 texcoord;
+			s >> texcoord.x >> texcoord.y;
+			texcoords.push_back(texcoord);
+		}
+		else if(identifier=="vn")
+		{
+			Vector3 normal;
+			s >> normal.x >> normal.y >> normal.z;
+			normals.push_back(normal);
+		}
+	}
+
+	//4.ModelDataを返す
+
+
+}
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
