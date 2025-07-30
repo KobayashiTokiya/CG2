@@ -346,6 +346,13 @@ Transform transformSprite{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 Transform transformSphere{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 
 
+//UVTransform用の変数を用意する
+Transform uvTransformSprite
+{
+	{1.0f,1.0f,1.0f},
+	{0.0f,0.0f,0.0f},
+	{0.0f,0.0f,0.0f},
+};
 
 [[nodiscard]]
 ID3D12Resource* UploadTextureData(ID3D12Resource* texture, const DirectX::ScratchImage& mipImage, ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
@@ -386,7 +393,8 @@ struct Material
 {
 	Vector4 color;
 	int32_t enableLighting;
-	Matrix3x3 uvTransform;
+	float padding[3];
+	Matrix4x4 uvTransform;
 };
 
 //TransformationMatrix
@@ -1052,6 +1060,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	materialData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	materialData->enableLighting = true;
 
+	//UVTransform行列を単位行列で初期化
+	materialData->uvTransform = MatrixMath::MakeIdentity4x4();
 
 	//Sprite用のマテリアルリソースを作る
 	ID3D12Resource* materialResourceSprite = CreateBufferResource(device, sizeof(Material));
@@ -1062,6 +1072,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//Sprite用のマテリアルリソースを
 	materialDataSprite->enableLighting = false;
 
+	//UVTransform行列を単位行列で初期化
+	materialDataSprite->uvTransform = MatrixMath::MakeIdentity4x4();
+
 	//WVP用のリソースを作る。
 	ID3D12Resource* wvpResource = CreateBufferResource(device, sizeof(TransformationMatrix));
 	//データを書き込む
@@ -1071,6 +1084,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//単位行列
 	wvpData->WVP = MatrixMath::MakeIdentity4x4();
 
+	Matrix4x4 uvTransformMatarix = MatrixMath::MakeScaleMatrix(uvTransformSprite.scale);
+	uvTransformMatarix = MatrixMath::Multiply(uvTransformMatarix, MatrixMath::MakeRotateZMatrix(uvTransformSprite.rotate.z));
+	uvTransformMatarix = MatrixMath::Multiply(uvTransformMatarix, MatrixMath::MakeTranslateMatrix(uvTransformSprite.translate));
+	materialDataSprite->uvTransform = uvTransformMatarix;
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -1181,6 +1198,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			ImGui::ColorEdit4("LightColor", &mappedLight->color.x);
 			ImGui::DragFloat3("LightDirectional", &mappedLight->direction.x, 0.01f);
 			ImGui::DragFloat("Intensity", &mappedLight->intensity);
+
+			ImGui::DragFloat2("UVTanslate", &uvTransformSprite.translate.x, 0.01f, -10.0f, 10.0f);
+			ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
+			ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
+
 			ImGui::End();
 
 
