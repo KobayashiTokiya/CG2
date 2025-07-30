@@ -875,7 +875,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//経度の方向に分割 0 ~ 2π
 		for (uint32_t lonIndex = 0; lonIndex <= kSubdivision; lonIndex++)
 		{
-			uint32_t start = latIndex * (kSubdivision+1) + lonIndex;
+			uint32_t start = latIndex * (kSubdivision + 1) + lonIndex;
 
 			//現在の経度
 			float lon = lonIndex * kLonEvery;
@@ -902,24 +902,24 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		}
 	}
 
-	
+
 	uint32_t* indexData = nullptr;
 
-	const int indexNum = kSubdivision*kSubdivision *6;
+	const int indexNum = kSubdivision * kSubdivision * 6;
 	//インデックス化されたスフィア
-	ID3D12Resource* indexResourceSphere = CreateBufferResource(device, sizeof(uint32_t) *indexNum);
+	ID3D12Resource* indexResourceSphere = CreateBufferResource(device, sizeof(uint32_t) * indexNum);
 	//頂点バッファービューを作成する
 	D3D12_INDEX_BUFFER_VIEW indexBufferViewSphere{};
 	//リリースの先頭のアドレスから使う
 	indexBufferViewSphere.BufferLocation = indexResourceSphere->GetGPUVirtualAddress();
 	//使用するリソースのサイズは頂点６つ分のサイズ
 	indexBufferViewSphere.SizeInBytes = sizeof(uint32_t) * indexNum;
-	
+
 	indexBufferViewSphere.Format = DXGI_FORMAT_R32_UINT;
 
 
 	indexResourceSphere->Map(0, nullptr, reinterpret_cast<void**>(&indexData));
-	
+
 
 
 	for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex)
@@ -931,10 +931,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		{
 			uint32_t start = (latIndex * kSubdivision + lonIndex) * 6;
 
-			uint32_t lb = latIndex*(kSubdivision+1)+lonIndex; // 左下 left bottom
-			uint32_t rb = lb+1; // 右下 right bottom
-			uint32_t lt = lb+(kSubdivision+1); // 左上 left top
-			uint32_t rt = lt+1; // 右上 right top
+			uint32_t lb = latIndex * (kSubdivision + 1) + lonIndex; // 左下 left bottom
+			uint32_t rb = lb + 1; // 右下 right bottom
+			uint32_t lt = lb + (kSubdivision + 1); // 左上 left top
+			uint32_t rt = lt + 1; // 右上 right top
 
 			indexData[start + 0] = lb;
 			indexData[start + 1] = lt;
@@ -1002,7 +1002,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #pragma endregion
 
 #pragma region インデックスデータ
-	
+
 	//インデックスデータ用
 	ID3D12Resource* indexResource = CreateBufferResource(device, sizeof(uint32_t) * 6);
 	//indexに対応したView
@@ -1084,10 +1084,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//単位行列
 	wvpData->WVP = MatrixMath::MakeIdentity4x4();
 
-	Matrix4x4 uvTransformMatarix = MatrixMath::MakeScaleMatrix(uvTransformSprite.scale);
-	uvTransformMatarix = MatrixMath::Multiply(uvTransformMatarix, MatrixMath::MakeRotateZMatrix(uvTransformSprite.rotate.z));
-	uvTransformMatarix = MatrixMath::Multiply(uvTransformMatarix, MatrixMath::MakeTranslateMatrix(uvTransformSprite.translate));
-	materialDataSprite->uvTransform = uvTransformMatarix;
+
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -1235,6 +1232,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 			mappedLight->direction = MatrixMath::Normalize(mappedLight->direction);
 
+			Matrix4x4 uvTransformMatarix = MatrixMath::MakeScaleMatrix(uvTransformSprite.scale);
+			uvTransformMatarix = MatrixMath::Multiply(uvTransformMatarix, MatrixMath::MakeRotateZMatrix(uvTransformSprite.rotate.z));
+			uvTransformMatarix = MatrixMath::Multiply(uvTransformMatarix, MatrixMath::MakeTranslateMatrix(uvTransformSprite.translate));
+			materialDataSprite->uvTransform = uvTransformMatarix;
 			//画面のクリア処理
 
 
@@ -1299,7 +1300,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 			//描画!(DrawCall/ドローコール)。3頂点で1つのインスタンス。インスタンスについては今後
-			commandList->DrawIndexedInstanced(indexNum, 1, 0, 0,0);
+			commandList->DrawIndexedInstanced(indexNum, 1, 0, 0, 0);
 
 
 
@@ -1317,7 +1318,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 			//SpriteのTransformationMatrixCBufferの場所を設定
 			commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
-		
+
 			// インデックスバッファ（スフィア用）←追加すること！
 			commandList->IASetIndexBuffer(&indexBufferViewSprite);
 
