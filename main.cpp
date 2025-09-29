@@ -22,8 +22,8 @@
 #include "externals/DirectXTex/DirectXTex.h"
 #include "externals/DirectXTex/d3dx12.h"
 
-#include "Matrix.h"
-#include "Vector.h"
+#include "engine/math/Matrix.h"
+#include "engine/math/Vector.h"
 
 #include "externals/imgui/imgui.h"
 #include "externals/imgui/imgui_impl_dx12.h"
