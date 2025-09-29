@@ -14,6 +14,8 @@
 #include <dxcapi.h>
 #include <vector>
 #include <sstream>
+//コムポインタ
+#include <wrl.h>
 
 #include <numbers>
 
