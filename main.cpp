@@ -928,9 +928,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
 	//RasterizerState
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
-	//裏面
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
-
+	//rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;//裏面だけ
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT;//両面
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	//ShaderをCompileする
@@ -947,7 +946,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//Depthの機能を有効化する
 	depthStencilDesc.DepthEnable = true;
 	//書き込みします
-	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	//depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;//Depthを消した
+
 	//比較関数はLessEqual。つまり、近ければ描画される。
 	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 
@@ -1013,7 +1014,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//06_02
 	//ModelDataを使う
-	ModelData modelData = LoadObjFile("Resource", "plane.obj");
+	//ModelData modelData = LoadObjFile("Resource", "plane.obj");//UVチェッカー
+	ModelData modelData = LoadObjFile("Resource", "fence.obj");//フェンス
 
 	//頂点リソースを作成
 	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * modelData.vertices.size());
