@@ -898,7 +898,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//BlendState
 	D3D12_BLEND_DESC blendDesc{};
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-
+	blendDesc.RenderTarget[0].BlendEnable = TRUE;
+	blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
 	//RasterizerState
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
 	//裏面
@@ -1317,7 +1323,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 			if (ImGui::CollapsingHeader("Camera"))
 			{
-				ImGui::DragFloat3("Transform", &cameraTransform.translate.x, 0.01f);
+				ImGui::DragFloat3("Translate", &cameraTransform.translate.x, 0.01f);
 				ImGui::DragFloat3("Rotate", &cameraTransform.rotate.x, 0.01f);
 				ImGui::DragFloat3("Scale", &cameraTransform.scale.x, 0.01f);
 			}
@@ -1327,10 +1333,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 				ImGui::DragFloat3("Translate", &transform.translate.x, 0.1f);
 				ImGui::DragFloat3("Rotate", &transform.rotate.x, 0.1f);
 				ImGui::DragFloat3("Scale", &transform.scale.x, 0.1f);
-
+				ImGui::ColorEdit4("Color", &materialData->color.x);
 				if (ImGui::CollapsingHeader("Material"))
 				{
-					ImGui::ColorEdit4("Color", &materialData->color.x);
+
 					//ImGui::Checkbox("useMonsterBall", &useMonsterBall);
 				}
 			}
