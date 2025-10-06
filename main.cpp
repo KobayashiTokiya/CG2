@@ -913,6 +913,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		L"vs_6_0", dxcUtils, dxcCompiler, includeHandler, logStream);
 	assert(vertexShaderBlob != nullptr);
 
+
 	IDxcBlob* pixelShaderBlob = CompileShader(L"Resource/shaders/Object3d.PS.hlsl",
 		L"ps_6_0", dxcUtils, dxcCompiler, includeHandler, logStream);
 	assert(pixelShaderBlob != nullptr);
