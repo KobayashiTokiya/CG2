@@ -267,6 +267,7 @@ ID3D12Resource* CreateBufferResource(ID3D12Device* device, size_t sizeInBytes)
 
 }
 
+
 //CompileShader関数
 IDxcBlob* CompileShader(
 	const std::wstring& filePath,
@@ -898,6 +899,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	D3D12_BLEND_DESC blendDesc{};
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
+
 	//RasterizerState
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
 	//裏面
@@ -909,6 +911,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	IDxcBlob* vertexShaderBlob = CompileShader(L"Resource/shaders/Object3d.VS.hlsl",
 		L"vs_6_0", dxcUtils, dxcCompiler, includeHandler, logStream);
 	assert(vertexShaderBlob != nullptr);
+
 
 	IDxcBlob* pixelShaderBlob = CompileShader(L"Resource/shaders/Object3d.PS.hlsl",
 		L"ps_6_0", dxcUtils, dxcCompiler, includeHandler, logStream);
