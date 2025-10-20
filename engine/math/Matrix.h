@@ -6,13 +6,14 @@ struct  Matrix4x4
 {
 	float m[4][4];
 };
+
 namespace MatrixMath
 {
 	Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio, float nearClip, float farClip);
 	
 	Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, float bottom, float nearClip, float farClip);
 	
-	Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height, float minDepth, float maxDepth);
+	Matrix4x4 MakeViewportMatrix(float left, float top, float  width, float height, float minDepth, float maxDepth);
 
 	Matrix4x4 MakeScaleMatrix(const Vector3& scale);
 
@@ -36,8 +37,7 @@ namespace MatrixMath
 
 	Matrix4x4 MakeIdentity4x4();
 
-
-
+	Vector3 Normalize(const Vector3& v);
 };
 
 

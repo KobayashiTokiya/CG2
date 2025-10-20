@@ -1,15 +1,14 @@
 #include "Matrix.h"
 
-#include "Matrix.h"
 #include "math.h"
 #include <cmath>
 
 
 //1.透視投影行列
 Matrix4x4 MatrixMath::MakePerspectiveFovMatrix(float fovY, float aspectRatio, float nearClip, float farClip) {
-	float cot = (1.0f / tanf(fovY / 2.0f));
+	float cot = 1.0f / tanf(fovY / 2.0f);
 	Matrix4x4 result = {};
-	result.m[0][0] = 1.0f / aspectRatio * cot;
+	result.m[0][0] = cot / aspectRatio;
 	result.m[1][1] = cot;
 	result.m[2][2] = farClip / (farClip - nearClip);
 	result.m[2][3] = 1.0f;
@@ -21,13 +20,13 @@ Matrix4x4 MatrixMath::MakePerspectiveFovMatrix(float fovY, float aspectRatio, fl
 Matrix4x4 MatrixMath::MakeOrthographicMatrix(float left, float top, float right, float bottom, float nearClip, float farClip) {
 	Matrix4x4 result = {};
 	result.m[0][0] = 2.0f / (right - left);
-	result.m[1][1] = 2.0f / (top - bottom);
+	result.m[1][1] = 2.0f / ( top-bottom);
 	result.m[2][2] = 1.0f / (farClip - nearClip);
-	result.m[0][3] = (left + right) / (left - right);
-	result.m[1][3] = (top + bottom) / (bottom - top);
-	result.m[2][3] = nearClip / (nearClip - farClip);
+	result.m[3][0] = (left + right) / (left - right);
+	result.m[3][1] = (top + bottom) / (bottom-top  );
+	result.m[3][2] = nearClip / (nearClip - farClip);
 	result.m[3][3] = 1.0f;
-
+	
 	return result;
 }
 
@@ -37,8 +36,8 @@ Matrix4x4 MatrixMath::MakeViewportMatrix(float left, float top, float width, flo
 	result.m[0][0] = width / 2.0f;
 	result.m[1][1] = -height / 2.0f;
 	result.m[2][2] = maxDepth - minDepth;
-	result.m[3][0] = left + (width / 2.0f);
-	result.m[3][1] = top + (height / 2.0f);
+	result.m[3][0] = left + width / 2.0f;
+	result.m[3][1] = top + height / 2.0f;
 	result.m[3][2] = minDepth;
 	result.m[3][3] = 1.0f;
 	return result;
@@ -87,8 +86,8 @@ Matrix4x4 MatrixMath::MakeRotateYMatrix(float radian) {
 Matrix4x4 MatrixMath::MakeRotateZMatrix(float radian) {
 	Matrix4x4 result = { {
 
-		{ std::cos(radian),std::sin(radian),0.0f,0.0f},
-		{-std::sin(radian),std::cos(radian),0.0f,0.0f},
+		{ std::cos(radian),-std::sin(radian),0.0f,0.0f},
+		{std::sin(radian),std::cos(radian),0.0f,0.0f},
 		{0.0f,0.0f,1.0f,0.0f},
 		{0.0f,0.0f,0.0f,1.0f}
 	} };
@@ -108,7 +107,7 @@ Matrix4x4 MatrixMath::MakeTranslateMatrix(const Vector3& translate) {
 	return result;
 }
 
-//積
+//掛け算
 Matrix4x4 MatrixMath::Multiply(const Matrix4x4& m1, const Matrix4x4& m2) {
 
 	Matrix4x4 result;
@@ -125,11 +124,8 @@ Matrix4x4 MatrixMath::Multiply(const Matrix4x4& m1, const Matrix4x4& m2) {
 }
 
 //アフィン行列
-Matrix4x4 MatrixMath::MakeAffineMatrix(const Vector3& scale, const Vector3& rotate, const Vector3& translate) {
-	Matrix4x4 result;
-
-
-
+Matrix4x4 MatrixMath::MakeAffineMatrix(const Vector3& scale, const Vector3& rotate, const Vector3& translate)
+{
 	//回転行列を生成する
 	Matrix4x4 rotateXMatrix = MakeRotateXMatrix(rotate.x);
 	Matrix4x4 rotateYMatrix = MakeRotateYMatrix(rotate.y);
@@ -137,8 +133,7 @@ Matrix4x4 MatrixMath::MakeAffineMatrix(const Vector3& scale, const Vector3& rota
 
 	Matrix4x4 rotateMatrix = Multiply(rotateXMatrix, Multiply(rotateYMatrix, rotateZMatrix));
 
-
-	result = {
+	Matrix4x4 result = {
 		scale.x * rotateMatrix.m[0][0],scale.x * rotateMatrix.m[0][1],scale.x * rotateMatrix.m[0][2],0.0f,
 		scale.y * rotateMatrix.m[1][0],scale.y * rotateMatrix.m[1][1],scale.y * rotateMatrix.m[1][2],0.0f,
 		scale.z * rotateMatrix.m[2][0],scale.z * rotateMatrix.m[2][1],scale.z * rotateMatrix.m[2][2],0.0f,
@@ -163,8 +158,10 @@ Vector3 MatrixMath::Cross(const Vector3& v1, const Vector3& v2) {
 Matrix4x4 MatrixMath::Inverse(const Matrix4x4& m) {
 
 	float aug[4][8] = {};
-	for (int row = 0; row < 4; row++) {
-		for (int col = 0; col < 4; col++) {
+	for (int row = 0; row < 4; row++)
+	{
+		for (int col = 0; col < 4; col++)
+		{
 			aug[row][col] = m.m[row][col];
 		}
 	}
@@ -193,23 +190,29 @@ Matrix4x4 MatrixMath::Inverse(const Matrix4x4& m) {
 
 		//ピボットを1のする
 		float pivot = aug[i][i];
-		for (int k = 0; k < 8; k++) {
+		for (int k = 0; k < 8; k++)
+		{
 			aug[i][k] /= pivot;
 		}
 
 		//i列目のピボット以外を0にする
-		for (int j = 0; j < 4; j++) {
-			if (j != i) {
+		for (int j = 0; j < 4; j++)
+		{
+			if (j != i)
+			{
 				float factor = aug[j][i];
-				for (int k = 0; k < 8; k++) {
+				for (int k = 0; k < 8; k++)
+				{
 					aug[j][k] -= factor * aug[i][k];
 				}
 			}
 		}
 	}
 	Matrix4x4 result = {};
-	for (int row = 0; row < 4; row++) {
-		for (int col = 0; col < 4; col++) {
+	for (int row = 0; row < 4; row++)
+	{
+		for (int col = 0; col < 4; col++)
+		{
 			result.m[row][col] = aug[row][col + 4];
 		}
 	}
@@ -226,20 +229,36 @@ Vector3 MatrixMath::Transform(const Vector3& vector, const Matrix4x4& matrix) {
 
 	float w = vector.x * matrix.m[0][3] + vector.y * matrix.m[1][3] + vector.z * matrix.m[2][3] + 1.0f * matrix.m[3][3];
 
-	result.x /= w;
-	result.y /= w;
-	result.z /= w;
-
+	// wで割って透視除算（wが0でない場合のみ）
+	if (w != 0.0f)
+	{
+		result.x /= w;
+		result.y /= w;
+		result.z /= w;
+	}
 
 	return result;
 }
+
 //単位行列
 Matrix4x4 MatrixMath::MakeIdentity4x4() {
 	Matrix4x4 result;
-	for (int i = 0; i < 4; ++i) {
-		for (int j = 0; j < 4; ++j) {
+	for (int i = 0; i < 4; ++i)
+	{
+		for (int j = 0; j < 4; ++j)
+		{
 			result.m[i][j] = (i == j) ? 1.0f : 0.0f;
 		}
 	}
 	return result;
 }
+
+Vector3 MatrixMath::Normalize(const Vector3& v)
+{
+	Vector3 result = {};
+	result.x = v.x / sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+	result.y = v.y / sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+	result.z = v.z / sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+
+	return result;
+};
