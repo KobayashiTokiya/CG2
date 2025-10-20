@@ -68,7 +68,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)DirectXGame\application\engine\math;$(ProjectDir)DirectXGame\application\engine\object;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -92,7 +92,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>MinSpace</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)DirectXGame\application\engine\math;$(ProjectDir)DirectXGame\application\engine\object;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -119,7 +119,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)DirectXGame\application\engine\math;$(ProjectDir)DirectXGame\application\engine\object;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)engine\math;$(ProjectDir)engine\2d;$(ProjectDir)engine\3d;$(ProjectDir)engine\audio;$(ProjectDir)engine\base;$(ProjectDir)engine\io;$(ProjectDir)engine\scene;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -145,7 +145,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
     </ClCompile>
-    <ClCompile Include="Matrix.cpp" />
+    <ClCompile Include="engine\math\Matrix.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Resource\shaders\Object3D.PS.hlsl">
@@ -174,9 +174,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="externals\imgui\imstb_rectpack.h" />
     <ClInclude Include="externals\imgui\imstb_textedit.h" />
     <ClInclude Include="externals\imgui\imstb_truetype.h" />
-    <ClInclude Include="Matrix.h" />
-    <ClInclude Include="Transform.h" />
-    <ClInclude Include="Vector.h" />
+    <ClInclude Include="engine\math\Matrix.h" />
+    <ClInclude Include="engine\math\Transform.h" />
+    <ClInclude Include="engine\math\Vector.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

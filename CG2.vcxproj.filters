@@ -66,7 +66,7 @@
     <ClCompile Include="externals\imgui\imgui_widgets.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Matrix.cpp">
+    <ClCompile Include="engine\math\Matrix.cpp">
       <Filter>ソース ファイル\engine\math</Filter>
     </ClCompile>
   </ItemGroup>
@@ -99,13 +99,13 @@
     <ClInclude Include="externals\imgui\imstb_truetype.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Matrix.h">
+    <ClInclude Include="engine\math\Matrix.h">
       <Filter>ソース ファイル\engine\math</Filter>
     </ClInclude>
-    <ClInclude Include="Transform.h">
+    <ClInclude Include="engine\math\Transform.h">
       <Filter>ソース ファイル\engine\math</Filter>
     </ClInclude>
-    <ClInclude Include="Vector.h">
+    <ClInclude Include="engine\math\Vector.h">
       <Filter>ソース ファイル\engine\math</Filter>
     </ClInclude>
   </ItemGroup>
