@@ -13,6 +13,27 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="ソース ファイル\2d">
+      <UniqueIdentifier>{59e8e4da-267e-4f8b-9929-10ad0776f281}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\3d">
+      <UniqueIdentifier>{9521dc01-94f7-453a-bc2b-c3ba0a97ff98}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\audio">
+      <UniqueIdentifier>{a533d43a-07f8-4784-88e3-e49e1e33e9d9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\base">
+      <UniqueIdentifier>{eba18bae-bbba-451d-8b0f-c84f33dfc639}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\io">
+      <UniqueIdentifier>{5a36aac1-9c68-4b49-979e-9f8c9386e278}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\scene">
+      <UniqueIdentifier>{019ce558-4093-4073-a29e-15cf97832421}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\math">
+      <UniqueIdentifier>{ac780803-32c3-4649-a3d9-a8ac7acd23c1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
