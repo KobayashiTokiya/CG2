@@ -267,7 +267,6 @@ ID3D12Resource* CreateBufferResource(ID3D12Device* device, size_t sizeInBytes)
 
 }
 
-
 //CompileShader関数
 IDxcBlob* CompileShader(
 	const std::wstring& filePath,
