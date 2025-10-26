@@ -13,6 +13,7 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+
     <Filter Include="ソース ファイル\engine">
       <UniqueIdentifier>{ac8dcbfb-56e2-43c3-9849-751c6178cedb}</UniqueIdentifier>
     </Filter>
@@ -39,6 +40,7 @@
     </Filter>
     <Filter Include="ソース ファイル\engine\scene">
       <UniqueIdentifier>{e74e8cf5-901b-404f-b5d6-26d7f9352ca4}</UniqueIdentifier>
+
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -66,6 +68,7 @@
     <ClCompile Include="externals\imgui\imgui_widgets.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+
     <ClCompile Include="engine\math\Matrix.cpp">
       <Filter>ソース ファイル\engine\math</Filter>
     </ClCompile>
@@ -99,6 +102,7 @@
     <ClInclude Include="externals\imgui\imstb_truetype.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+
     <ClInclude Include="engine\math\Matrix.h">
       <Filter>ソース ファイル\engine\math</Filter>
     </ClInclude>
@@ -107,12 +111,15 @@
     </ClInclude>
     <ClInclude Include="engine\math\Vector.h">
       <Filter>ソース ファイル\engine\math</Filter>
+
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />
   </ItemGroup>
   <ItemGroup>
+
     <None Include="Resource\shaders\Object3d.hlsli" />
+
   </ItemGroup>
 </Project>

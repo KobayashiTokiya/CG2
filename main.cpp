@@ -912,12 +912,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	//ShaderをCompileする
+
 	IDxcBlob* vertexShaderBlob = CompileShader(L"Resource/shaders/Object3d.VS.hlsl",
 		L"vs_6_0", dxcUtils, dxcCompiler, includeHandler, logStream);
 	assert(vertexShaderBlob != nullptr);
 
 
 	IDxcBlob* pixelShaderBlob = CompileShader(L"Resource/shaders/Object3d.PS.hlsl",
+
 		L"ps_6_0", dxcUtils, dxcCompiler, includeHandler, logStream);
 	assert(pixelShaderBlob != nullptr);
 
@@ -1534,6 +1536,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	ImGui_ImplDX12_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
+
 
 
 
