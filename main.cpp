@@ -1532,6 +1532,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 
+
 	OutputDebugStringA("Hello,DirectX!\n");
 
 	CloseHandle(fenceEvent);
