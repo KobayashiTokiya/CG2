@@ -1552,7 +1552,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	commandAllocator->Release();
 
-	CommandAllocator->Release();
+	//CommandAllocator->Release();
 
 	commandQueue->Release();
 	device->Release();
@@ -1565,7 +1565,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	CloseWindow(hwnd);
 
 
-	vertexResorce->Release();
+	//vertexResorce->Release();
 	graphicsPipelineState->Release();
 	signatureBlob->Release();
 	if (errorBlob)
