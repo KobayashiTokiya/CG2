@@ -13,26 +13,34 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="ソース ファイル\2d">
-      <UniqueIdentifier>{59e8e4da-267e-4f8b-9929-10ad0776f281}</UniqueIdentifier>
+
+    <Filter Include="ソース ファイル\engine">
+      <UniqueIdentifier>{ac8dcbfb-56e2-43c3-9849-751c6178cedb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\3d">
-      <UniqueIdentifier>{9521dc01-94f7-453a-bc2b-c3ba0a97ff98}</UniqueIdentifier>
+    <Filter Include="ソース ファイル\engine\2d">
+      <UniqueIdentifier>{09791ab9-10cb-45b8-9bea-8b8e4c53bb2a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\audio">
-      <UniqueIdentifier>{a533d43a-07f8-4784-88e3-e49e1e33e9d9}</UniqueIdentifier>
+    <Filter Include="ソース ファイル\engine\3d">
+      <UniqueIdentifier>{2917eaf4-5b6f-4560-ab96-5971535a0f21}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\base">
-      <UniqueIdentifier>{eba18bae-bbba-451d-8b0f-c84f33dfc639}</UniqueIdentifier>
+    <Filter Include="ソース ファイル\engine\audio">
+      <UniqueIdentifier>{38acd139-a08a-411e-92e4-d88f08e3a130}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\io">
-      <UniqueIdentifier>{5a36aac1-9c68-4b49-979e-9f8c9386e278}</UniqueIdentifier>
+    <Filter Include="ソース ファイル\engine\math">
+      <UniqueIdentifier>{af4b1af2-23d2-48c5-8fdb-c3f72df1ea8d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\scene">
-      <UniqueIdentifier>{019ce558-4093-4073-a29e-15cf97832421}</UniqueIdentifier>
+    <Filter Include="ソース ファイル\application">
+      <UniqueIdentifier>{62460623-7914-41e2-a8d0-68a7f2d4ab70}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\math">
-      <UniqueIdentifier>{ac780803-32c3-4649-a3d9-a8ac7acd23c1}</UniqueIdentifier>
+    <Filter Include="ソース ファイル\engine\base">
+      <UniqueIdentifier>{fa0eb3be-fae9-4240-8912-85454f1486d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\engine\io">
+      <UniqueIdentifier>{9a0c708b-c9ff-4bec-91b4-f1383720a639}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\engine\scene">
+      <UniqueIdentifier>{e74e8cf5-901b-404f-b5d6-26d7f9352ca4}</UniqueIdentifier>
+
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -60,13 +68,14 @@
     <ClCompile Include="externals\imgui\imgui_widgets.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Matrix.cpp">
-      <Filter>ソース ファイル\math</Filter>
+
+    <ClCompile Include="engine\math\Matrix.cpp">
+      <Filter>ソース ファイル\engine\math</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Resource\shader\Object3D.VS.hlsl" />
-    <FxCompile Include="Resource\shader\Object3D.PS.hlsl" />
+    <FxCompile Include="Resource\shaders\Object3D.VS.hlsl" />
+    <FxCompile Include="Resource\shaders\Object3D.PS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -93,20 +102,24 @@
     <ClInclude Include="externals\imgui\imstb_truetype.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Matrix.h">
-      <Filter>ソース ファイル\math</Filter>
+
+    <ClInclude Include="engine\math\Matrix.h">
+      <Filter>ソース ファイル\engine\math</Filter>
     </ClInclude>
-    <ClInclude Include="Transform.h">
-      <Filter>ソース ファイル\math</Filter>
+    <ClInclude Include="engine\math\Transform.h">
+      <Filter>ソース ファイル\engine\math</Filter>
     </ClInclude>
-    <ClInclude Include="Vector.h">
-      <Filter>ソース ファイル\math</Filter>
+    <ClInclude Include="engine\math\Vector.h">
+      <Filter>ソース ファイル\engine\math</Filter>
+
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resource\shader\Object3d.hlsli" />
+
+    <None Include="Resource\shaders\Object3d.hlsli" />
+
   </ItemGroup>
 </Project>
