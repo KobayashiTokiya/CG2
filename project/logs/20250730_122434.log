@@ -1,0 +1,20 @@
+Hello,DirectX!
+
+clientSize:1280,720
+
+Use Adapater:NVIDIA GeForce RTX 4060 Laptop GPU
+
+FeatureLevel : 12.2
+
+Complete create D3D12Device!!!
+
+Begin CompileShader,path:Object3d.VS.hlsl,prefile:vs_6_0
+
+Compile Succeeded,path:Object3d.VS.hlsl,profile:vs_6_0
+
+Begin CompileShader,path:Object3d.PS.hlsl,prefile:ps_6_0
+
+Object3d.PS.hlsl:33:36: error: use of undeclared identifier 'textureColor'
+    output.color = gMaterial.color*textureColor;
+                                   ^
+
