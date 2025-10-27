@@ -39,6 +39,11 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 #pragma comment(lib,"dxcompiler.lib")
 
+#define DIRECTION_VERSION 0x0800 //DirectInputのバージョン指定
+#include <dinput.h>
+
+#pragma comment(lib,"dinput8.lib")
+#pragma comment(lib,"dxguid.lib")
 
 //ヴェクター４を作る
 struct Vector4
@@ -554,6 +559,8 @@ ModelData LoadObjFile(const std::string& directoryPath, const std::string& filen
 	return modelData;
 }
 
+	
+
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
 	//COM初期化
@@ -587,9 +594,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	RECT wrc = { 0,0,kClientWindth,kClientHeight };
 
 	AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
-
-
-
 
 	HWND hwnd = CreateWindow(
 		wc.lpszClassName,
@@ -975,6 +979,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	vertexResourceDesc.SampleDesc.Count = 1;
 
 	vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+	//DirectInputの初期化
+	IDirectInput8* directInput = nullptr;
+	result = DirectInput8Create(w.hInstance, DIRECTION_VERSION, IID_IDirectInput8,
+		(void**)&directInput, nullptr);
+	assert(SUCCEEDED(result));
+
+	//キーボードデバイスの生成
+	IDirectInputDevice8* keyboard = nullptr;
+	result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
+	assert(SUCCEEDED(result));
+
+	//入力データ形式のセット
+	result = keyboard->SetDataFormat(&c_dfDIKeyboard);//標準形式
+	assert(SUCCEEDED(result));
+
+	//排他制限レベルのセット
+	result = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+	assert(SUCCEEDED(result));
+
 
 #pragma region スフィア
 	//05_00
