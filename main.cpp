@@ -559,6 +559,8 @@ ModelData LoadObjFile(const std::string& directoryPath, const std::string& filen
 	return modelData;
 }
 
+
+
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
 	//COM初期化
@@ -815,9 +817,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
 	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-	//パーティクル用
-	D3D12_ROOT_SIGNATURE_DESC particleDescriptionRootSignature{};
-	particleDescriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
 	//Object3d用
 	D3D12_DESCRIPTOR_RANGE descriptorRange[1] = {};
@@ -825,8 +824,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	descriptorRange[0].NumDescriptors = 1;//数は1つ
 	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;//SRVを使う
 	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-	
 
 	//RootParameter作成
 	D3D12_ROOT_PARAMETER rootParamenters[4] = {};
@@ -850,6 +847,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	descriptionRootSignature.pParameters = rootParamenters;
 	descriptionRootSignature.NumParameters = _countof(rootParamenters);
 
+	//パーティクル用
+	D3D12_ROOT_SIGNATURE_DESC particleDescriptionRootSignature{};
+	particleDescriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
 	//Particle用
 	D3D12_DESCRIPTOR_RANGE descriptorRangeForInstancing[1] = {};
@@ -882,6 +882,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	particleDescriptionRootSignature.NumParameters = _countof(particleRootParamenters);
 
 
+	D3D12_STATIC_SAMPLER_DESC particleStaticSamplers[1] = {};
+	particleStaticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+	particleStaticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	particleStaticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	particleStaticSamplers[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	particleStaticSamplers[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	particleStaticSamplers[0].MaxLOD = D3D12_FLOAT32_MAX;
+	particleStaticSamplers[0].ShaderRegister = 0;
+	particleStaticSamplers[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	particleDescriptionRootSignature.pStaticSamplers = particleStaticSamplers;
+	particleDescriptionRootSignature.NumStaticSamplers = _countof(particleStaticSamplers);
+
 
 	D3D12_STATIC_SAMPLER_DESC staticSamplers[1] = {};
 	staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
@@ -895,7 +907,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	descriptionRootSignature.pStaticSamplers = staticSamplers;
 	descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers);
 
-
+	
 	ID3DBlob* signatureBlob = nullptr;
 	ID3DBlob* errorBlob = nullptr;
 
@@ -918,16 +930,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	ID3DBlob* particleSignatureBlob = nullptr;
 	ID3DBlob* particleErrorBlob = nullptr;
 
-	hr = D3D12SerializeRootSignature(&descriptionRootSignature,
-		D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
+	hr = D3D12SerializeRootSignature(&particleDescriptionRootSignature,
+		D3D_ROOT_SIGNATURE_VERSION_1, &particleSignatureBlob, &particleErrorBlob);
 	if (FAILED(hr))
 	{
-		Log(logStream, reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
+		Log(logStream, reinterpret_cast<char*>(particleErrorBlob->GetBufferPointer()));
 		assert(false);
 	}
 	ID3D12RootSignature* particleRootSignature = nullptr;
 	hr = device->CreateRootSignature(0,
-		signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(),
+		particleSignatureBlob->GetBufferPointer(), particleSignatureBlob->GetBufferSize(),
 		IID_PPV_ARGS(&particleRootSignature));
 	assert(SUCCEEDED(hr));
 
@@ -1070,11 +1082,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #pragma region パーティクル用
 	//PSO
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC particleGraphicsPipelineStateDesc{};
-	particleGraphicsPipelineStateDesc.pRootSignature = rootSignature;
+	particleGraphicsPipelineStateDesc.pRootSignature = particleRootSignature;
 	particleGraphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
 	particleGraphicsPipelineStateDesc.VS = { particleVertexShaderBlob->GetBufferPointer(),
 	particleVertexShaderBlob->GetBufferSize() };
-	particleGraphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(),
+	particleGraphicsPipelineStateDesc.PS = { particlePixelShaderBlob->GetBufferPointer(),
 	particlePixelShaderBlob->GetBufferSize() };
 	particleGraphicsPipelineStateDesc.BlendState = blendDesc;
 	particleGraphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
@@ -1087,30 +1099,30 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	particleGraphicsPipelineStateDesc.SampleDesc.Count = 1;
 	particleGraphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
 
-	//////DepthStencilの設定
-	//particleGraphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
-	//particleGraphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	//
-	//ID3D12PipelineState* particleGraphicsPipelineState = nullptr;
-	//hr = device->CreateGraphicsPipelineState(&particleGraphicsPipelineStateDesc,
-	//	IID_PPV_ARGS(&particleGraphicsPipelineState));
-	//assert(SUCCEEDED(hr));
-	//
-	////VertexResource
-	//D3D12_HEAP_PROPERTIES particleUploadHeapProperties{};
-	//particleUploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-	//
-	//D3D12_RESOURCE_DESC particleVertexResourceDesc{};
-	//
-	//particleVertexResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	//particleVertexResourceDesc.Width = sizeof(VertexData) * 6;//リソースのサイズ。今回はVector4を3頂点
-	//
-	//particleVertexResourceDesc.Height = 1;
-	//particleVertexResourceDesc.DepthOrArraySize = 1;
-	//particleVertexResourceDesc.MipLevels = 1;
-	//particleVertexResourceDesc.SampleDesc.Count = 1;
-	//
-	//particleVertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	//DepthStencilの設定
+	particleGraphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
+	particleGraphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	
+	ID3D12PipelineState* particleGraphicsPipelineState = nullptr;
+	hr = device->CreateGraphicsPipelineState(&particleGraphicsPipelineStateDesc,
+		IID_PPV_ARGS(&particleGraphicsPipelineState));
+	assert(SUCCEEDED(hr));
+	
+	//VertexResource
+	D3D12_HEAP_PROPERTIES particleUploadHeapProperties{};
+	particleUploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+	
+	D3D12_RESOURCE_DESC particleVertexResourceDesc{};
+	
+	particleVertexResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	particleVertexResourceDesc.Width = sizeof(VertexData) * 6;//リソースのサイズ。今回はVector4を3頂点
+	
+	particleVertexResourceDesc.Height = 1;
+	particleVertexResourceDesc.DepthOrArraySize = 1;
+	particleVertexResourceDesc.MipLevels = 1;
+	particleVertexResourceDesc.SampleDesc.Count = 1;
+	
+	particleVertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 #pragma endregion
 
 
