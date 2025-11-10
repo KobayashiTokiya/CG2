@@ -1416,10 +1416,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			//keyboard->GetDeviceState(sizeof(key), key);
 			//
 			////数字の0キーが押されたら
-			//if (key[DIK_0])
-			//{
-			//	OutputDebugStringA("Hit 0\n");
-			//}
+			if (input->PushKey(DIK_0))
+			{
+				OutputDebugStringA("Hit 0\n");
+			}
 			//入力の更新
 			input->Update();
 
