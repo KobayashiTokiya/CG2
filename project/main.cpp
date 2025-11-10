@@ -1423,6 +1423,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			//入力の更新
 			input->Update();
 
+
 			//ゲーム処理
 
 			//transform.rotate.y += 0.03f;
