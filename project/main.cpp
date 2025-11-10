@@ -39,8 +39,8 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 #pragma comment(lib,"dxcompiler.lib")
 
-#define DIRECTION_VERSION 0x0800 //DirectInputのバージョン指定
-#include <dinput.h>
+//#define DIRECTION_VERSION 0x0800 //DirectInputのバージョン指定
+//#include <dinput.h>
 
 #pragma comment(lib,"dinput8.lib")
 #pragma comment(lib,"dxguid.lib")
@@ -1409,18 +1409,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			ImGui::End();
 
 			//キーボード情報の取得開始
-			keyboard->Acquire();
-
-			//全キーの入力状態を取得する
-			BYTE key[256] = {};
-			keyboard->GetDeviceState(sizeof(key), key);
-
-			//数字の0キーが押されたら
-			if (key[DIK_0])
-			{
-				OutputDebugStringA("Hit 0\n");
-			}
-			
+			//keyboard->Acquire();
+			//
+			////全キーの入力状態を取得する
+			//BYTE key[256] = {};
+			//keyboard->GetDeviceState(sizeof(key), key);
+			//
+			////数字の0キーが押されたら
+			//if (key[DIK_0])
+			//{
+			//	OutputDebugStringA("Hit 0\n");
+			//}
+			//入力の更新
+			input->Update();
 
 			//ゲーム処理
 
