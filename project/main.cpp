@@ -607,6 +607,32 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		nullptr,
 		wc.hInstance,
 		nullptr);
+	
+	//入力
+	WNDCLASS w{};
+	w.lpfnWndProc = WindowProc;
+	w.lpszClassName = L"CGWindowsClass";
+	w.hInstance = GetModuleHandle(nullptr);
+	w.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	//DirectInputの初期化
+	IDirectInput8* directInput = nullptr;
+	HRESULT result;
+	result = DirectInput8Create(w.hInstance, DIRECTION_VERSION, IID_IDirectInput8,
+		(void**)&directInput, nullptr);
+	assert(SUCCEEDED(result));
+
+	//キーボードデバイスの生成
+	IDirectInputDevice8* keyboard = nullptr;
+	result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
+	assert(SUCCEEDED(result));
+
+	//入力データ形式のセット
+	result = keyboard->SetDataFormat(&c_dfDIKeyboard);//標準形式
+	assert(SUCCEEDED(result));
+
+	//排他制限レベルのセット
+	result = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+	assert(SUCCEEDED(result));
 
 #ifdef _DEBUG
 	ID3D12Debug1* debugController = nullptr;
@@ -979,26 +1005,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	vertexResourceDesc.SampleDesc.Count = 1;
 
 	vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-	//DirectInputの初期化
-	IDirectInput8* directInput = nullptr;
-	result = DirectInput8Create(w.hInstance, DIRECTION_VERSION, IID_IDirectInput8,
-		(void**)&directInput, nullptr);
-	assert(SUCCEEDED(result));
-
-	//キーボードデバイスの生成
-	IDirectInputDevice8* keyboard = nullptr;
-	result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
-	assert(SUCCEEDED(result));
-
-	//入力データ形式のセット
-	result = keyboard->SetDataFormat(&c_dfDIKeyboard);//標準形式
-	assert(SUCCEEDED(result));
-
-	//排他制限レベルのセット
-	result = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
-	assert(SUCCEEDED(result));
-
 
 #pragma region スフィア
 	//05_00
@@ -1392,6 +1398,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 			ImGui::End();
 
+			//キーボード情報の取得開始
+			keyboard->Acquire();
+
+			//全キーの入力状態を取得する
+			BYTE key[256] = {};
+			keyboard->GetDeviceState(sizeof(key), key);
+
+			//数字の0キーが押されたら
+			if (key[DIK_0])
+			{
+				OutputDebugStringA("Hit 0\n");
+			}
+			
 
 			//ゲーム処理
 
