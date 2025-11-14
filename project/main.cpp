@@ -39,6 +39,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 #pragma comment(lib,"dxcompiler.lib")
 
+#include "Input.h"
 
 //ヴェクター４を作る
 struct Vector4
@@ -603,6 +604,42 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		nullptr,
 		wc.hInstance,
 		nullptr);
+
+
+	//入力
+	WNDCLASS w{};
+	w.lpfnWndProc = WindowProc;
+	w.lpszClassName = L"CGWindowsClass";
+	w.hInstance = GetModuleHandle(nullptr);
+	w.hCursor = LoadCursor(nullptr, IDC_ARROW);
+
+	//ポインタ
+	Input* input = nullptr;
+	//入力の初期化
+	input = new Input();
+	input->Initialize(w.hInstance, hwnd);
+
+
+	////DirectInputの初期化
+	//IDirectInput8* directInput = nullptr;
+	//HRESULT result;
+	//result = DirectInput8Create(w.hInstance, DIRECTION_VERSION, IID_IDirectInput8,
+	//	(void**)&directInput, nullptr);
+	//assert(SUCCEEDED(result));
+	//
+	////キーボードデバイスの生成
+	//IDirectInputDevice8* keyboard = nullptr;
+	//result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
+	//assert(SUCCEEDED(result));
+	//
+	////入力データ形式のセット
+	//result = keyboard->SetDataFormat(&c_dfDIKeyboard);//標準形式
+	//assert(SUCCEEDED(result));
+	//
+	////排他制限レベルのセット
+	//result = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+	//assert(SUCCEEDED(result));
+
 
 #ifdef _DEBUG
 	ID3D12Debug1* debugController = nullptr;
@@ -1368,7 +1405,27 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 			ImGui::End();
 
-
+			//キーボード情報の取得開始
+			// //keyboard->Acquire();
+			//
+			////全キーの入力状態を取得する
+			//BYTE key[256] = {};
+			//keyboard->GetDeviceState(sizeof(key), key);
+			// ////数字の0キーが押されたら
+			if (input->ReleaseKey(DIK_0))
+			{
+				OutputDebugStringA("Hit 0\n");
+			}
+			if (input->PushKey(DIK_1))
+			{
+				OutputDebugStringA("Hit 1\n");
+			}
+			if (input->TriggerKey(DIK_2))
+			{
+				OutputDebugStringA("Hit 2\n");
+			}
+			//入力の更新
+			input->Update();
 			//ゲーム処理
 
 			//transform.rotate.y += 0.03f;
@@ -1601,13 +1658,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	indexResource->Release();
 	//indexResourceSphere->Release();
 
+	delete input;
+
 	//COMの終了処理
 	CoUninitialize();
 
 
 
 	IDXGIDebug1* debug;
-	if (SUCCEEDED(DXGIGetDebugInterface1(0,IID_PPV_ARGS(&debug))))
+	if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug))))
 	{
 		debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
 		debug->ReportLiveObjects(DXGI_DEBUG_APP, DXGI_DEBUG_RLO_ALL);
