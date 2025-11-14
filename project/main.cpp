@@ -605,6 +605,42 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		wc.hInstance,
 		nullptr);
 
+
+	//入力
+	WNDCLASS w{};
+	w.lpfnWndProc = WindowProc;
+	w.lpszClassName = L"CGWindowsClass";
+	w.hInstance = GetModuleHandle(nullptr);
+	w.hCursor = LoadCursor(nullptr, IDC_ARROW);
+
+	//ポインタ
+	Input* input = nullptr;
+	//入力の初期化
+	input = new Input();
+	input->Initialize(w.hInstance, hwnd);
+
+
+	////DirectInputの初期化
+	//IDirectInput8* directInput = nullptr;
+	//HRESULT result;
+	//result = DirectInput8Create(w.hInstance, DIRECTION_VERSION, IID_IDirectInput8,
+	//	(void**)&directInput, nullptr);
+	//assert(SUCCEEDED(result));
+	//
+	////キーボードデバイスの生成
+	//IDirectInputDevice8* keyboard = nullptr;
+	//result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
+	//assert(SUCCEEDED(result));
+	//
+	////入力データ形式のセット
+	//result = keyboard->SetDataFormat(&c_dfDIKeyboard);//標準形式
+	//assert(SUCCEEDED(result));
+	//
+	////排他制限レベルのセット
+	//result = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+	//assert(SUCCEEDED(result));
+
+
 #ifdef _DEBUG
 	ID3D12Debug1* debugController = nullptr;
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
@@ -1621,6 +1657,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	directionalLightResource->Release();
 	indexResource->Release();
 	//indexResourceSphere->Release();
+
+	delete input;
 
 	//COMの終了処理
 	CoUninitialize();
