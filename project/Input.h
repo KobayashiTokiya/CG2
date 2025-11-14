@@ -20,11 +20,17 @@ public:
 	bool PushKey(BYTE keyNumber);
 
 	bool TriggerKey(BYTE keyNumber);
+
+	bool ReleaseKey(BYTE keyNumber);
 private:
 	//メンバ変数
 	//キーボードのデバイス
 	ComPtr<IDirectInputDevice8> keyboard;
 	//全キーの状態
 	BYTE key[256] = {};
+	//前回の全キ―の状態
+	BYTE keyPre[256] = {};
+	//DirectInputのインスタンス
+	ComPtr<IDirectInput8> directInput = nullptr;
 };
 

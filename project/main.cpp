@@ -1405,7 +1405,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 				ImGui::DragFloat3("LightDirectional", &mappedLight->direction.x, 0.01f);
 				ImGui::DragFloat("Intensity", &mappedLight->intensity);
 			}
-
+			
 			ImGui::End();
 
 			//キーボード情報の取得開始
@@ -1416,9 +1416,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			//keyboard->GetDeviceState(sizeof(key), key);
 			//
 			////数字の0キーが押されたら
-			if (input->PushKey(DIK_0))
+			if (input->ReleaseKey(DIK_0))
 			{
 				OutputDebugStringA("Hit 0\n");
+			}
+			if (input->PushKey(DIK_1))
+			{
+				OutputDebugStringA("Hit 1\n");
+			}
+			if (input->TriggerKey(DIK_2))
+			{
+				OutputDebugStringA("Hit 2\n");
 			}
 			//入力の更新
 			input->Update();
