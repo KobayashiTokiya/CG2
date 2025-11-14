@@ -1369,7 +1369,27 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 			ImGui::End();
 
-
+			//キーボード情報の取得開始
+			// //keyboard->Acquire();
+			//
+			////全キーの入力状態を取得する
+			//BYTE key[256] = {};
+			//keyboard->GetDeviceState(sizeof(key), key);
+			// ////数字の0キーが押されたら
+			if (input->ReleaseKey(DIK_0))
+			{
+				OutputDebugStringA("Hit 0\n");
+			}
+			if (input->PushKey(DIK_1))
+			{
+				OutputDebugStringA("Hit 1\n");
+			}
+			if (input->TriggerKey(DIK_2))
+			{
+				OutputDebugStringA("Hit 2\n");
+			}
+			//入力の更新
+			input->Update();
 			//ゲーム処理
 
 			//transform.rotate.y += 0.03f;
@@ -1608,7 +1628,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 	IDXGIDebug1* debug;
-	if (SUCCEEDED(DXGIGetDebugInterface1(0,IID_PPV_ARGS(&debug))))
+	if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug))))
 	{
 		debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
 		debug->ReportLiveObjects(DXGI_DEBUG_APP, DXGI_DEBUG_RLO_ALL);
