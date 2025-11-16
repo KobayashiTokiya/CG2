@@ -26,7 +26,11 @@ public://定数
 	//wcのgetter
 	HINSTANCE GetHInstance() const { return wc.hInstance; }
 
-	
+	//終了
+	void Finalize();
+
+	//メッセージの処理
+	bool ProcessMessage();
 
 private:
 	//ウィンドウハンドル

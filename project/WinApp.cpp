@@ -1,7 +1,7 @@
 #include "WinApp.h"
 
 //ウィンドウプロシージャ
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+LRESULT CALLBACK WinApp::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam))
 	{
@@ -23,7 +23,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 void WinApp::Initialize()
 {
-	//HRESULT hr = CoInitializeEx(0, COINIT_MULTITHREADED);
+
+	HRESULT hr = CoInitializeEx(0, COINIT_MULTITHREADED);
 
 	//WNDCLASS wc{};
 	wc.lpfnWndProc = WindowProc;
@@ -59,4 +60,28 @@ void WinApp::Initialize()
 void WinApp::Update()
 {
 
+}
+
+void WinApp::Finalize()
+{
+	CloseWindow(hwnd);
+	CoUninitialize();
+}
+
+bool WinApp::ProcessMessage()
+{
+	MSG msg{};
+
+	if (PeekMessage(&msg, nullptr,0,0,PM_REMOVE))
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+
+	if (msg.message==WM_QUIT)
+	{
+		return true;
+	}
+
+	return false;
 }
