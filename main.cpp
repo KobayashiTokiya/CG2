@@ -1678,7 +1678,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			commandList->SetGraphicsRootSignature(particleRootSignature);
 			commandList->SetPipelineState(particleGraphicsPipelineState);
 			
-			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewParticle);
 			
 			commandList->SetGraphicsRootConstantBufferView(
