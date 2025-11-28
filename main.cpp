@@ -1146,7 +1146,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	modelData.vertices.push_back({ .position = {-1.0f,1.0f,0.0f,1.0f},.texcoord = {1.0f,0.0f},.normal = {0.0f,0.0f,1.0f} });//右上
 	modelData.vertices.push_back({ .position = {-1.0f,-1.0f,0.0f,1.0f},.texcoord = {1.0f,1.0f},.normal = {0.0f,0.0f,1.0f} });//右下
 	modelData.material.textureFilePath = "./Resource/uvChecker.png";
-	
+
 	//ModelData modelData = LoadObjFile("Resource", "fence.obj");//フェンス
 
 	//頂点リソースを作成
@@ -1442,7 +1442,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//
 	////DepthSteencilTextureをウィンドウのサイズで作成
 	ID3D12Resource* depthStencilResource = CreateDepthSteencilTextureResource(device, kClientWindth, kClientHeight);
-	
+
 	//metaDataを基にSRVを設定
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 	srvDesc.Format = metadata.format;
@@ -1496,7 +1496,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	D3D12_GPU_DESCRIPTOR_HANDLE instancingSrvHandleGPU = GetGPUDescriptorHandle(srvDscriptorHeap, desriptorSizeSRV, 3);
 	device->CreateShaderResourceView(instancingResource.Get(), &instancingSrvDesc, instancingSrvHandleCPU);
 
-	
+
 	//切り替え用
 	bool useMonsterBall = true;
 
@@ -1630,7 +1630,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			ImGui::Render();
 
 
-
 			ID3D12DescriptorHeap* descriptorHeaps[] = { srvDscriptorHeap };
 			commandList->SetDescriptorHeaps(1, descriptorHeaps);
 
@@ -1638,14 +1637,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 			//描画先のRTVとDSVを設定する
 			commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
-	
+
 			//指定した色で画面全体をクリアする
 			float clearColor[] = { 0.1f,0.25f,0.5f,1.0f };
 			commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
 
 			//指定した深度で画面全体をクリアする
-			//commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
+			commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+			
 			//コマンドをお積む
 			commandList->RSSetViewports(1, &viewport);
 			commandList->RSSetScissorRects(1, &scissorRect);
@@ -1661,10 +1660,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			//commandList->DrawInstanced(3, 1,0,0 );
 
 			//マテリアルCBufferの場所を設定
-			
+
 			//Table
 
-			//commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
+			commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
 
 			//テクスチャの切り替えるか
 			//commandList->SetGraphicsRootDescriptorTable(2, useMonsterBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
@@ -1678,16 +1677,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 			commandList->SetGraphicsRootSignature(particleRootSignature);
 			commandList->SetPipelineState(particleGraphicsPipelineState);
-			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewParticle);
-
-			commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
-			commandList->SetGraphicsRootDescriptorTable(1, instancingSrvHandleGPU);
 			
-			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
-	
-			//ModelData
-			commandList->DrawInstanced(UINT(modelData.vertices.size()), kNumInstance, 0, 0);
-		
+			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewParticle);
+			
+			commandList->SetGraphicsRootConstantBufferView(
+				0, materialResource->GetGPUVirtualAddress());
+			
+			commandList->SetGraphicsRootDescriptorTable(
+				1, instancingSrvHandleGPU);
+			
+			commandList->SetGraphicsRootDescriptorTable(
+				2, textureSrvHandleGPU);
+			
+			commandList->DrawInstanced(
+				UINT(modelData.vertices.size()), // 1インスタンスの頂点数
+				kNumInstance,                    // インスタンス数
+				0, 0);
 
 			//マテリアルCBufferの場所を設定
 			//commandList->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
@@ -1707,11 +1713,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			//commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
-
-
-
-
-
 
 			//画面に描く処理は全て終わり、画面に移すので、状態を遷移
 			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -1790,12 +1791,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	srvDscriptorHeap->Release();
 	CloseWindow(hwnd);
 
-	//textureResource->Release();
+	textureResource->Release();
 	dxcUtils->Release();
 	vertexResource->Release();
-	//intermediateResource->Release();
+	intermediateResource->Release();
 
-	//depthStencilResource->Release();
+	depthStencilResource->Release();
 	dsvDescriptorHeap->Release();
 
 	vertexResourceSprite->Release();
@@ -1809,6 +1810,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	directionalLightResource->Release();
 	indexResource->Release();
 	//indexResourceSphere->Release();
+	
+	particleGraphicsPipelineState->Release();
+	particleRootSignature->Release();
+	if (particleErrorBlob)
+	{
+		particleErrorBlob->Release();
+	}
+	particlePixelShaderBlob->Release();
+	particleSignatureBlob->Release();
+	particleVertexShaderBlob->Release();
 
 	//COMの終了処理
 	CoUninitialize();
