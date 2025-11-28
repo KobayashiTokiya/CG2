@@ -996,8 +996,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
 	//RasterizerState
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;//裏面だけ
-	//rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT;//両面
+	//rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;//裏面だけ
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT;//両面
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	//ShaderをCompileする
@@ -1458,10 +1458,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//srvDesc2.Texture2D.MipLevels = UINT(metadata2.mipLevels);
 
 	//SRVを作成するDescriptorHeapの場所を決める　１枚目
-	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = GetCPUDescriptorHandle(srvDscriptorHeap, desriptorSizeSRV, 1);
-	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = GetGPUDescriptorHandle(srvDscriptorHeap, desriptorSizeSRV, 1);
+	//D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = GetCPUDescriptorHandle(srvDscriptorHeap, desriptorSizeSRV, 1);
+	//D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = GetGPUDescriptorHandle(srvDscriptorHeap, desriptorSizeSRV, 1);
 	////SRVの生成
-	device->CreateShaderResourceView(textureResource, &srvDesc, textureSrvHandleCPU);
+	//device->CreateShaderResourceView(textureResource, &srvDesc, textureSrvHandleCPU);
 	//
 	////SRVを作成するDescriptorHeapの場所を決める　2枚目
 	//D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU2 = GetCPUDescriptorHandle(srvDscriptorHeap, desriptorSizeSRV, 2);
@@ -1478,7 +1478,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//particle用のSRV
 	//SRVを作成するDescriptorHeapの場所を決める
-
+	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU = GetCPUDescriptorHandle(srvDscriptorHeap, desriptorSizeSRV, 3);
+	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = GetGPUDescriptorHandle(srvDscriptorHeap, desriptorSizeSRV, 3);
 	//先頭はImGuiが使っているのでその次を使う
 	textureSrvHandleCPU.ptr += device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	textureSrvHandleGPU.ptr += device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -1636,6 +1637,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			//03_01_p24
 			D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 			//描画先のRTVとDSVを設定する
+			commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
 			commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
 
 			//指定した色で画面全体をクリアする
