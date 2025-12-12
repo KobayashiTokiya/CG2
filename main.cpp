@@ -344,7 +344,7 @@ Transform transform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 
 Transform cameraTransform{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,-5.0f} };
 
-Transform cameraTransformParticle{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,-5.0f} };
+Transform cameraTransformParticle{ {1.0f,-1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,-5.0f} };
 
 Transform transformSprite{ {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f} };
 
@@ -998,8 +998,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
 	//RasterizerState
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
-	//rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;//裏面だけ
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT;//両面
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;//裏面だけ
+	//rasterizerDesc.CullMode = D3D12_CULL_MODE_FRONT;//両面
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	//ShaderをCompileする
@@ -1313,14 +1313,27 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		instancingData[index].World = MatrixMath::MakeIdentity4x4();
 	}
 
+
+	Microsoft::WRL::ComPtr<ID3D12Resource>instancingVertexResorce = CreateBufferResource(device, sizeof(VertexData) * UINT(modelData.vertices.size()));
+
 	//頂点バッファービューを作成する
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferViewParticle{};
 	//リリースの先頭のアドレスから使う
-	vertexBufferViewParticle.BufferLocation = instancingResource->GetGPUVirtualAddress();
+	vertexBufferViewParticle.BufferLocation = instancingVertexResorce->GetGPUVirtualAddress();
 	//使用するリソースのサイズは頂点６つ分のサイズ
-	vertexBufferViewParticle.SizeInBytes = sizeof(VertexData) * 6;
+	vertexBufferViewParticle.SizeInBytes = sizeof(VertexData) * UINT(modelData.vertices.size());
 	//１頂点あたりのサイズ
 	vertexBufferViewParticle.StrideInBytes = sizeof(VertexData);
+
+
+	VertexData* vertexDataParticle = nullptr;
+	instancingVertexResorce->Map(0, nullptr, reinterpret_cast<void**>(&vertexDataParticle));
+
+	for (uint32_t i = 0; i < modelData.vertices.size(); i++)
+	{
+		vertexDataParticle[i] = modelData.vertices[i];
+	}
+
 #pragma endregion
 
 	//CG3_01_00_Transformの作成と書き込み
@@ -1328,10 +1341,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	for (uint32_t index = 0; index < kNumInstance; ++index)
 	{
 		transforms[index].scale = { 1.0f,1.0f,1.0f };
-		transforms[index].rotate = { 0.0f,0.0f,0.0f };
+		transforms[index].rotate = { 0.0f,9.5f,.0f };
 		transforms[index].translate = { index * 0.1f,index * 0.1f,index * 0.1f };
 	}
-
 #pragma region インデックスデータ
 
 	//インデックスデータ用
@@ -1441,7 +1453,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	const DirectX::TexMetadata& metadata2 = mipImages2.GetMetadata();
 	ID3D12Resource* textureResource2 = CreateTextureResource(device, metadata2);
 	ID3D12Resource* intermediateResource2 = UploadTextureData(textureResource2, mipImages2, device, commandList);
-	
+
 	////DepthSteencilTextureをウィンドウのサイズで作成
 	ID3D12Resource* depthStencilResource = CreateDepthSteencilTextureResource(device, kClientWindth, kClientHeight);
 
@@ -1464,14 +1476,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU = GetGPUDescriptorHandle(srvDscriptorHeap, desriptorSizeSRV, 1);
 	//SRVの生成
 	device->CreateShaderResourceView(textureResource, &srvDesc, textureSrvHandleCPU);
-	
+
 	//SRVを作成するDescriptorHeapの場所を決める　2枚目
 	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvHandleCPU2 = GetCPUDescriptorHandle(srvDscriptorHeap, desriptorSizeSRV, 2);
 	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU2 = GetGPUDescriptorHandle(srvDscriptorHeap, desriptorSizeSRV, 2);
 	//SRVの生成
 	device->CreateShaderResourceView(textureResource2, &srvDesc2, textureSrvHandleCPU2);
 
-		//DSVの設定
+	//DSVの設定
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
 	dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
@@ -1557,6 +1569,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 					ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f, 10.0f);
 					ImGui::ColorEdit4("Color", &materialData->color.x);
 					//ImGui::Checkbox("useMonsterBall", &useMonsterBall);
+				}
+			}
+
+
+			if (ImGui::CollapsingHeader("Particle"))
+			{
+				for (uint32_t index = 0; index < kNumInstance; ++index)
+				{
+					ImGui::DragFloat3("Translate", &transforms[index].translate.x, 0.1f);
+					ImGui::DragFloat3("Rotate", &transforms[index].rotate.x, 0.1f);
+					ImGui::DragFloat3("Scale", &transforms[index].scale.x, 0.1f);
 				}
 			}
 
@@ -1649,7 +1672,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 			//指定した深度で画面全体をクリアする
 			commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-			
+
 			//コマンドをお積む
 			commandList->RSSetViewports(1, &viewport);
 			commandList->RSSetScissorRects(1, &scissorRect);
@@ -1682,18 +1705,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 			commandList->SetGraphicsRootSignature(particleRootSignature);
 			commandList->SetPipelineState(particleGraphicsPipelineState);
-			
+
 			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewParticle);
-			
+
 			commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
-			
+
 			commandList->SetGraphicsRootDescriptorTable(1, instancingSrvHandleGPU);
-			
+
 			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
-			
+
 			commandList->DrawInstanced(
-				UINT(modelData.vertices.size()), 
-				kNumInstance,                    
+				UINT(modelData.vertices.size()),
+				kNumInstance,
 				0, 0);
 
 			//マテリアルCBufferの場所を設定
@@ -1804,14 +1827,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	transformationMatrixResourceSprite->Release();
 
-	//textureResource2->Release();
-	//intermediateResource2->Release();
+	textureResource2->Release();
+	intermediateResource2->Release();
 	materialResourceSprite->Release();
 
 	directionalLightResource->Release();
 	indexResource->Release();
 	//indexResourceSphere->Release();
-	
+
 	particleGraphicsPipelineState->Release();
 	particleRootSignature->Release();
 	if (particleErrorBlob)
@@ -1821,6 +1844,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	particlePixelShaderBlob->Release();
 	particleSignatureBlob->Release();
 	particleVertexShaderBlob->Release();
+
+	instancingResource.Get()->Release();
+	instancingVertexResorce.Get()->Release();
+
+
 
 	//COMの終了処理
 	CoUninitialize();
