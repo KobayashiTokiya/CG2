@@ -411,3 +411,62 @@ DirectXCommon::CreateDescriptorHeap(
 
 	return descriptorHeap;
 }
+
+//描画前処理
+void DirectXCommon::PreDraw()
+{
+	HRESULT hr;
+
+	//バックバッファの番号取得
+		//書き込むバックバッファのインデックスを取得
+	UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
+	
+	// リソースバリアの書き込み可能に変更
+	//TransitionBarrerの設定
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = renderTargets_[backBufferIndex].Get();
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	commandList_->ResourceBarrier(1, &barrier);
+	
+	//描画先のRTVのDSVを指定する
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandles = rtvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart();
+	rtvStartHandles.ptr += backBufferIndex * decriptorSizeRTV_;
+	commandList_->OMSetRenderTargets(1, &rtvStartHandles[backBufferIndex], false, &dsvHandle_);
+
+	// 画面全体の色をクリア
+	//指定した色で画面全体をクリアする
+	float clearColor[] = { 0.1f,0.25f,0.5f,1.0f };
+	commandList_->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
+	
+	// 画面全体の深度をクリア
+	//指定した深度で画面全体をクリアする
+	commandList_->ClearDepthStencilView(dsvHandle_, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+	// SRV用のデスクリプタヒープを指定する
+	dsvDescriptorHeap_ = srvDscriptorHeap_.Get();
+	commandList_->SetDescriptorHeaps(1,deseaps_);
+
+	// ビューポート領域の設定
+	commandList_->RSSetViewports(1, &viewport_);
+
+	// シザー矩形の設定
+	commandList_->RSSetScissorRects(1, &scissorRect_);
+}
+
+//描画後処理
+void DirectXCommon::PostDraw()
+{
+	//バックバッファの番号取得
+	// リソースバリアで表示状態に変更
+	// グラフィックスコマンドをクローズ
+	// GPUコマンドの実行
+	// GPU画面の交換を通知
+	// フェンスの値を更新
+	// コマンド完了待ち
+	// コマンドアロケーターのリセット
+	// コマンドリストのリセット
+	//
+}
