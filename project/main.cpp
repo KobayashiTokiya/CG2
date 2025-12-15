@@ -41,6 +41,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 #include "Input.h"
 #include "WinApp.h"
+#include "DirectXCommon.h"
 
 //ヴェクター４を作る
 struct Vector4
@@ -79,45 +80,45 @@ static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception)
 	return EXCEPTION_EXECUTE_HANDLER;
 }
 ////////////
-std::wstring ConvertString(const std::string& str)
-{
-	if (str.empty())
-	{
-		return std::wstring();
-	}
-
-	auto sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size()), NULL, 0);
-	if (sizeNeeded == 0)
-	{
-		return std::wstring();
-	}
-	std::wstring result(sizeNeeded, 0);
-	MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size()), &result[0], sizeNeeded);
-	return result;
-}
+//std::wstring ConvertString(const std::string& str)
+//{
+//	if (str.empty())
+//	{
+//		return std::wstring();
+//	}
+//
+//	auto sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size()), NULL, 0);
+//	if (sizeNeeded == 0)
+//	{
+//		return std::wstring();
+//	}
+//	std::wstring result(sizeNeeded, 0);
+//	MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<const char*>(&str[0]), static_cast<int>(str.size()), &result[0], sizeNeeded);
+//	return result;
+//}
 ///
-std::string ConvertString(const std::wstring& str)
-{
-	if (str.empty())
-	{
-		return std::string();
-	}
-
-	auto sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), NULL, 0, NULL, NULL);
-	if (sizeNeeded == 0)
-	{
-		return std::string();
-	}
-	std::string result(sizeNeeded, 0);
-	WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), result.data(), sizeNeeded, NULL, NULL);
-	return result;
-}
+//std::string ConvertString(const std::wstring& str)
+//{
+//	if (str.empty())
+//	{
+//		return std::string();
+//	}
+//
+//	auto sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), NULL, 0, NULL, NULL);
+//	if (sizeNeeded == 0)
+//	{
+//		return std::string();
+//	}
+//	std::string result(sizeNeeded, 0);
+//	WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), result.data(), sizeNeeded, NULL, NULL);
+//	return result;
+//}
 ///
-void Log(std::ostream& os, const std::string& message)
-{
-	os << message << std::endl;
-	OutputDebugStringA(message.c_str());
-}
+//void Log(std::ostream& os, const std::string& message)
+//{
+//	os << message << std::endl;
+//	OutputDebugStringA(message.c_str());
+//}
 ///
 ID3D12DescriptorHeap* CreateDescriptorHeap(
 	ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors, bool shaderVisible)
@@ -677,57 +678,63 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	);
 
 
+	//ポインタ
+	DirectXCommon* dxCommon = nullptr;
+	//DirectXの初期化
+	dxCommon = new DirectXCommon();
+	dxCommon->Initialize();
+
 	//DXGIFactoryの生成
-	IDXGIFactory7* dxgiFactory = nullptr;
-	hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
-	assert(SUCCEEDED(hr));
-
-	//使用するアダプタ(GPU)を決定する
-	IDXGIAdapter4* useAdarter = nullptr;
-
-	for (UINT i = 0; dxgiFactory->EnumAdapterByGpuPreference(i,
-		DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&useAdarter)) !=
-		DXGI_ERROR_NOT_FOUND; ++i)
-	{
-		DXGI_ADAPTER_DESC3 adapterDesc{};
-		hr = useAdarter->GetDesc3(&adapterDesc);
-		assert(SUCCEEDED(hr));
-		if (!(adapterDesc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE))
-		{
-			Log(
-				logStream,
-				ConvertString(
-					std::format(
-						L"Use Adapater:{}\n", adapterDesc.Description
-					)
-				)
-			);
-			break;
-		}
-		useAdarter = nullptr;
-	}
-	assert(useAdarter != nullptr);
-
-	ID3D12Device* device = nullptr;
-	D3D_FEATURE_LEVEL featureLevels[] =
-	{
-		D3D_FEATURE_LEVEL_12_2,D3D_FEATURE_LEVEL_12_1,D3D_FEATURE_LEVEL_12_0
-	};
-	const char* featureLevelStrings[] = { "12.2","12.1","12.0" };
-	for (size_t i = 0; i < _countof(featureLevels); ++i)
-	{
-		hr = D3D12CreateDevice(useAdarter, featureLevels[i], IID_PPV_ARGS(&device));
-		if (SUCCEEDED(hr))
-		{
-			Log(
-				logStream,
-				std::format("FeatureLevel : {}\n", featureLevelStrings[i]));
-			break;
-		}
-	}
-
-	assert(device != nullptr);
-	Log(logStream, "Complete create D3D12Device!!!\n");
+	//IDXGIFactory7* dxgiFactory = nullptr;
+	//hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory));
+	//assert(SUCCEEDED(hr));
+	//
+	////使用するアダプタ(GPU)を決定する
+	//IDXGIAdapter4* useAdarter = nullptr;
+	//
+	//for (UINT i = 0; dxgiFactory->EnumAdapterByGpuPreference(i,
+	//	DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&useAdarter)) !=
+	//	DXGI_ERROR_NOT_FOUND; ++i)
+	//{
+	//	DXGI_ADAPTER_DESC3 adapterDesc{};
+	//	hr = useAdarter->GetDesc3(&adapterDesc);
+	//	assert(SUCCEEDED(hr));
+	//	if (!(adapterDesc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE))
+	//	{
+	//		Log(
+	//			logStream,
+	//			ConvertString(
+	//				std::format(
+	//					L"Use Adapater:{}\n", adapterDesc.Description
+	//				)
+	//			)
+	//		);
+	//		break;
+	//	}
+	//	useAdarter = nullptr;
+	//}
+	//assert(useAdarter != nullptr);
+	//
+	//ID3D12Device* device = nullptr;
+	//D3D_FEATURE_LEVEL featureLevels[] =
+	//{
+	//	D3D_FEATURE_LEVEL_12_2,D3D_FEATURE_LEVEL_12_1,D3D_FEATURE_LEVEL_12_0
+	//};
+	//const char* featureLevelStrings[] = { "12.2","12.1","12.0" };
+	//for (size_t i = 0; i < _countof(featureLevels); ++i)
+	//{
+	//	hr = D3D12CreateDevice(useAdarter, featureLevels[i], IID_PPV_ARGS(&device));
+	//	if (SUCCEEDED(hr))
+	//	{
+	//		Log(
+	//			logStream,
+	//			std::format("FeatureLevel : {}\n", featureLevelStrings[i]));
+	//		break;
+	//	}
+	//}
+	//
+	//assert(device != nullptr);
+	//Log(logStream, "Complete create D3D12Device!!!\n");
 
 	//DescriptorSizeを取得しておく
 	const uint32_t desriptorSizeSRV = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -1673,6 +1680,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//WindowsAPI解放
 	delete winApp;
 	winApp = nullptr;
+
+	//DirectX解放
+	delete dxCommon;
 
 	//COMの終了処理
 	CoUninitialize();
