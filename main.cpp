@@ -596,7 +596,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	HWND hwnd = CreateWindow(
 		wc.lpszClassName,
-		L"CG2",
+		L"LE2C_14_コバヤシ_トキヤ",
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
@@ -1718,7 +1718,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 				UINT(modelData.vertices.size()),
 				kNumInstance,
 				0, 0);
-
+			
 			//マテリアルCBufferの場所を設定
 			//commandList->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
 
@@ -1844,11 +1844,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	particlePixelShaderBlob->Release();
 	particleSignatureBlob->Release();
 	particleVertexShaderBlob->Release();
-
+	
 	instancingResource.Get()->Release();
 	instancingVertexResorce.Get()->Release();
-
-
 
 	//COMの終了処理
 	CoUninitialize();
