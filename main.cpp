@@ -1778,11 +1778,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		}
 	}
+
+	//==============================
+// GPU 完全待機（最初）
+//==============================
+	static UINT64 fenceValue = 0;
+	fenceValue++;
+
+	commandQueue->Signal(fence, fenceValue);
+	if (fence->GetCompletedValue() < fenceValue)
+	{
+		fence->SetEventOnCompletion(fenceValue, fenceEvent);
+		WaitForSingleObject(fenceEvent, INFINITE);
+	}
+
 	ImGui_ImplDX12_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
-
-
 
 	OutputDebugStringA("Hello,DirectX!\n");
 
@@ -1795,9 +1807,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	commandList->Release();
 	commandAllocator->Release();
 	commandQueue->Release();
-	device->Release();
-	useAdarter->Release();
-	dxgiFactory->Release();
 #ifdef _DEBUG
 	debugController->Release();
 #endif // _DEBUG
@@ -1845,11 +1854,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	particleSignatureBlob->Release();
 	particleVertexShaderBlob->Release();
 	
-	instancingResource.Get()->Release();
-	instancingVertexResorce.Get()->Release();
+	instancingResource.Reset();
+	instancingVertexResorce.Reset();
 
-	//COMの終了処理
-	CoUninitialize();
+	includeHandler->Release();
+	dxcCompiler->Release();
+	infoQueue->Release();
+
+	
 
 	IDXGIDebug1* debug;
 	if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug))))
@@ -1860,6 +1872,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		debug->Release();
 	}
 
+	device->Release();
+	useAdarter->Release();
+	dxgiFactory->Release();
+
+	//COMの終了処理
+	CoUninitialize();
 
 	return 0;
 }
