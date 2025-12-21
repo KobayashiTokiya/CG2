@@ -1822,6 +1822,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	materialResource->Release();
 	wvpResource->Release();
 	srvDscriptorHeap->Release();
+
+	particleGraphicsPipelineState->Release();
+	particleSignatureBlob->Release();
+	if (particleErrorBlob)
+	{
+		particleErrorBlob->Release();
+	}
+	particleRootSignature->Release();
+	particlePixelShaderBlob->Release();
+	particleVertexShaderBlob->Release();
+
+	instancingResource.Reset();
+	instancingVertexResorce.Reset();
+
 	CloseWindow(hwnd);
 
 	textureResource->Release();
@@ -1844,22 +1858,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	indexResource->Release();
 	//indexResourceSphere->Release();
 
-	particleGraphicsPipelineState->Release();
-	particleRootSignature->Release();
-	if (particleErrorBlob)
-	{
-		particleErrorBlob->Release();
-	}
-	particlePixelShaderBlob->Release();
-	particleSignatureBlob->Release();
-	particleVertexShaderBlob->Release();
-	
-	instancingResource.Reset();
-	instancingVertexResorce.Reset();
-
 	includeHandler->Release();
 	dxcCompiler->Release();
-	infoQueue->Release();
 
 	
 
