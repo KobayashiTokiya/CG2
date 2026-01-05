@@ -175,14 +175,13 @@ void DirectXCommon::CreateDepthSteencilTextureResource()
 	depthClearValue.DepthStencil.Depth = 1.0f;
 	depthClearValue.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	//Resourceの生成
-	ID3D12Resource* depthStencilResource = nullptr;
 	HRESULT hr = device_->CreateCommittedResource(
 		&heapProperties,//heapの設定
 		D3D12_HEAP_FLAG_NONE,//heapの特殊な設定。特になし。
 		&resourceDesc,//Resouceの設定
 		D3D12_RESOURCE_STATE_DEPTH_WRITE,//深度値を書き込む状態にしておく
 		&depthClearValue,//Clear最適値
-		IID_PPV_ARGS(&depthStencilResource));//作成するResouceポインタへのポインタ
+		IID_PPV_ARGS(&depthStencilResource_));//作成するResouceポインタへのポインタ
 	assert(SUCCEEDED(hr));
 };
 #pragma endregion
@@ -193,9 +192,9 @@ void DirectXCommon::CreatingVariousDescriptorTeaps()
 	assert(device_);
 
 	//DescriptorSizeを取得しておく
-	decriptorSizeRTV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	desriptorSizeSRV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	desriptorSizeDSV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	descriptorSizeRTV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	descriptorSizeSRV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	descriptorSizeDSV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
 	//DSV用のヒープでディスクリプタの数は１。DSVはShader内で触るものではないので、ShaderVisibleはfalse
 	rtvDescriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
@@ -232,14 +231,14 @@ void DirectXCommon::RenderTargetViewInitializing()
 			i, IID_PPV_ARGS(&renderTargets_[i]));
 		assert(SUCCEEDED(hr));
 
-		D3D12_CPU_DESCRIPTOR_HANDLE currentRtvHandleCPU = rtvHandleCPU;
-		currentRtvHandleCPU.ptr += i * rtvDescriptorSize;
+		rtvHandles_[i] = rtvHandleCPU;
+		rtvHandles_[i].ptr += i * rtvDescriptorSize;
 
 		//レンダ―ターゲットビューの生成
 		device_->CreateRenderTargetView(
 			renderTargets_[i].Get(),// RTVを生成したいリソース
 			&rtvDesc,				// RTVの設定
-			currentRtvHandleCPU		// RTVを書き込むディスクリプタハンドル
+			rtvHandles_[i]	// RTVを書き込むディスクリプタハンドル
 		);
 	}
 }
@@ -259,33 +258,33 @@ D3D12_GPU_DESCRIPTOR_HANDLE DirectXCommon::GetGPUDescriptorHandle(const Microsof
 //SRV専用のデスクリプタハンドル取得関数を作成
 D3D12_CPU_DESCRIPTOR_HANDLE DirectXCommon::GetSRVCPUDescriptorHandle(uint32_t index)
 {
-	return GetCPUDescriptorHandle(srvDscriptorHeap_, desriptorSizeSRV_, index);
+	return GetCPUDescriptorHandle(srvDscriptorHeap_, descriptorSizeSRV_, index);
 }
 D3D12_GPU_DESCRIPTOR_HANDLE DirectXCommon::GetSRVGPUDescriptorHandle(uint32_t index)
 {
-	return GetGPUDescriptorHandle(srvDscriptorHeap_, desriptorSizeSRV_, index);
+	return GetGPUDescriptorHandle(srvDscriptorHeap_, descriptorSizeSRV_, index);
 }
 #pragma endregion
 #pragma region RTVに特化した公開用の関数(実装)
 //RTV専用のデスクリプタハンドル取得関数を作成
 D3D12_CPU_DESCRIPTOR_HANDLE DirectXCommon::GetRTVCPUDescriptorHandle(uint32_t index)
 {
-	return GetCPUDescriptorHandle(srvDscriptorHeap_, desriptorSizeSRV_, index);
+	return GetCPUDescriptorHandle(srvDscriptorHeap_, descriptorSizeSRV_, index);
 }
 D3D12_GPU_DESCRIPTOR_HANDLE DirectXCommon::GetRTVGPUDescriptorHandle(uint32_t index)
 {
-	return GetGPUDescriptorHandle(srvDscriptorHeap_, desriptorSizeSRV_, index);
+	return GetGPUDescriptorHandle(srvDscriptorHeap_, descriptorSizeSRV_, index);
 }
 #pragma endregion
 #pragma region DSVに特化した公開用の関数(実装)
 //DSV専用のデスクリプタハンドル取得関数を作成
 D3D12_CPU_DESCRIPTOR_HANDLE DirectXCommon::GetDSVCPUDescriptorHandle(uint32_t index)
 {
-	return GetCPUDescriptorHandle(srvDscriptorHeap_, desriptorSizeSRV_, index);
+	return GetCPUDescriptorHandle(srvDscriptorHeap_, descriptorSizeSRV_, index);
 }
 D3D12_GPU_DESCRIPTOR_HANDLE DirectXCommon::GetDSVGPUDescriptorHandle(uint32_t index)
 {
-	return GetGPUDescriptorHandle(srvDscriptorHeap_, desriptorSizeSRV_, index);
+	return GetGPUDescriptorHandle(srvDscriptorHeap_, descriptorSizeSRV_, index);
 }
 #pragma endregion
 
@@ -415,7 +414,6 @@ DirectXCommon::CreateDescriptorHeap(
 //描画前処理
 void DirectXCommon::PreDraw()
 {
-	HRESULT hr;
 
 	//バックバッファの番号取得
 		//書き込むバックバッファのインデックスを取得
@@ -432,23 +430,23 @@ void DirectXCommon::PreDraw()
 	commandList_->ResourceBarrier(1, &barrier);
 	
 	//描画先のRTVのDSVを指定する
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvStartHandles = rtvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart();
-	rtvStartHandles.ptr += backBufferIndex * decriptorSizeRTV_;
-	commandList_->OMSetRenderTargets(1, &rtvStartHandles[backBufferIndex], false, &dsvHandle_);
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart();
+
+	commandList_->OMSetRenderTargets(1, &rtvHandles_[backBufferIndex], false, &dsvHandle);
 
 	// 画面全体の色をクリア
 	//指定した色で画面全体をクリアする
 	float clearColor[] = { 0.1f,0.25f,0.5f,1.0f };
-	commandList_->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
+	commandList_->ClearRenderTargetView(rtvHandles_[backBufferIndex], clearColor, 0, nullptr);
 	
 	// 画面全体の深度をクリア
 	//指定した深度で画面全体をクリアする
-	commandList_->ClearDepthStencilView(dsvHandle_, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+	commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 	// SRV用のデスクリプタヒープを指定する
-	dsvDescriptorHeap_ = srvDscriptorHeap_.Get();
-	commandList_->SetDescriptorHeaps(1,deseaps_);
-
+	ID3D12DescriptorHeap* descriptorHeaps[] = { srvDscriptorHeap_.Get()};
+	commandList_->SetDescriptorHeaps(1, descriptorHeaps);
+	
 	// ビューポート領域の設定
 	commandList_->RSSetViewports(1, &viewport_);
 
@@ -459,14 +457,36 @@ void DirectXCommon::PreDraw()
 //描画後処理
 void DirectXCommon::PostDraw()
 {
-	//バックバッファの番号取得
+	// バックバッファの番号取得
+	//書き込むバックバッファのインデックスを取得
+	UINT bbIndex = swapChain_->GetCurrentBackBufferIndex();
+
 	// リソースバリアで表示状態に変更
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = renderTargets_[bbIndex].Get();
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+	barrier.Transition.Subresource =
+		D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	commandList_->ResourceBarrier(1, &barrier);
+
 	// グラフィックスコマンドをクローズ
+
 	// GPUコマンドの実行
+
 	// GPU画面の交換を通知
-	// フェンスの値を更新
+
+	// Fenceの値を更新
+
+	// コマンドキューにシグナルを送る
+
 	// コマンド完了待ち
+
 	// コマンドアロケーターのリセット
+
 	// コマンドリストのリセット
+
 	//
 }

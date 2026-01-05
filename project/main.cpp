@@ -684,6 +684,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//DirectXの初期化
 	dxCommon = new DirectXCommon();
 	dxCommon->Initialize(winApp);
+	
+	dxCommon->PreDraw();
+	dxCommon->PostDraw();
 	/*
 	//DXGIFactoryの生成
 	//IDXGIFactory7* dxgiFactory = nullptr;
