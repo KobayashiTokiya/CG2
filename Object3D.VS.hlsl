@@ -14,6 +14,12 @@ struct VertexShaderInput
     float32_t3 normal : NORMAL0;
 };
 
+struct Camera
+{
+    float32_t3 worldPosition;
+};
+ConstantBuffer<Camera> gCamera : register(b2);
+
 VertexShaderOutput main(VertexShaderInput input)
 {
     VertexShaderOutput output;
@@ -22,5 +28,6 @@ VertexShaderOutput main(VertexShaderInput input)
     
     output.normal = normalize(mul(input.normal, (float32_t3x3) gTransformationMatrix.World));
    
+    output.worldPosition = mul(input.position, gTransformationMatrix.World).xyz;
     return output;
 }
