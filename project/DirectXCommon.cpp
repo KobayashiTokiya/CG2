@@ -473,20 +473,36 @@ void DirectXCommon::PostDraw()
 	commandList_->ResourceBarrier(1, &barrier);
 
 	// グラフィックスコマンドをクローズ
+	HRESULT hr = commandList_->Close();
+	assert(SUCCEEDED(hr));
 
 	// GPUコマンドの実行
+	ID3D12CommandList* commandLists[] = { commandList_.Get()};
+	commandQueue_->ExecuteCommandLists(1, commandLists);
 
 	// GPU画面の交換を通知
+	swapChain_->Present(1, 0);
 
 	// Fenceの値を更新
+	fenceValue_++;
 
 	// コマンドキューにシグナルを送る
+	commandQueue_->Signal(fence_.Get(), fenceValue_);
 
 	// コマンド完了待ち
+	if (fence_->GetCompletedValue() < fenceValue_)
+	{
+		fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
+		//イベント待つ
+		WaitForSingleObject(fenceEvent_, INFINITE);
+	}
 
 	// コマンドアロケーターのリセット
+	hr = commandAllocator_->Reset();
+	assert(SUCCEEDED(hr));
 
 	// コマンドリストのリセット
-
+	hr = commandList_->Reset(commandAllocator_.Get(), nullptr);
+	assert(SUCCEEDED(hr));
 	//
 }
