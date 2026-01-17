@@ -111,10 +111,11 @@ private:
 	ComPtr<ID3D12DescriptorHeap>dsvDescriptorHeap_;
 
 	//各種デスクリプタサイズをメンバ変数にする
-	uint32_t decriptorSizeRTV_ = 0;
-	uint32_t desriptorSizeSRV_ = 0;
-	uint32_t desriptorSizeDSV_ = 0;
+	uint32_t descriptorSizeRTV_ = 0;
+	uint32_t descriptorSizeSRV_ = 0;
+	uint32_t descriptorSizeDSV_ = 0;
 
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles_[2];
 
 	// バックバッファ用
 	ComPtr<ID3D12Resource> renderTargets_[2];
@@ -160,4 +161,10 @@ private:
 	Microsoft::WRL::ComPtr<IDxcUtils> dxcUtils_ = nullptr;
 	Microsoft::WRL::ComPtr <IDxcCompiler3> dxcCompiler_ = nullptr;
 	Microsoft::WRL::ComPtr <IDxcIncludeHandler> includeHandler_ = nullptr;
+
+public:
+	//描画前処理
+	void PreDraw();
+	//描画後処理
+	void PostDraw();
 };
