@@ -80,6 +80,10 @@ public://メンバ関数
 
 	IDXGISwapChain4* GetSwapChain()const { return swapChain_.Get(); }
 
+	//シェーダーのコンパイル
+	Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
+		const std::wstring& filePath,
+		const wchar_t* profile);
 
 private:
 	//DirectX12デバイス
@@ -161,6 +165,10 @@ private:
 	Microsoft::WRL::ComPtr<IDxcUtils> dxcUtils_ = nullptr;
 	Microsoft::WRL::ComPtr <IDxcCompiler3> dxcCompiler_ = nullptr;
 	Microsoft::WRL::ComPtr <IDxcIncludeHandler> includeHandler_ = nullptr;
+
+	//getter
+	ID3D12Device* GetDevice() const { return device_.Get(); }
+	ID3D12GraphicsCommandList* GetCommandList() const { return commandList_.Get(); }
 
 public:
 	//描画前処理
