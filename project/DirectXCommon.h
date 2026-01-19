@@ -26,6 +26,7 @@ using namespace Microsoft::WRL;
 #include "WinApp.h"
 #include "Logger.h"
 #include "StringUtility.h"
+#include "externals/DirectXTex/DirectXTex.h"
 
 
 
@@ -74,9 +75,11 @@ public://メンバ関数
 	//ImGuiの初期化
 	void ImGuiInitializing();
 
+	//getter
 	ID3D12CommandQueue* GetCommandQueue() const { return commandQueue_.Get(); }
 	ID3D12CommandAllocator* GetCommandAllocator() const { return commandAllocator_.Get(); }
 	ID3D12GraphicsCommandList* GetCommandList() const { return commandList_.Get(); }
+	ID3D12Device* GetDevice() const { return device_.Get(); }
 
 	IDXGISwapChain4* GetSwapChain()const { return swapChain_.Get(); }
 
@@ -84,6 +87,18 @@ public://メンバ関数
 	Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
 		const std::wstring& filePath,
 		const wchar_t* profile);
+
+	//バッファリソースの生成
+	Microsoft::WRL::ComPtr<ID3D12Resource>CreateBufferResource(size_t sizeInBytes);
+
+	//テクスチャリソースの生成
+	Microsoft::WRL::ComPtr<ID3D12Resource> CreateTextureResource(const DirectX::TexMetadata& metadata);
+
+	//リソース転送関数・テクスチャデータの転送
+	void UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImage);
+
+	//テクスチャファイル読み込み関数
+	static DirectX::ScratchImage LoadTexture(const std::string& filePath);
 
 private:
 	//DirectX12デバイス
@@ -165,10 +180,6 @@ private:
 	Microsoft::WRL::ComPtr<IDxcUtils> dxcUtils_ = nullptr;
 	Microsoft::WRL::ComPtr <IDxcCompiler3> dxcCompiler_ = nullptr;
 	Microsoft::WRL::ComPtr <IDxcIncludeHandler> includeHandler_ = nullptr;
-
-	//getter
-	ID3D12Device* GetDevice() const { return device_.Get(); }
-	ID3D12GraphicsCommandList* GetCommandList() const { return commandList_.Get(); }
 
 public:
 	//描画前処理
