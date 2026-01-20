@@ -1162,24 +1162,24 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//ModelData modelData = LoadObjFile("Resource", "fence.obj");//フェンス
 
 	//頂点リソースを作成
-	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * modelData.vertices.size());
+	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) *indexCount);
 
 	//頂点バッファビューを作成
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
 	vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();	//リソースの先頭のアドレスから使う
-	vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * modelData.vertices.size());//使用するリソースのサイズは頂点のサイズ
+	vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * indexCount);//使用するリソースのサイズは頂点のサイズ
 	vertexBufferView.StrideInBytes = sizeof(VertexData);//1頂点当たりのサイズ
 
 	//頂点リソースデータを書き込む
 	VertexData* vertexData = nullptr;
 	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));//書き込む為のアドレスを取得
-	std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size());
+	//std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size());
 
 	//緯度の方向に分割 -π/2 ~ π/2
 	for (uint32_t latIndex = 0; latIndex <= kSubdivision; latIndex++)
 	{
 		float lat = -std::numbers::pi_v<float> / 2.0f + kLatEvery * latIndex;
-	
+		float lat_next = -std::numbers::pi_v<float> / 2.0f + kLatEvery * (latIndex + 1);
 		//経度の方向に分割 0 ~ 2π
 		for (uint32_t lonIndex = 0; lonIndex <= kSubdivision; lonIndex++)
 		{
@@ -1187,6 +1187,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	
 			//現在の経度
 			float lon = lonIndex * kLonEvery;
+			float lon_next = (lonIndex + 1) * kLonEvery;
 	
 			//頂点にデータを入力する
 	
@@ -1207,54 +1208,106 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			vertexData[start + 0].normal.y = vertexData[start + 0].position.y;
 			vertexData[start + 0].normal.z = vertexData[start + 0].position.z;
 	
-		}
+			//b
+			vertexData[start + 1].position.x = cos(lat) * cos(lon_next);
+			vertexData[start + 1].position.y = sin(lat);
+			vertexData[start + 1].position.z = cos(lat) * sin(lon_next);
+			vertexData[start + 1].position.w = 1.0f;
+
+			vertexData[start + 1].texcoord = {
+				float(lonIndex+1) / float(kSubdivision),
+				 1.0f - float(latIndex) / float(kSubdivision)
+			};
+
+			vertexData[start + 1].normal.x = vertexData[start + 1].position.x;
+			vertexData[start + 1].normal.y = vertexData[start + 1].position.y;
+			vertexData[start + 1].normal.z = vertexData[start + 1].position.z;
+
+			//c
+			vertexData[start + 2].position.x = cos(lat_next) * cos(lon);
+			vertexData[start + 2].position.y = sin(lat_next);
+			vertexData[start + 2].position.z = cos(lat_next) * sin(lon);
+			vertexData[start + 2].position.w = 1.0f;
+
+			vertexData[start + 2].texcoord = {
+			float(lonIndex) / float(kSubdivision),
+				1.0f - float(latIndex + 1) / float(kSubdivision)
+			};
+
+			vertexData[start + 2].normal.x = vertexData[start + 2].position.x;
+			vertexData[start + 2].normal.y = vertexData[start + 2].position.y;
+			vertexData[start + 2].normal.z = vertexData[start + 2].position.z;
+
+			//d
+			vertexData[start + 3] = vertexData[start + 2];
+
+			//e
+			vertexData[start + 4] = vertexData[start + 1];
+
+			//f
+			vertexData[start + 5].position.x = cos(lat_next) * cos(lon);
+			vertexData[start + 5].position.y = sin(lat_next);
+			vertexData[start + 5].position.z = cos(lat_next) * sin(lon);
+			vertexData[start + 5].position.w = 1.0f;
+
+			vertexData[start + 2].texcoord = {
+				float(lonIndex + 1) / float(kSubdivision),
+				1.0f - float(latIndex + 1) / float(kSubdivision)
+			};
+
+			vertexData[start + 5].normal.x = vertexData[start + 5].position.x;
+			vertexData[start + 5].normal.y = vertexData[start + 5].position.y;
+			vertexData[start + 5].normal.z = vertexData[start + 5].position.z;
+
+		}														
 	}
 
+	vertexResource->Unmap(0, nullptr);
 	
-	uint32_t* indexData = nullptr;
-	
-	const int indexNum = kSubdivision * kSubdivision * 6;
-	//インデックス化されたスフィア
-	ID3D12Resource* indexResourceSphere = CreateBufferResource(device, sizeof(uint32_t) * indexNum);
-	//頂点バッファービューを作成する
-	D3D12_INDEX_BUFFER_VIEW indexBufferViewSphere{};
-	//リリースの先頭のアドレスから使う
-	indexBufferViewSphere.BufferLocation = indexResourceSphere->GetGPUVirtualAddress();
-	//使用するリソースのサイズは頂点６つ分のサイズ
-	indexBufferViewSphere.SizeInBytes = sizeof(uint32_t) * indexNum;
-	
-	indexBufferViewSphere.Format = DXGI_FORMAT_R32_UINT;
-	
-	
-	indexResourceSphere->Map(0, nullptr, reinterpret_cast<void**>(&indexData));
-	
-	
-	
-	for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex)
-	{
-		//float lat = -std::numbers::pi_v<float> / 2.0f + kLatEvery * latIndex;
-	
-		//経度の方向に分割 0 ~ 2π
-		for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex)
-		{
-			uint32_t start = (latIndex * kSubdivision + lonIndex) * 6;
-	
-			uint32_t lb = latIndex * (kSubdivision + 1) + lonIndex; // 左下 left bottom
-			uint32_t rb = lb + 1; // 右下 right bottom
-			uint32_t lt = lb + (kSubdivision + 1); // 左上 left top
-			uint32_t rt = lt + 1; // 右上 right top
-	
-			indexData[start + 0] = lb;
-			indexData[start + 1] = lt;
-			indexData[start + 2] = rb;
-	
-			indexData[start + 3] = rb;
-			indexData[start + 4] = lt;
-			indexData[start + 5] = rt;
-		}
-	}
-	
-	indexResourceSphere->Unmap(0, nullptr);
+	//uint32_t* indexData = nullptr;
+	//
+	//const int indexNum = kSubdivision * kSubdivision * 6;
+	////インデックス化されたスフィア
+	//ID3D12Resource* indexResourceSphere = CreateBufferResource(device, sizeof(uint32_t) * indexNum);
+	////頂点バッファービューを作成する
+	//D3D12_INDEX_BUFFER_VIEW indexBufferViewSphere{};
+	////リリースの先頭のアドレスから使う
+	//indexBufferViewSphere.BufferLocation = indexResourceSphere->GetGPUVirtualAddress();
+	////使用するリソースのサイズは頂点６つ分のサイズ
+	//indexBufferViewSphere.SizeInBytes = sizeof(uint32_t) * indexNum;
+	//
+	//indexBufferViewSphere.Format = DXGI_FORMAT_R32_UINT;
+	//
+	//
+	//indexResourceSphere->Map(0, nullptr, reinterpret_cast<void**>(&indexData));
+	//
+	//
+	//
+	//for (uint32_t latIndex = 0; latIndex < kSubdivision; ++latIndex)
+	//{
+	//	//float lat = -std::numbers::pi_v<float> / 2.0f + kLatEvery * latIndex;
+	//
+	//	//経度の方向に分割 0 ~ 2π
+	//	for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex)
+	//	{
+	//		uint32_t start = (latIndex * kSubdivision + lonIndex) * 6;
+	//
+	//		uint32_t lb = latIndex * (kSubdivision + 1) + lonIndex; // 左下 left bottom
+	//		uint32_t rb = lb + 1; // 右下 right bottom
+	//		uint32_t lt = lb + (kSubdivision + 1); // 左上 left top
+	//		uint32_t rt = lt + 1; // 右上 right top
+	//
+	//		indexData[start + 0] = lb;
+	//		indexData[start + 1] = lt;
+	//		indexData[start + 2] = rb;
+	//
+	//		indexData[start + 3] = rb;
+	//		indexData[start + 4] = lt;
+	//		indexData[start + 5] = rt;
+	//	}
+	//}
+	//
+	//indexResourceSphere->Unmap(0, nullptr);
 #pragma endregion
 
 #pragma region Spriteの描画
@@ -1441,11 +1494,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//カメラ用リソース
 	ID3D12Resource* cameraResource = CreateBufferResource(device, sizeof(CameraForGPU));
-	Material* cameraData = nullptr;
-	cameraResource->Map(2, nullptr, reinterpret_cast<void**>(&cameraData));
-	cameraData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	cameraData->enableLighting = false;
-	cameraData->uvTransform = MatrixMath::MakeIdentity4x4();
+	CameraForGPU* cameraData = nullptr;
+	cameraResource->Map(0, nullptr, reinterpret_cast<void**>(&cameraData));
+	cameraData->WorldPosition = transform.translate;
+	cameraData->padding = 0.0f;
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -1672,98 +1724,87 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			commandList->ResourceBarrier(1, &barrier);
 
 
+			// --- ここから書き換え開始 ---
+
 			ImGui::Render();
 
-
+			// 1. ディスクリプタヒープの設定 (テクスチャ使用に必須)
 			ID3D12DescriptorHeap* descriptorHeaps[] = { srvDscriptorHeap };
 			commandList->SetDescriptorHeaps(1, descriptorHeaps);
 
-			//03_01_p24
+			// 2. 画面クリアとレンダーターゲット設定
 			D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-			//描画先のRTVとDSVを設定する
-			commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
 			commandList->OMSetRenderTargets(1, &rtvHandles[backBufferIndex], false, &dsvHandle);
 
-			//指定した色で画面全体をクリアする
-			float clearColor[] = { 0.1f,0.25f,0.5f,1.0f };
+			float clearColor[] = { 0.1f, 0.25f, 0.5f, 1.0f };
 			commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor, 0, nullptr);
-
-			//指定した深度で画面全体をクリアする
 			commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-			//コマンドをお積む
+			// 3. ビューポートとシザーの設定
 			commandList->RSSetViewports(1, &viewport);
 			commandList->RSSetScissorRects(1, &scissorRect);
-			//RootSignatureを設定。POSに設定しているけど別途設定が必要
+
+			// ==========================================
+			//  球体 (Object3D) の描画
+			// ==========================================
 			commandList->SetGraphicsRootSignature(rootSignature);
 			commandList->SetPipelineState(graphicsPipelineState);
-			//形状を設定。PSOに設定しているものとはまた別。同じものを設定すると考えておけば良い
 			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+			// 頂点バッファセット
 			commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
-			commandList->IASetIndexBuffer(&indexBufferViewSphere);
 
-			//commandList->DrawInstanced(3, 1,0,0 );
+			// ★ルートパラメータの設定 (ここが一番重要です)
+			// [0] マテリアル
+			commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
 
-			//マテリアルCBufferの場所を設定
+			// [1] WVP行列 (ここが無効化されていたのがエラーの原因！)
+			commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
 
-			//Table
+			// [2] テクスチャ
+			// (モンスターボール切替処理があるならここで行う。とりあえず textureSrvHandleGPU を指定)
+			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
 
-			//commandList->SetGraphicsRootConstantBufferView(1, wvpResource->GetGPUVirtualAddress());
+			// [3] 平行光源 (ライト)
+			commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
 
-			//テクスチャの切り替えるか
-			//commandList->SetGraphicsRootDescriptorTable(2, useMonsterBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
+			// [4] カメラ (鏡面反射用) ★ライトの次なので 4番 です
+			commandList->SetGraphicsRootConstantBufferView(4, cameraResource->GetGPUVirtualAddress());
+
+			// 描画コマンド (先生のやり方：indexCountという名前の変数に入った頂点数を使う)
+			commandList->DrawInstanced(indexCount, 1, 0, 0);
 
 
-			//commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
-
-
-			//描画!(DrawCall/ドローコール)。3頂点で1つのインスタンス。インスタンスについては今後
-			//commandList->DrawIndexedInstanced(indexNum, 1, 0, 0, 0);
-
+			// ==========================================
+			//  パーティクルの描画
+			// ==========================================
 			commandList->SetGraphicsRootSignature(particleRootSignature);
 			commandList->SetPipelineState(particleGraphicsPipelineState);
+			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 			commandList->IASetVertexBuffers(0, 1, &vertexBufferViewParticle);
 
+			// パーティクル用の設定
 			commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
-
 			commandList->SetGraphicsRootDescriptorTable(1, instancingSrvHandleGPU);
-
 			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
 
-			commandList->DrawInstanced(
-				UINT(modelData.vertices.size()),
-				kNumInstance,
-				0, 0);
+			// パーティクル描画
+			commandList->DrawInstanced(UINT(modelData.vertices.size()), kNumInstance, 0, 0);
 
-			//マテリアルCBufferの場所を設定
-			//commandList->SetGraphicsRootConstantBufferView(0, materialResourceSprite->GetGPUVirtualAddress());
 
-			//Spriteの描画。変更が必要なものだけ変更する
-			//commandList->IASetVertexBuffers(0, 1, &vertexBufferViewSprite);
-			//IndexBufferViewを設定
-			//commandList->IASetIndexBuffer(&indexBufferViewSprite);
-
-			//SpriteのTransformationMatrixCBufferの場所を設定
-			//commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
-
-			// インデックスバッファ（スフィア用）←追加すること！
-			//commandList->IASetIndexBuffer(&indexBufferViewSprite);
-
-			//描画！(DrawCall/ドローコール)6個のインデックスを使用し1つのインスタンスを描画。その他は当面0で良い
-			//commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
-
+			// ==========================================
+			//  ImGuiの描画
+			// ==========================================
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
 
-			//画面に描く処理は全て終わり、画面に移すので、状態を遷移
+
+			// 4. バリアを戻して閉じる
 			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-			//TransitionBarrierを張る
 			commandList->ResourceBarrier(1, &barrier);
 
-			//コマンドリストの内容を確定させる。
-			//全てのコマンドを積んでからCloseすること
+			// コマンドリストを閉じる
 			hr = commandList->Close();
 			assert(SUCCEEDED(hr));
 
