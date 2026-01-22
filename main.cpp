@@ -1162,7 +1162,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//ModelData modelData = LoadObjFile("Resource", "fence.obj");//フェンス
 
 	//頂点リソースを作成
-	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) *indexCount);
+	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * indexCount);
 
 	//頂点バッファビューを作成
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
@@ -1176,38 +1176,38 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size());
 
 	//緯度の方向に分割 -π/2 ~ π/2
-	for (uint32_t latIndex = 0; latIndex <= kSubdivision; latIndex++)
+	for (uint32_t latIndex = 0; latIndex < kSubdivision; latIndex++)
 	{
 		float lat = -std::numbers::pi_v<float> / 2.0f + kLatEvery * latIndex;
 		float lat_next = -std::numbers::pi_v<float> / 2.0f + kLatEvery * (latIndex + 1);
 		//経度の方向に分割 0 ~ 2π
-		for (uint32_t lonIndex = 0; lonIndex <= kSubdivision; lonIndex++)
+		for (uint32_t lonIndex = 0; lonIndex < kSubdivision; lonIndex++)
 		{
-			uint32_t start = latIndex * (kSubdivision + 1) + lonIndex;
-	
+			uint32_t start = (latIndex * kSubdivision + lonIndex) * 6;
+
 			//現在の経度
 			float lon = lonIndex * kLonEvery;
 			float lon_next = (lonIndex + 1) * kLonEvery;
-	
+
 			//頂点にデータを入力する
-	
+
 			//三角形1つ目: a,b,c
-	
+
 			//a
 			vertexData[start + 0].position.x = cos(lat) * cos(lon);
 			vertexData[start + 0].position.y = sin(lat);
 			vertexData[start + 0].position.z = cos(lat) * sin(lon);
 			vertexData[start + 0].position.w = 1.0f;
-	
+
 			vertexData[start + 0].texcoord = {
 				float(lonIndex) / float(kSubdivision),
 				 1.0f - float(latIndex) / float(kSubdivision)
 			};
-	
+
 			vertexData[start + 0].normal.x = vertexData[start + 0].position.x;
 			vertexData[start + 0].normal.y = vertexData[start + 0].position.y;
 			vertexData[start + 0].normal.z = vertexData[start + 0].position.z;
-	
+
 			//b
 			vertexData[start + 1].position.x = cos(lat) * cos(lon_next);
 			vertexData[start + 1].position.y = sin(lat);
@@ -1215,7 +1215,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			vertexData[start + 1].position.w = 1.0f;
 
 			vertexData[start + 1].texcoord = {
-				float(lonIndex+1) / float(kSubdivision),
+				float(lonIndex + 1) / float(kSubdivision),
 				 1.0f - float(latIndex) / float(kSubdivision)
 			};
 
@@ -1245,12 +1245,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			vertexData[start + 4] = vertexData[start + 1];
 
 			//f
-			vertexData[start + 5].position.x = cos(lat_next) * cos(lon);
+			vertexData[start + 5].position.x = cos(lat_next) * cos(lon_next);
 			vertexData[start + 5].position.y = sin(lat_next);
-			vertexData[start + 5].position.z = cos(lat_next) * sin(lon);
+			vertexData[start + 5].position.z = cos(lat_next) * sin(lon_next);
 			vertexData[start + 5].position.w = 1.0f;
 
-			vertexData[start + 2].texcoord = {
+			vertexData[start + 5].texcoord = {
 				float(lonIndex + 1) / float(kSubdivision),
 				1.0f - float(latIndex + 1) / float(kSubdivision)
 			};
@@ -1258,12 +1258,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			vertexData[start + 5].normal.x = vertexData[start + 5].position.x;
 			vertexData[start + 5].normal.y = vertexData[start + 5].position.y;
 			vertexData[start + 5].normal.z = vertexData[start + 5].position.z;
-
-		}														
+		}
 	}
 
 	vertexResource->Unmap(0, nullptr);
-	
+
 	//uint32_t* indexData = nullptr;
 	//
 	//const int indexNum = kSubdivision * kSubdivision * 6;
@@ -1790,7 +1789,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
 
 			// パーティクル描画
-			commandList->DrawInstanced(UINT(modelData.vertices.size()), kNumInstance, 0, 0);
+			//commandList->DrawInstanced(UINT(modelData.vertices.size()), kNumInstance, 0, 0);
 
 
 			// ==========================================
