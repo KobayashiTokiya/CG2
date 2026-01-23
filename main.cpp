@@ -1915,6 +1915,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	includeHandler->Release();
 	dxcCompiler->Release();
 
+	cameraResource->Release();
 
 
 	IDXGIDebug1* debug;
