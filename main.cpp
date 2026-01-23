@@ -1518,7 +1518,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	ID3D12Resource* intermediateResource = UploadTextureData(textureResource, mipImages, device, commandList);
 	//
 	////二枚目のTextureを読んで転送する
-	DirectX::ScratchImage mipImages2 = LoadTexture(modelData.material.textureFilePath);
+	DirectX::ScratchImage mipImages2 = LoadTexture("Resource/monsterBall.png");
 	const DirectX::TexMetadata& metadata2 = mipImages2.GetMetadata();
 	ID3D12Resource* textureResource2 = CreateTextureResource(device, metadata2);
 	ID3D12Resource* intermediateResource2 = UploadTextureData(textureResource2, mipImages2, device, commandList);
@@ -1620,7 +1620,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 				ImGui::ColorEdit4("Color", &materialData->color.x);
 				if (ImGui::CollapsingHeader("Material"))
 				{
-
 					//ImGui::Checkbox("useMonsterBall", &useMonsterBall);
 				}
 			}
@@ -1723,8 +1722,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			commandList->ResourceBarrier(1, &barrier);
 
 
-			// --- ここから書き換え開始 ---
-
 			ImGui::Render();
 
 			// 1. ディスクリプタヒープの設定 (テクスチャ使用に必須)
@@ -1753,7 +1750,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			// 頂点バッファセット
 			commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
 
-			// ★ルートパラメータの設定 (ここが一番重要です)
 			// [0] マテリアル
 			commandList->SetGraphicsRootConstantBufferView(0, materialResource->GetGPUVirtualAddress());
 
@@ -1762,12 +1758,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 			// [2] テクスチャ
 			// (モンスターボール切替処理があるならここで行う。とりあえず textureSrvHandleGPU を指定)
-			commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandleGPU);
+			commandList->SetGraphicsRootDescriptorTable(2, useMonsterBall ? textureSrvHandleGPU2 : textureSrvHandleGPU);
 
 			// [3] 平行光源 (ライト)
 			commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
 
-			// [4] カメラ (鏡面反射用) ★ライトの次なので 4番 です
+			// [4] カメラ (鏡面反射用)
 			commandList->SetGraphicsRootConstantBufferView(4, cameraResource->GetGPUVirtualAddress());
 
 			// 描画コマンド (先生のやり方：indexCountという名前の変数に入った頂点数を使う)
