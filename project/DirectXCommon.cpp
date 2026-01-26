@@ -718,3 +718,20 @@ void DirectXCommon::UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resourc
 
 }
 #pragma endregion
+
+#pragma region テクスチャファイル読み込み関数
+DirectX::ScratchImage DirectXCommon::LoadTexture(const std::string& filePath)
+{
+	DirectX::ScratchImage image{};
+	std::wstring filePathW = StringUtility::ConvertString(filePath);
+	HRESULT hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+	assert(SUCCEEDED(hr));
+
+
+	DirectX::ScratchImage mipImages{};
+	hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 0, mipImages);
+	assert(SUCCEEDED(hr));
+
+	return mipImages;
+}
+#pragma endregion

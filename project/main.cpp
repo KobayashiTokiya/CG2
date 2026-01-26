@@ -63,6 +63,7 @@ struct VertexData
 	Vector3 normal;
 };
 
+
 //
 static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception)
 {
@@ -561,6 +562,16 @@ ModelData LoadObjFile(const std::string& directoryPath, const std::string& filen
 */
 #pragma endregion
 
+struct VertexData
+{
+	float x, y, z, w;
+};
+
+VertexData vertices[6] = {
+	{  0.0f,  0.5f, 0.0f, 1.0f },
+	{  0.5f, -0.5f, 0.0f, 1.0f },
+	{ -0.5f, -0.5f, 0.0f, 1.0f },
+};
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -571,131 +582,101 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	winApp = new WinApp();
 	winApp->Initialize();
 
-#pragma region コメントアウト
-	/*
-		//COM初期化
-		CoInitializeEx(0, COINIT_MULTITHREADED);
-
-		SetUnhandledExceptionFilter(ExportDump);
-
-		std::filesystem::create_directory("logs");
-
-		std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-		std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
-		std::chrono::zoned_time localTime{ std::chrono::current_zone(),nowSeconds };
-		std::string dateString = std::format("{:%Y%m%d_%H%M%S}", localTime);
-		std::string logFilePath = std::string("logs/") + dateString + ".log";
-		std::ofstream logStream(logFilePath);
-
-		HRESULT hr = CoInitializeEx(0, COINIT_MULTITHREADED);
-		//uint32_t* p = nullptr;
-		//*p = 100;
-
-		//WNDCLASS wc{};
-		//wc.lpfnWndProc = WindowProc;
-		//wc.lpszClassName = L"CGWindowsClass";
-		//wc.hInstance = GetModuleHandle(nullptr);
-		//wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-		//
-		//RegisterClass(&wc);
-		//
-		//const int32_t WinApp::kClientWidth = 1280;
-		//const int32_t WinApp::kClientHeight = 720;
-		//
-		//RECT wrc = { 0,0,WinApp::kClientWidth,WinApp::kClientHeight };
-		//
-		//AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
-		//
-		//
-		//
-		//
-		//HWND hwnd = CreateWindow(
-		//	wc.lpszClassName,
-		//	L"CG2",
-		//	WS_OVERLAPPEDWINDOW,
-		//	CW_USEDEFAULT,
-		//	CW_USEDEFAULT,
-		//	wrc.right - wrc.left,
-		//	wrc.bottom - wrc.top,
-		//	nullptr,
-		//	nullptr,
-		//	wc.hInstance,
-		//	nullptr);
-
-
-		//入力
-		//WNDCLASS w{};
-		//w.lpfnWndProc = WindowProc;
-		//w.lpszClassName = L"CGWindowsClass";
-		//w.hInstance = GetModuleHandle(nullptr);
-		//w.hCursor = LoadCursor(nullptr, IDC_ARROW);
-
-		//ポインタ
-		Input* input = nullptr;
-		//入力の初期化
-		input = new Input();
-		input->Initialize(winApp);
-
-
-		////DirectInputの初期化
-		//IDirectInput8* directInput = nullptr;
-		//HRESULT result;
-		//result = DirectInput8Create(w.hInstance, DIRECTION_VERSION, IID_IDirectInput8,
-		//	(void**)&directInput, nullptr);
-		//assert(SUCCEEDED(result));
-		//
-		////キーボードデバイスの生成
-		//IDirectInputDevice8* keyboard = nullptr;
-		//result = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
-		//assert(SUCCEEDED(result));
-		//
-		////入力データ形式のセット
-		//result = keyboard->SetDataFormat(&c_dfDIKeyboard);//標準形式
-		//assert(SUCCEEDED(result));
-		//
-		////排他制限レベルのセット
-		//result = keyboard->SetCooperativeLevel(hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
-		//assert(SUCCEEDED(result));
-
-
-	#ifdef _DEBUG
-		ID3D12Debug1* debugController = nullptr;
-		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
-		{
-			debugController->EnableDebugLayer();
-
-			debugController->SetEnableGPUBasedValidation(TRUE);
-		}
-
-	#endif // _DEBUG
-
-
-		//ShowWindow(hwnd, SW_SHOW);
-		Log(logStream, "Hello,DirectX!\n");
-		Log(logStream,
-			ConvertString
-			(
-				std::format
-				(
-					L"clientSize:{},{}\n",
-					WinApp::kClientWidth,
-					WinApp::kClientHeight
-				)
-			)
-		);
-
-		*/
-#pragma endregion
-
-
-		//ポインタ
+	//ポインタ
 	DirectXCommon* dxCommon = nullptr;
 	//DirectXの初期化
 	dxCommon = new DirectXCommon();
 	dxCommon->Initialize(winApp);
+	
+	ID3D12Device* device = dxCommon->GetDevice();
+	ID3D12GraphicsCommandList* commandList = dxCommon->GetCommandList();
+	
+	//RootSignature作成
+	D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc{};
+	rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+	
+	ID3DBlob* signatureBlob = nullptr;
+	ID3DBlob* errorBlob = nullptr;
+
+	HRESULT hr = D3D12SerializeRootSignature(
+		&rootSignatureDesc,
+		D3D_ROOT_SIGNATURE_VERSION_1,
+		&signatureBlob,
+		&errorBlob);
+	assert(SUCCEEDED(hr));
+
+	//バイナリを元に生成
+	ID3D12RootSignature* rootSignature = nullptr;
+	hr = device->CreateRootSignature(0,
+		signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(),
+		IID_PPV_ARGS(&rootSignature));
+	assert(SUCCEEDED(hr));
+
+	//PSO
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
+	graphicsPipelineStateDesc.pRootSignature = rootSignature;
+	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
+	graphicsPipelineStateDesc.VS = { vertexShaderBlob->GetBufferPointer(),
+	vertexShaderBlob->GetBufferSize() };
+	graphicsPipelineStateDesc.PS = { pixelShaderBlob->GetBufferPointer(),
+	pixelShaderBlob->GetBufferSize() };
+	graphicsPipelineStateDesc.BlendState = blendDesc;
+	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
+
+	graphicsPipelineStateDesc.NumRenderTargets = 1;
+	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+
+	graphicsPipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+	graphicsPipelineStateDesc.SampleDesc.Count = 1;
+	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+
+	//DepthStencilの設定
+	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
+	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+	ID3D12PipelineState* graphicsPipelineState = nullptr;
+	hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc,
+		IID_PPV_ARGS(&graphicsPipelineState));
+	assert(SUCCEEDED(hr));
+	
+	const uint32_t kSubdivision = 16;
+	
+	//頂点リソースを作成
+	ID3D12Resource* vertexResource = CreateBufferResource(device, sizeof(VertexData) * modelData.vertices.size());
+
+	//頂点バッファビューを作成
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
+	vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();	//リソースの先頭のアドレスから使う
+	vertexBufferView.SizeInBytes = UINT(sizeof(VertexData) * modelData.vertices.size());//使用するリソースのサイズは頂点のサイズ
+	vertexBufferView.StrideInBytes = sizeof(VertexData);//1頂点当たりのサイズ
+
+	VertexData* vertexData = nullptr;
+	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));//書き込む為のアドレスを取得
+	std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * modelData.vertices.size());
+
+	vertexData[0] = { {-0.5f,  0.5f,0,1} };
+	vertexData[1] = { { 0.5f,  0.5f,0,1} };
+	vertexData[2] = { {-0.5f, -0.5f,0,1} };
+	vertexData[3] = { {-0.5f, -0.5f,0,1} };
+	vertexData[4] = { { 0.5f,  0.5f,0,1} };
+	vertexData[5] = { { 0.5f, -0.5f,0,1} };
+
+	vertexResource->Unmap(0, nullptr);	
+
 	while (winApp->ProcessMessage() == false)
 	{
 		dxCommon->PreDraw();
+
+		commandList->SetGraphicsRootSignature(rootSignature);
+		commandList->SetPipelineState(graphicsPipelineState);
+
+		commandList->IASetPrimitiveTopology(
+			D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
+
+		commandList->DrawInstanced(3, 1, 0, 0);
 
 		dxCommon->PostDraw();
 	}
@@ -936,12 +917,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 			Log(logStream, reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
 			assert(false);
 		}
-		//バイナリを元に生成
-		ID3D12RootSignature* rootSignature = nullptr;
-		hr = device->CreateRootSignature(0,
-			signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(),
-			IID_PPV_ARGS(&rootSignature));
-		assert(SUCCEEDED(hr));
+		
 
 
 
@@ -1141,7 +1117,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//{
 		//	//float lat = -std::numbers::pi_v<float> / 2.0f + kLatEvery * latIndex;
 		//
-		//	//経度の方向に分割 0 ~ 2π
+		//	//経度の方向に分割 0 ~ 2πmeinn
 		//	for (uint32_t lonIndex = 0; lonIndex < kSubdivision; ++lonIndex)
 		//	{
 		//		uint32_t start = (latIndex * kSubdivision + lonIndex) * 6;
@@ -1721,7 +1697,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		*/
 #pragma endregion
 
-
+	ImGui_ImplDX12_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
 	//DirectX解放
 	delete dxCommon;
 	delete winApp;
