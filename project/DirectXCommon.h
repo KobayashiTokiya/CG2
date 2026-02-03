@@ -26,6 +26,7 @@ using namespace Microsoft::WRL;
 #include "WinApp.h"
 #include "Logger.h"
 #include "StringUtility.h"
+#include "externals/DirectXTex/DirectXTex.h"
 
 
 
@@ -74,12 +75,49 @@ public://メンバ関数
 	//ImGuiの初期化
 	void ImGuiInitializing();
 
+	//getter
 	ID3D12CommandQueue* GetCommandQueue() const { return commandQueue_.Get(); }
 	ID3D12CommandAllocator* GetCommandAllocator() const { return commandAllocator_.Get(); }
 	ID3D12GraphicsCommandList* GetCommandList() const { return commandList_.Get(); }
+	ID3D12Device* GetDevice() const { return device_.Get(); }
 
 	IDXGISwapChain4* GetSwapChain()const { return swapChain_.Get(); }
 
+	//シェーダーのコンパイル
+	Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
+		const std::wstring& filePath,
+		const wchar_t* profile);
+
+	//バッファリソースの生成
+	Microsoft::WRL::ComPtr<ID3D12Resource>CreateBufferResource(size_t sizeInBytes);
+
+	//テクスチャリソースの生成
+	Microsoft::WRL::ComPtr<ID3D12Resource> CreateTextureResource(const DirectX::TexMetadata& metadata);
+
+	//リソース転送関数・テクスチャデータの転送
+	void UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImage);
+
+	//テクスチャファイル読み込み関数
+	static DirectX::ScratchImage LoadTexture(const std::string& filePath);
+
+	ID3D12DescriptorHeap* GetSRVDescriptorHeap()const { return srvDscriptorHeap_.Get(); }
+
+#pragma region 公開用の関数(宣言)
+	//SRVの指定番号のCPUデスクリプタハンドルを取得
+	D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUDescriptorHandle(uint32_t index);
+	//SRVの指定番号のGPUデスクリプタハンドルを取得
+	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUDescriptorHandle(uint32_t index);
+
+	//RTVの指定番号のCPUデスクリプタハンドルを取得
+	D3D12_CPU_DESCRIPTOR_HANDLE GetRTVCPUDescriptorHandle(uint32_t index);
+	//RTVの指定番号のGPUデスクリプタハンドルを取得
+	D3D12_GPU_DESCRIPTOR_HANDLE GetRTVGPUDescriptorHandle(uint32_t index);
+
+	//DSVの指定番号のCPUデスクリプタハンドルを取得
+	D3D12_CPU_DESCRIPTOR_HANDLE GetDSVCPUDescriptorHandle(uint32_t index);
+	//DSVの指定番号のGPUデスクリプタハンドルを取得
+	D3D12_GPU_DESCRIPTOR_HANDLE GetDSVGPUDescriptorHandle(uint32_t index);
+#pragma endregion
 
 private:
 	//DirectX12デバイス
@@ -125,22 +163,7 @@ private:
 	//指定番号のGPUデスクリプタハンドルを取得
 	static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
-#pragma region 公開用の関数(宣言)
-	//SRVの指定番号のCPUデスクリプタハンドルを取得
-	D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUDescriptorHandle(uint32_t index);
-	//SRVの指定番号のGPUデスクリプタハンドルを取得
-	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUDescriptorHandle(uint32_t index);
 
-	//RTVの指定番号のCPUデスクリプタハンドルを取得
-	D3D12_CPU_DESCRIPTOR_HANDLE GetRTVCPUDescriptorHandle(uint32_t index);
-	//RTVの指定番号のGPUデスクリプタハンドルを取得
-	D3D12_GPU_DESCRIPTOR_HANDLE GetRTVGPUDescriptorHandle(uint32_t index);
-
-	//DSVの指定番号のCPUデスクリプタハンドルを取得
-	D3D12_CPU_DESCRIPTOR_HANDLE GetDSVCPUDescriptorHandle(uint32_t index);
-	//DSVの指定番号のGPUデスクリプタハンドルを取得
-	D3D12_GPU_DESCRIPTOR_HANDLE GetDSVGPUDescriptorHandle(uint32_t index);
-#pragma endregion
 
 	//スワップチェーンリソース
 	//std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, 2> swapChainResources;

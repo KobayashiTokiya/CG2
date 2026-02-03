@@ -150,7 +150,7 @@ Vector3 MatrixMath::Cross(const Vector3& v1, const Vector3& v2) {
 		(v1.z * v2.x) - (v1.x * v2.z),
 		(v1.x * v2.y) - (v1.y * v2.x)
 	};
-	return Vector3();
+	return result;
 }
 
 
