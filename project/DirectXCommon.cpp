@@ -247,11 +247,15 @@ void DirectXCommon::RenderTargetViewInitializing()
 
 D3D12_CPU_DESCRIPTOR_HANDLE DirectXCommon::GetCPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize, uint32_t index)
 {
-	return D3D12_CPU_DESCRIPTOR_HANDLE();
+	D3D12_CPU_DESCRIPTOR_HANDLE handleCPU = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	handleCPU.ptr += (static_cast<uint64_t>(descriptorSize) * index);
+	return handleCPU;
 }
 D3D12_GPU_DESCRIPTOR_HANDLE DirectXCommon::GetGPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize, uint32_t index)
 {
-	return D3D12_GPU_DESCRIPTOR_HANDLE();
+	D3D12_GPU_DESCRIPTOR_HANDLE handleGPU = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
+	handleGPU.ptr += (static_cast<uint64_t>(descriptorSize) * index);
+	return handleGPU;
 }
 
 #pragma region SRVに特化した公開用の関数(実装)
@@ -377,6 +381,10 @@ void DirectXCommon::ImGuiInitializing()
 
 	//RTVフォーマット
 	DXGI_FORMAT rtvFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+
+	D3D12_CPU_DESCRIPTOR_HANDLE fontSrvHandleCPU = GetSRVCPUDescriptorHandle(0);
+	D3D12_GPU_DESCRIPTOR_HANDLE fontSrvHandleGPU = GetSRVGPUDescriptorHandle(0);
+
 	//DirectX12の初期化
 	ImGui_ImplDX12_Init(
 		device_.Get(),

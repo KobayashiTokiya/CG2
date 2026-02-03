@@ -100,6 +100,25 @@ public://メンバ関数
 	//テクスチャファイル読み込み関数
 	static DirectX::ScratchImage LoadTexture(const std::string& filePath);
 
+	ID3D12DescriptorHeap* GetSRVDescriptorHeap()const { return srvDscriptorHeap_.Get(); }
+
+#pragma region 公開用の関数(宣言)
+	//SRVの指定番号のCPUデスクリプタハンドルを取得
+	D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUDescriptorHandle(uint32_t index);
+	//SRVの指定番号のGPUデスクリプタハンドルを取得
+	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUDescriptorHandle(uint32_t index);
+
+	//RTVの指定番号のCPUデスクリプタハンドルを取得
+	D3D12_CPU_DESCRIPTOR_HANDLE GetRTVCPUDescriptorHandle(uint32_t index);
+	//RTVの指定番号のGPUデスクリプタハンドルを取得
+	D3D12_GPU_DESCRIPTOR_HANDLE GetRTVGPUDescriptorHandle(uint32_t index);
+
+	//DSVの指定番号のCPUデスクリプタハンドルを取得
+	D3D12_CPU_DESCRIPTOR_HANDLE GetDSVCPUDescriptorHandle(uint32_t index);
+	//DSVの指定番号のGPUデスクリプタハンドルを取得
+	D3D12_GPU_DESCRIPTOR_HANDLE GetDSVGPUDescriptorHandle(uint32_t index);
+#pragma endregion
+
 private:
 	//DirectX12デバイス
 	Microsoft::WRL::ComPtr<ID3D12Device> device_;
@@ -144,22 +163,7 @@ private:
 	//指定番号のGPUデスクリプタハンドルを取得
 	static D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& descriptorHeap, uint32_t descriptorSize, uint32_t index);
 
-#pragma region 公開用の関数(宣言)
-	//SRVの指定番号のCPUデスクリプタハンドルを取得
-	D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUDescriptorHandle(uint32_t index);
-	//SRVの指定番号のGPUデスクリプタハンドルを取得
-	D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUDescriptorHandle(uint32_t index);
 
-	//RTVの指定番号のCPUデスクリプタハンドルを取得
-	D3D12_CPU_DESCRIPTOR_HANDLE GetRTVCPUDescriptorHandle(uint32_t index);
-	//RTVの指定番号のGPUデスクリプタハンドルを取得
-	D3D12_GPU_DESCRIPTOR_HANDLE GetRTVGPUDescriptorHandle(uint32_t index);
-
-	//DSVの指定番号のCPUデスクリプタハンドルを取得
-	D3D12_CPU_DESCRIPTOR_HANDLE GetDSVCPUDescriptorHandle(uint32_t index);
-	//DSVの指定番号のGPUデスクリプタハンドルを取得
-	D3D12_GPU_DESCRIPTOR_HANDLE GetDSVGPUDescriptorHandle(uint32_t index);
-#pragma endregion
 
 	//スワップチェーンリソース
 	//std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, 2> swapChainResources;
