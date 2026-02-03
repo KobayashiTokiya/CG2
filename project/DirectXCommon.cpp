@@ -3,12 +3,16 @@
 
 void DirectXCommon::Initialize(WinApp* winApp)
 {
+	//FPS固定初期化
+	InitializeFixFPS();
+
 	//NULL検出
 	assert(winApp);
 
 	//メンバ変数に記録
 	this->winApp = winApp;
 
+	//色々な初期化
 	DeviceInitialize();
 	CommandInitialize();
 	SwapChainGenerate();
@@ -506,6 +510,9 @@ void DirectXCommon::PostDraw()
 		WaitForSingleObject(fenceEvent_, INFINITE);
 	}
 
+	//FPS固定
+	UpdateFixFPS();
+
 	// コマンドアロケーターのリセット
 	hr = commandAllocator_->Reset();
 	assert(SUCCEEDED(hr));
@@ -743,3 +750,17 @@ DirectX::ScratchImage DirectXCommon::LoadTexture(const std::string& filePath)
 	return mipImages;
 }
 #pragma endregion
+
+void DirectXCommon::InitializeFixFPS()
+{
+	//現在時間の記録する
+	referece_ = std::chrono::steady_clock::now();
+}
+
+void DirectXCommon::UpdateFixFPS()
+{
+	//1/60ぴったりの時間
+	const std::chrono::microseconds kMinTime(uint64_t(1000000.0f / 60.0f));
+	//1/60秒よりわずかに短い時間
+	const std::chrono::microseconds kMinCheckTime(uint64_t(1000000.0f / 65.0f));
+}

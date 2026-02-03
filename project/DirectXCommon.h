@@ -28,7 +28,8 @@ using namespace Microsoft::WRL;
 #include "StringUtility.h"
 #include "externals/DirectXTex/DirectXTex.h"
 
-
+#include <chrono>
+#include <thread>
 
 class DirectXCommon
 {
@@ -184,6 +185,15 @@ private:
 	Microsoft::WRL::ComPtr<IDxcUtils> dxcUtils_ = nullptr;
 	Microsoft::WRL::ComPtr <IDxcCompiler3> dxcCompiler_ = nullptr;
 	Microsoft::WRL::ComPtr <IDxcIncludeHandler> includeHandler_ = nullptr;
+
+	//FPS固定初期化
+	void InitializeFixFPS();
+
+	//FPS固定更新
+	void UpdateFixFPS();
+
+	//記録時間(FPS固定用)
+	std::chrono::steady_clock::time_point referece_;
 
 public:
 	//描画前処理
