@@ -44,6 +44,10 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include "Input.h"
 #include "WinApp.h"
 #include "DirectXCommon.h"
+//スプライト共通部
+#include "SpriteCommon.h"
+//スプライト
+#include "Sprite.h"
 
 #pragma region コメントアウトにしてる
 /*
@@ -639,6 +643,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	dxCommon = new DirectXCommon();
 	dxCommon->Initialize(winApp);
 	
+	SpriteCommon* spriteCommon = nullptr;
+	//スプライト共通部の初期化
+	spriteCommon = new SpriteCommon;
+	spriteCommon->Initialize(dxCommon);
+
+
 	ID3D12Device* device = dxCommon->GetDevice();
 	ID3D12GraphicsCommandList* commandList = dxCommon->GetCommandList();
 	
@@ -965,6 +975,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	static D3DResourceLeakChecker leakChecker;
 
+	Sprite* sprite = new Sprite();
+	sprite->Initialize();
+
 	while (winApp->ProcessMessage() == false)
 	{
 		// =================================================
@@ -1026,6 +1039,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		// --- 描画処理 (Draw) ---
 		dxCommon->PreDraw();
+
+		//スプライトの描画準備。Spriteの描画に共通のグラフィックコマンドを積む
+		spriteCommon->CommonDrawSettings();
 
 		commandList->SetGraphicsRootSignature(rootSignature.Get());
 		commandList->SetPipelineState(graphicsPipelineState);
@@ -2078,6 +2094,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	ImGui_ImplDX12_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
+	
+	//スプライトの解放
+	delete spriteCommon;
+	delete sprite;
+
 	//DirectX解放
 	delete dxCommon;
 	delete winApp;
