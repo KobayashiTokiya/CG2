@@ -471,7 +471,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 	// ImGui用の変数を定義（Vector構造体は Vector.h 由来）
-	Vector2 spritePosition = { 320.0f, 180.0f };
+	Vector2 spritePosition = { 0.0f, 0.0f };
 	float spriteRotation = 0.0f;
 	Vector2 spriteSize = { 640.0f, 360.0f };
 	Vector4 spriteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
