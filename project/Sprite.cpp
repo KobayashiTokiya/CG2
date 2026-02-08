@@ -9,6 +9,12 @@ void Sprite::Initialize(SpriteCommon* spriteCommon, std::string textureFilePath)
 	//引数で受け取ってメンバ変数に記録する
 	this->spriteCommon = spriteCommon;
 
+	//単位行列を書き込んでおく
+	textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(textureFilePath);
+
+	//初期サイズを画像の解像度に合わせる
+	AdjustTextureSize();
+
 	// 頂点データ作成関数を呼ぶ
 	CreateVertexData();
 	
@@ -18,8 +24,6 @@ void Sprite::Initialize(SpriteCommon* spriteCommon, std::string textureFilePath)
 	//座標変換行列
 	CreateTransformationMatrixData(); 
 
-	//単位行列を書き込んでおく
-	textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(textureFilePath);
 }
 
 void Sprite::Update()
@@ -88,36 +92,66 @@ void Sprite::CreateVertexData()
 	// リソースを書き込める状態にする (Map)
 	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
 
+	float left = 0.0f - anchorPoint.x;
+	float right = 1.0f - anchorPoint.x;
+	float top = 0.0f - anchorPoint.y;
+	float bottom = 1.0f - anchorPoint.y;
+
+	//左右反転
+	if (isFlipX_)
+	{
+		left = -left;
+		right = -right;
+	}
+	//上下反転
+	if (isFlipY_)
+	{
+		top = -top;
+		bottom = -bottom;
+	}
+
+	//画像の元サイズ（メタデータ）を取得
+	const DirectX::TexMetadata& metadata =
+	TextureManager::GetInstance()->GetMetaData(textureIndex);
+
+	//左上座標とサイズを、0.0～1.0 の比率（UV座標）に変換
+	float tex_left = textureLeftTop.x / metadata.width;
+	float tex_right = (textureLeftTop.x + textureSize.x) / metadata.width;
+	float tex_top = textureLeftTop.y / metadata.height;
+	float tex_bottom = (textureLeftTop.y + textureSize.y) / metadata.height;
+
 	// --- 1枚目の三角形 ---
-	// 左下 (uv: 0,1) -> 画面では下側 (+0.5f)
-	vertexData[0].position = { 0.0f,  1.0f, 0.0f, 1.0f };
-	vertexData[0].texcoord = { 0.0f, 1.0f };
+
+	// ■1枚目の三角形
+	// 左下
+	vertexData[0].position = { left, bottom, 0.0f, 1.0f };
+	vertexData[0].texcoord = { tex_left, tex_bottom };     
 	vertexData[0].normal = { 0.0f, 0.0f, -1.0f };
-	
-	// 左上 (uv: 0,0) -> 画面では上側 (-0.5f)
-	vertexData[1].position = { 0.0f,  0.0f, 0.0f, 1.0f };
-	vertexData[1].texcoord = { 0.0f, 0.0f };
+
+	// 左上
+	vertexData[1].position = { left, top, 0.0f, 1.0f };
+	vertexData[1].texcoord = { tex_left, tex_top };        
 	vertexData[1].normal = { 0.0f, 0.0f, -1.0f };
-	
-	// 右下 (uv: 1,1) -> 画面では下側 (+0.5f)
-	vertexData[2].position = { 1.0f,  1.0f, 0.0f, 1.0f };
-	vertexData[2].texcoord = { 1.0f, 1.0f };
+
+	// 右下
+	vertexData[2].position = { right, bottom, 0.0f, 1.0f };
+	vertexData[2].texcoord = { tex_right, tex_bottom };    
 	vertexData[2].normal = { 0.0f, 0.0f, -1.0f };
 
-	// --- 2枚目の三角形 ---
-	// 左上 (uv: 0,0) -> 画面では上側 (-0.5f)
-	vertexData[3].position = { 0.0f,  0.0f, 0.0f, 1.0f };
-	vertexData[3].texcoord = { 0.0f, 0.0f };
+	// ■2枚目の三角形
+	// 左上
+	vertexData[3].position = { left, top, 0.0f, 1.0f };
+	vertexData[3].texcoord = { tex_left, tex_top };        
 	vertexData[3].normal = { 0.0f, 0.0f, -1.0f };
-	
-	// 右上 (uv: 1,0) -> 画面では上側 (-0.5f)
-	vertexData[4].position = { 1.0f,  0.0f, 0.0f, 1.0f };
-	vertexData[4].texcoord = { 1.0f, 0.0f };
+
+	// 右上
+	vertexData[4].position = { right, top, 0.0f, 1.0f };
+	vertexData[4].texcoord = { tex_right, tex_top };       
 	vertexData[4].normal = { 0.0f, 0.0f, -1.0f };
-	
-	// 右下 (uv: 1,1) -> 画面では下側 (+0.5f)
-	vertexData[5].position = { 1.0f,  1.0f, 0.0f, 1.0f };
-	vertexData[5].texcoord = { 1.0f, 1.0f };
+
+	// 右下
+	vertexData[5].position = { right, bottom, 0.0f, 1.0f };
+	vertexData[5].texcoord = { tex_right, tex_bottom };    
 	vertexData[5].normal = { 0.0f, 0.0f, -1.0f };
 
 	// 書き込み終了
@@ -158,4 +192,17 @@ void Sprite::CreateTransformationMatrixData()
 	// 初期値を設定
 	transformationMatrixData->WVP = MatrixMath::MakeIdentity4x4();
 	transformationMatrixData->World = MatrixMath::MakeIdentity4x4();
+}
+
+void Sprite::AdjustTextureSize()
+{
+	// テクスチャメタデータを取得
+	const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(textureIndex);
+
+	// 切り出しサイズを画像の解像度に合わせる
+	textureSize.x = static_cast<float>(metadata.width);
+	textureSize.y = static_cast<float>(metadata.height);
+
+	// 画像サイズをテクスチャサイズに合わせる
+	size = textureSize;
 }

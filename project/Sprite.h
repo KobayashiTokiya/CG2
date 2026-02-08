@@ -68,6 +68,26 @@ public://ゲッターとセッター
 	//ゲッター (Drawで使うのでpublicにする必要はあまりないですが、あってもOK)
 	D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView()const { return vertexBufferView; }
 
+	//アンカーポイント
+	const Vector2& GetAnchorPoint()const { return anchorPoint; }
+	void SetAnchorPoint(const Vector2& anchorPoint) { this->anchorPoint = anchorPoint; }
+
+	// フリップ設定X
+	bool GetIsFlipX() const { return isFlipX_; }
+	void SetIsFlipX(bool isFlipX) { isFlipX_ = isFlipX; }
+	
+	// フリップ設定Y
+	bool GetIsFlipY() const { return isFlipY_; }
+	void SetIsFlipY(bool isFlipY) { isFlipY_ = isFlipY; }
+
+	//textureLeftTop
+	const Vector2& GetTextureLeftTop() const { return textureLeftTop; }
+	void SetTextureLeftTop(const Vector2& textureLeftTop) { this->textureLeftTop = textureLeftTop; }
+
+	//textureSize
+	const Vector2& GetTextureSize() const { return textureSize; }
+	void SetTextureSize(const Vector2& textureSize) { this->textureSize = textureSize; }
+
 private://メンバ関数(内部用)
 	
 	//頂点データ作成用の関数
@@ -78,6 +98,9 @@ private://メンバ関数(内部用)
 
 	//座標変換行列リソースを作る関数
 	void CreateTransformationMatrixData();
+
+	//テクスチャサイズをイメージをあわせる
+	void AdjustTextureSize();
 
 private:
 	SpriteCommon* spriteCommon = nullptr;
@@ -114,5 +137,17 @@ private:
 
 	//テクスチャ番号
 	uint32_t textureIndex = 0;
+
+	Vector2 anchorPoint = { 0.0f,0.0f };
+
+	//左右フリップ
+	bool isFlipX_ = false;
+	//上下フリップ
+	bool isFlipY_ = false;
+
+	//テクスチャ左上座標
+	Vector2 textureLeftTop = { 0.0f,0.0f };
+	//テクスチャ切り出しサイズ
+	Vector2 textureSize = { 100.0f,100.0f };
 };
 
