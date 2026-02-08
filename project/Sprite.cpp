@@ -22,9 +22,9 @@ void Sprite::Initialize(SpriteCommon* spriteCommon)
 void Sprite::Update()
 {
 	//Transform情報を作る (位置、回転、サイズ)
-	Vector3 scale = { size_.x, size_.y, 1.0f };       // size_を使用
-	Vector3 rotate = { 0.0f, 0.0f, rotation_ };       // rotation_を使用
-	Vector3 translate = { position_.x, position_.y, 0.0f }; // position_を使用
+	Vector3 scale = { size.x, size.y, 1.0f };       // sizeを使用
+	Vector3 rotate = { 0.0f, 0.0f, rotation };       // rotationを使用
+	Vector3 translate = { position.x, position.y, 0.0f };
 
 	//TransformからWorldMatrixを作る
 	// アフィン変換行列の作成 (S * R * T)
@@ -87,33 +87,33 @@ void Sprite::CreateVertexData()
 
 	// --- 1枚目の三角形 ---
 	// 左下 (uv: 0,1) -> 画面では下側 (+0.5f)
-	vertexData[0].position = { -0.5f,  0.5f, 0.0f, 1.0f };
+	vertexData[0].position = { 0.0f,  1.0f, 0.0f, 1.0f };
 	vertexData[0].texcoord = { 0.0f, 1.0f };
 	vertexData[0].normal = { 0.0f, 0.0f, -1.0f };
 	
 	// 左上 (uv: 0,0) -> 画面では上側 (-0.5f)
-	vertexData[1].position = { -0.5f, -0.5f, 0.0f, 1.0f };
+	vertexData[1].position = { 0.0f,  0.0f, 0.0f, 1.0f };
 	vertexData[1].texcoord = { 0.0f, 0.0f };
 	vertexData[1].normal = { 0.0f, 0.0f, -1.0f };
 	
 	// 右下 (uv: 1,1) -> 画面では下側 (+0.5f)
-	vertexData[2].position = { 0.5f,  0.5f, 0.0f, 1.0f };
+	vertexData[2].position = { 1.0f,  1.0f, 0.0f, 1.0f };
 	vertexData[2].texcoord = { 1.0f, 1.0f };
 	vertexData[2].normal = { 0.0f, 0.0f, -1.0f };
 
 	// --- 2枚目の三角形 ---
 	// 左上 (uv: 0,0) -> 画面では上側 (-0.5f)
-	vertexData[3].position = { -0.5f, -0.5f, 0.0f, 1.0f };
+	vertexData[3].position = { 0.0f,  0.0f, 0.0f, 1.0f };
 	vertexData[3].texcoord = { 0.0f, 0.0f };
 	vertexData[3].normal = { 0.0f, 0.0f, -1.0f };
 	
 	// 右上 (uv: 1,0) -> 画面では上側 (-0.5f)
-	vertexData[4].position = { 0.5f, -0.5f, 0.0f, 1.0f };
+	vertexData[4].position = { 1.0f,  0.0f, 0.0f, 1.0f };
 	vertexData[4].texcoord = { 1.0f, 0.0f };
 	vertexData[4].normal = { 0.0f, 0.0f, -1.0f };
 	
 	// 右下 (uv: 1,1) -> 画面では下側 (+0.5f)
-	vertexData[5].position = { 0.5f,  0.5f, 0.0f, 1.0f };
+	vertexData[5].position = { 1.0f,  1.0f, 0.0f, 1.0f };
 	vertexData[5].texcoord = { 1.0f, 1.0f };
 	vertexData[5].normal = { 0.0f, 0.0f, -1.0f };
 

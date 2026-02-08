@@ -48,20 +48,21 @@ public:// メンバ関数
 public://ゲッターとセッター
 	
 	//座標設定
-	void SetPosition(const Vector2& position) { position_ = position; }
-	const Vector2& GetPosition() const { return position_; }
+	void SetPosition(const Vector2& position) { this->position = position; }
+	const Vector2& GetPosition() const { return position; }
 
 	//回転設定
-	void SetRotation(float rotation) { rotation_ = rotation; }
-	float GetRotation() const { return rotation_; }
+	float GetRotation() const { return rotation; }
+	void SetRotation(float rotation) {this->rotation = rotation; }
 
 	//サイズ設定
-	void SetSize(const Vector2& size) { size_ = size; }
-	const Vector2& GetSize() const { return size_; }
+	const Vector2& GetSize() const { return size; }
+	void SetSize(const Vector2& size) {this->size = size; }
 
 	//色設定（マテリアルの書き換え）
 	// Initialize後に呼ばれることを想定しています
-	void SetColor(const Vector4& color) { if (materialData) materialData->color = color; }
+	const Vector4& GetColor()const { return materialData->color; }
+	void SetColor(const Vector4& color) { materialData->color = color; }
 
 	//ゲッター (Drawで使うのでpublicにする必要はあまりないですが、あってもOK)
 	D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView()const { return vertexBufferView; }
@@ -106,8 +107,8 @@ private:
 	TransformationMatrix* transformationMatrixData = nullptr;
 
 	//スプライトの変形情報（Updateで使用）
-	Vector2 position_ = { 0.0f, 0.0f };
-	float rotation_ = 0.0f;
-	Vector2 size_ = { 100.0f, 100.0f }; // 仮の初期サイズ
+	Vector2 position = { 0.0f, 0.0f };
+	float rotation = 0.0f;
+	Vector2 size = { 640.0f, 360.0f }; // 仮の初期サイズ
 };
 
