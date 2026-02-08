@@ -483,33 +483,36 @@ dxCommon->GetDevice()->CreateShaderResourceView(textureResourceSprite.Get(), &sr
 TextureManager::GetInstance()->LoadTexture("Resource/monsterBall.png");
 TextureManager::GetInstance()->LoadTexture("Resource/uvChecker.png");
 
+//スプライトを1個だけ生成
+Sprite* sprite = new Sprite();
+sprite->Initialize(spriteCommon, "Resource/uvChecker.png");
 
-std::vector<Sprite*> sprites;
-const int kSpriteCount = 5;
-
-for (uint32_t i = 0; i < kSpriteCount; ++i)
-{
-	Sprite* pSprite = new Sprite();
-
-	// --- ステップ2：交互に画像を変える ---
-	// "i % 2 == 0" は「iを2で割った余りが0」＝「偶数のとき」という意味です
-	if (i % 2 == 0)
-	{
-		// 偶数番目 (0, 2, 4...) はチェック柄
-		pSprite->Initialize(spriteCommon, "Resource/uvChecker.png");
-	}
-	else
-	{
-		// 奇数番目 (1, 3...) はモンスターボール
-		pSprite->Initialize(spriteCommon, "Resource/monsterBall.png");
-	}
-
-	// 初期位置をずらす（X座標を少しずつ右へ）
-	Vector2 startPos = { i * 200.0f + 100.0f, 200.0f };
-	pSprite->SetPosition(startPos);
-
-	sprites.push_back(pSprite);
-}
+//std::vector<Sprite*> sprites;
+//const int kSpriteCount = 5;
+//
+//for (uint32_t i = 0; i < kSpriteCount; ++i)
+//{
+//	Sprite* pSprite = new Sprite();
+//
+//	// --- ステップ2：交互に画像を変える ---
+//	// "i % 2 == 0" は「iを2で割った余りが0」＝「偶数のとき」という意味です
+//	if (i % 2 == 0)
+//	{
+//		// 偶数番目 (0, 2, 4...) はチェック柄
+//		pSprite->Initialize(spriteCommon, "Resource/uvChecker.png");
+//	}
+//	else
+//	{
+//		// 奇数番目 (1, 3...) はモンスターボール
+//		pSprite->Initialize(spriteCommon, "Resource/monsterBall.png");
+//	}
+//
+//	// 初期位置をずらす（X座標を少しずつ右へ）
+//	Vector2 startPos = { i * 200.0f + 100.0f, 200.0f };
+//	pSprite->SetPosition(startPos);
+//
+//	sprites.push_back(pSprite);
+//}
 
 // ImGui用の変数を定義（Vector構造体は Vector.h 由来）
 Vector2 spritePosition = { 0.0f, 0.0f };
@@ -546,31 +549,31 @@ Vector4 spriteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 		//更新処理
 
 		// ImGuiの値をスプライトに反映
-		//sprite->SetPosition(spritePosition);
-		//sprite->SetRotation(spriteRotation);
-		//sprite->SetSize(spriteSize);
-		//sprite->SetColor(spriteColor);
+		sprite->SetPosition(spritePosition);
+		sprite->SetRotation(spriteRotation);
+		sprite->SetSize(spriteSize);
+		sprite->SetColor(spriteColor);
 
 		// スプライトの更新（行列計算など）
-		//sprite->Update();
+		sprite->Update();
 
-		for (size_t i = 0; i < sprites.size(); ++i)
-		{
-			Sprite* pSprite = sprites[i];
-
-			// 個別の位置計算： (ImGuiの基準位置) + (スプライトごとのオフセット)
-			// こうしないと、ImGuiを触った瞬間に全員が同じ場所に集合してしまいます
-			Vector2 offset = { i * 50.0f, 50.0f };
-			pSprite->SetPosition({ spritePosition.x + offset.x, spritePosition.y + offset.y });
-
-			// 回転・サイズ・色は全員同じにする
-			pSprite->SetRotation(spriteRotation);
-			pSprite->SetSize(spriteSize);
-			pSprite->SetColor(spriteColor);
-
-			// 更新行列の計算
-			pSprite->Update();
-		}
+		//for (size_t i = 0; i < sprites.size(); ++i)
+		//{
+		//	Sprite* pSprite = sprites[i];
+		//
+		//	// 個別の位置計算： (ImGuiの基準位置) + (スプライトごとのオフセット)
+		//	// こうしないと、ImGuiを触った瞬間に全員が同じ場所に集合してしまいます
+		//	Vector2 offset = { i * 50.0f, 50.0f };
+		//	pSprite->SetPosition({ spritePosition.x + offset.x, spritePosition.y + offset.y });
+		//
+		//	// 回転・サイズ・色は全員同じにする
+		//	pSprite->SetRotation(spriteRotation);
+		//	pSprite->SetSize(spriteSize);
+		//	pSprite->SetColor(spriteColor);
+		//
+		//	// 更新行列の計算
+		//	pSprite->Update();
+		//}
 
 		//描画処理
 
@@ -581,12 +584,12 @@ Vector4 spriteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 		spriteCommon->CommonDrawSettings();
 
 		// スプライト描画
-		//sprite->Draw(dxCommon->GetCommandList(), srvHandleGPU);
+		sprite->Draw(dxCommon->GetCommandList(), srvHandleGPU);
 
-		for (Sprite* pSprite :sprites)
-		{
-			pSprite->Draw(dxCommon->GetCommandList(), srvHandleGPU);
-		}
+		//for (Sprite* pSprite :sprites)
+		//{
+		//	pSprite->Draw(dxCommon->GetCommandList(), srvHandleGPU);
+		//}
 
 		// ImGuiの内部コマンド生成
 		ImGui::Render();
@@ -601,12 +604,12 @@ Vector4 spriteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
 
-	for (Sprite* pSprite : sprites)
-	{
-		delete pSprite;
-	}
-	sprites.clear(); // 忘れずにクリア
-	//delete sprite;
+	//for (Sprite* pSprite : sprites)
+	//{
+	//	delete pSprite;
+	//}
+	//sprites.clear(); // 忘れずにクリア
+	delete sprite;
 	delete spriteCommon;
 	
 	//テクスチャマネージャーの終了
