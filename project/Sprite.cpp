@@ -4,7 +4,7 @@
 #include "WinApp.h"
 #include <Matrix.h>
 
-void Sprite::Initialize(SpriteCommon* spriteCommon)
+void Sprite::Initialize(SpriteCommon* spriteCommon, std::string textureFilePath)
 {
 	//引数で受け取ってメンバ変数に記録する
 	this->spriteCommon = spriteCommon;
@@ -17,6 +17,9 @@ void Sprite::Initialize(SpriteCommon* spriteCommon)
 
 	//座標変換行列
 	CreateTransformationMatrixData(); 
+
+	//単位行列を書き込んでおく
+	textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(textureFilePath);
 }
 
 void Sprite::Update()
@@ -64,7 +67,7 @@ void Sprite::Draw(ID3D12GraphicsCommandList* commandList, const D3D12_GPU_DESCRI
 
 	//SRV（テクスチャ）のDescriptorTableを設定
 	// シェーダーのパラメータ番号2番に設定
-	commandList->SetGraphicsRootDescriptorTable(2, textureSrvHandle);
+	commandList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSrvHandleGPU(textureIndex));
 
 	//描画！(DrawCall)
 	// 6頂点（三角形2枚分）を描画する
