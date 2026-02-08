@@ -96,10 +96,8 @@ public://メンバ関数
 	Microsoft::WRL::ComPtr<ID3D12Resource> CreateTextureResource(const DirectX::TexMetadata& metadata);
 
 	//リソース転送関数・テクスチャデータの転送
-	void UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImage);
+	Microsoft::WRL::ComPtr<ID3D12Resource> UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImage);
 
-	//テクスチャファイル読み込み関数
-	static DirectX::ScratchImage LoadTexture(const std::string& filePath);
 
 	ID3D12DescriptorHeap* GetSRVDescriptorHeap()const { return srvDscriptorHeap_.Get(); }
 
@@ -119,6 +117,9 @@ public://メンバ関数
 	//DSVの指定番号のGPUデスクリプタハンドルを取得
 	D3D12_GPU_DESCRIPTOR_HANDLE GetDSVGPUDescriptorHandle(uint32_t index);
 #pragma endregion
+
+	//最大SRV数(最大テクスチャ枚数)
+	static constexpr uint32_t kMaxSRVCount = 512;
 
 private:
 	//DirectX12デバイス

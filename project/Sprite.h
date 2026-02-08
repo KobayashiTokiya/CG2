@@ -5,6 +5,7 @@
 #include "Vector.h"
 #include "Matrix.h"
 
+#include "TextureManager.h"
 
 class  SpriteCommon;
 
@@ -37,7 +38,7 @@ class Sprite
 {
 public:// メンバ関数
 	//初期化
-	void Initialize(SpriteCommon* spriteCommon);
+	void Initialize(SpriteCommon* spriteCommon,std::string textureFilePath);
 
 	//更新処理
 	void Update();
@@ -110,5 +111,8 @@ private:
 	Vector2 position = { 0.0f, 0.0f };
 	float rotation = 0.0f;
 	Vector2 size = { 640.0f, 360.0f }; // 仮の初期サイズ
+
+	//テクスチャ番号
+	uint32_t textureIndex = 0;
 };
 

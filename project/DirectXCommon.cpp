@@ -203,7 +203,7 @@ void DirectXCommon::CreatingVariousDescriptorTeaps()
 
 	//DSV用のヒープでディスクリプタの数は１。DSVはShader内で触るものではないので、ShaderVisibleはfalse
 	rtvDescriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
-	srvDscriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
+	srvDscriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
 	dsvDescriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
 	// DescriptorSizeを取得
 	assert(rtvDescriptorHeap_);
@@ -661,7 +661,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource>DirectXCommon::CreateTextureResource(const
 #pragma endregion
 
 #pragma region リソース転送関数・テクスチャデータの転送
-void DirectXCommon::UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImage)
+Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCommon::UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImage)
 {
 	std::vector<D3D12_SUBRESOURCE_DATA> subresources;
 	// ScratchImageからSubresourceデータを抽出
@@ -731,23 +731,7 @@ void DirectXCommon::UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resourc
 	commandAllocator_->Reset();
 	commandList_->Reset(commandAllocator_.Get(), nullptr);
 
-}
-#pragma endregion
-
-#pragma region テクスチャファイル読み込み関数
-DirectX::ScratchImage DirectXCommon::LoadTexture(const std::string& filePath)
-{
-	DirectX::ScratchImage image{};
-	std::wstring filePathW = StringUtility::ConvertString(filePath);
-	HRESULT hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
-	assert(SUCCEEDED(hr));
-
-
-	DirectX::ScratchImage mipImages{};
-	hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 0, mipImages);
-	assert(SUCCEEDED(hr));
-
-	return mipImages;
+	return intermediateResource;
 }
 #pragma endregion
 
