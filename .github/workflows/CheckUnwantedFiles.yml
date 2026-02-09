@@ -32,33 +32,34 @@ jobs:
       - name: 不要なファイルのディレクトリを検索（bash）
         run: |
           # ディレクトリ条件を構築（最初の不要な-oを後で削除）
-          DIR_CONDITION=()
-          for pattern in  $UNWANTED_DIR_PATTERNS; do DIR_CONDITION+=(-o -iname "$pattern")
-          done
-          unset DIR_CONDITIONS[0]
-
-          #ファイル条件を構築(最初の不要な-oを後で削除)
-          NAME_CONDITIONS=()
-          for pattern in $UNWANTED_NAME_PATTERNS; do
-          NAME_CONDITIONS+=(-o -iname "$pattern")
-          done
-          unset NAME_CONDITIONS[0]
-
-          #一回のfind実行で全件を検索
-          #1. .gitを除外
-          #2. 不要なディレクトリを検索(-type d)し、見つけたらパスを出力(-print)し、その中身を枝刈り(-prune)
-          #3. または（-o）不要なファイルを検索(-type f)し、パスを出力(-print)
-          UNWANTED_LIST=$(find . -path "./.git" -prune -o\
-          \(\("${DIR_CONDITIONS[@]}"\)-a -type d -pring -prune \)-o\
-          \(\("${NAME_CONDITIONS[@]}"\)-a -type f -print\) \
-          )
-
-          #検出結果があればエラーとして出力し、失敗させる
-          if[-n "$UNWANTED_LIST"];then
-            echo "::error不要なファイルまたはディレクトリが見つかりました！"
-            echo "$UNWANTED_LIST"
-            exit 1
-          fi
-
-          echo "リポジトリはクリーンです。"
-
+  DIR_CONDITION=()
+  for pattern in  $UNWANTED_DIR_PATTERNS; do DIR_CONDITION+=(-o -iname "$pattern")
+  done
+  # 修正：変数名を定義時(DIR_CONDITION)に合わせました
+  if [ ${#DIR_CONDITION[@]} -gt 0 ]; then unset DIR_CONDITION[0]; fi
+  
+  #ファイル条件を構築(最初の不要な-oを後で削除)
+  NAME_CONDITIONS=()
+  for pattern in $UNWANTED_NAME_PATTERNS; do
+  NAME_CONDITIONS+=(-o -iname "$pattern")
+  done
+  if [ ${#NAME_CONDITIONS[@]} -gt 0 ]; then unset NAME_CONDITIONS[0]; fi
+  
+  #一回のfind実行で全件を検索
+  #1. .gitを除外
+  #2. 不要なディレクトリを検索(-type d)し、見つけたらパスを出力(-print)し、その中身を枝刈り(-prune)
+  #3. または（-o）不要なファイルを検索(-type f)し、パスを出力(-print)
+  # 修正：-pring を正しい命令である -print に直しました
+  UNWANTED_LIST=$(find . -path "./.git" -prune -o \
+  \( \( "${DIR_CONDITION[@]}" \) -a -type d -print -prune \) -o \
+  \( \( "${NAME_CONDITIONS[@]}" \) -a -type f -print \) \
+  )
+  
+  #検出結果があればエラーとして出力し、失敗させる
+  if [ -n "$UNWANTED_LIST" ]; then
+    echo "::error不要なファイルまたはディレクトリが見つかりました！"
+    echo "$UNWANTED_LIST"
+    exit 1
+  fi
+  
+  echo "リポジトリはクリーンです。"
