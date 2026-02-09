@@ -1,2 +1,0 @@
-﻿  BCDirectCompute.cpp
-C:\Users\k024g\Desktop\二年\二年前期\CG2\CG2\externals\DirectXTex\BCDirectCompute.cpp(25,18): error C1083: include ファイルを開けません。'BC7Encode_EncodeBlockCS.inc':No such file or directory
