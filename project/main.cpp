@@ -47,6 +47,9 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 //スプライト
 #include "Sprite.h"
 #include "TextureManager.h"
+//3Dオブジェクト
+#include "Object3dCommon.h"
+#include "Object3d.h"
 
 
 #pragma region コメントアウト（構造体・関数）
@@ -136,6 +139,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//入力クラスの初期化
 	Input* input = new Input();
 	input->Initialize(winApp);
+
+	// ===============================
+	// object3d
+	// ===============================
+	Object3dCommon* object3dCommon = nullptr;
+	//3Dオブジェクト共通部の初期化
+	object3dCommon = new Object3dCommon;
+	object3dCommon->Initialize(dxCommon);
+
+	Object3d* object3d = new Object3d;
+	object3d->Initialize();
 
 #pragma region コメントアウト（古い初期化コード）
 	/*
@@ -441,84 +455,84 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	*/
 #pragma endregion
 
-TextureManager::GetInstance()->Initialize(dxCommon);
+	TextureManager::GetInstance()->Initialize(dxCommon);
 
-// テクスチャを読み込む (内部でリソース生成～SRV作成までやってくれる)
-TextureManager::GetInstance()->LoadTexture("Resource/uvChecker.png");
+	// テクスチャを読み込む (内部でリソース生成～SRV作成までやってくれる)
+	TextureManager::GetInstance()->LoadTexture("Resource/uvChecker.png");
 
-// スプライトで使うためのハンドルをマネージャーから取得する
-D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU =
-TextureManager::GetInstance()->GetSrvHandleGPU("Resource/uvChecker.png");
+	// スプライトで使うためのハンドルをマネージャーから取得する
+	D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU =
+		TextureManager::GetInstance()->GetSrvHandleGPU("Resource/uvChecker.png");
 
 
-// --- 古い処理 (TextureManagerに移植したので不要) ---
-// ※3DオブジェクトでもTextureManagerを使うので、基本的にはこの「生の処理」はもう使いません。
-//   学習用のメモとしてコメントアウトで残しておきます。
+	// --- 古い処理 (TextureManagerに移植したので不要) ---
+	// ※3DオブジェクトでもTextureManagerを使うので、基本的にはこの「生の処理」はもう使いません。
+	//   学習用のメモとしてコメントアウトで残しておきます。
 
-/* // ファイルを読み込む
-DirectX::ScratchImage mipImages = dxCommon->LoadTexture("Resource/uvChecker.png");
-const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
+	/* // ファイルを読み込む
+	DirectX::ScratchImage mipImages = dxCommon->LoadTexture("Resource/uvChecker.png");
+	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
 
-// GPUバッファを作る
-Microsoft::WRL::ComPtr<ID3D12Resource> textureResourceSprite = dxCommon->CreateTextureResource(metadata);
+	// GPUバッファを作る
+	Microsoft::WRL::ComPtr<ID3D12Resource> textureResourceSprite = dxCommon->CreateTextureResource(metadata);
 
-// データを転送する
-dxCommon->UploadTextureData(textureResourceSprite.Get(), mipImages);
+	// データを転送する
+	dxCommon->UploadTextureData(textureResourceSprite.Get(), mipImages);
 
-// SRV (Shader Resource View) を作る
-D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-srvDesc.Format = metadata.format;
-srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-srvDesc.Texture2D.MipLevels = UINT(metadata.mipLevels);
+	// SRV (Shader Resource View) を作る
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+	srvDesc.Format = metadata.format;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = UINT(metadata.mipLevels);
 
-// SRVを作る場所（ディスクリプタヒープの場所）を決める
-D3D12_CPU_DESCRIPTOR_HANDLE srvHandleCPU = dxCommon->GetSRVCPUDescriptorHandle(1);
-D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU = dxCommon->GetSRVGPUDescriptorHandle(1);
+	// SRVを作る場所（ディスクリプタヒープの場所）を決める
+	D3D12_CPU_DESCRIPTOR_HANDLE srvHandleCPU = dxCommon->GetSRVCPUDescriptorHandle(1);
+	D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU = dxCommon->GetSRVGPUDescriptorHandle(1);
 
-// SRV作成
-dxCommon->GetDevice()->CreateShaderResourceView(textureResourceSprite.Get(), &srvDesc, srvHandleCPU);
-*/
+	// SRV作成
+	dxCommon->GetDevice()->CreateShaderResourceView(textureResourceSprite.Get(), &srvDesc, srvHandleCPU);
+	*/
 
-TextureManager::GetInstance()->LoadTexture("Resource/monsterBall.png");
-TextureManager::GetInstance()->LoadTexture("Resource/uvChecker.png");
+	TextureManager::GetInstance()->LoadTexture("Resource/monsterBall.png");
+	TextureManager::GetInstance()->LoadTexture("Resource/uvChecker.png");
 
-//スプライトを1個だけ生成
-Sprite* sprite = new Sprite();
-sprite->Initialize(spriteCommon, "Resource/uvChecker.png");
+	//スプライトを1個だけ生成
+	Sprite* sprite = new Sprite();
+	sprite->Initialize(spriteCommon, "Resource/uvChecker.png");
 
-//std::vector<Sprite*> sprites;
-//const int kSpriteCount = 5;
-//
-//for (uint32_t i = 0; i < kSpriteCount; ++i)
-//{
-//	Sprite* pSprite = new Sprite();
-//
-//	// --- ステップ2：交互に画像を変える ---
-//	// "i % 2 == 0" は「iを2で割った余りが0」＝「偶数のとき」という意味です
-//	if (i % 2 == 0)
-//	{
-//		// 偶数番目 (0, 2, 4...) はチェック柄
-//		pSprite->Initialize(spriteCommon, "Resource/uvChecker.png");
-//	}
-//	else
-//	{
-//		// 奇数番目 (1, 3...) はモンスターボール
-//		pSprite->Initialize(spriteCommon, "Resource/monsterBall.png");
-//	}
-//
-//	// 初期位置をずらす（X座標を少しずつ右へ）
-//	Vector2 startPos = { i * 200.0f + 100.0f, 200.0f };
-//	pSprite->SetPosition(startPos);
-//
-//	sprites.push_back(pSprite);
-//}
+	//std::vector<Sprite*> sprites;
+	//const int kSpriteCount = 5;
+	//
+	//for (uint32_t i = 0; i < kSpriteCount; ++i)
+	//{
+	//	Sprite* pSprite = new Sprite();
+	//
+	//	// --- ステップ2：交互に画像を変える ---
+	//	// "i % 2 == 0" は「iを2で割った余りが0」＝「偶数のとき」という意味です
+	//	if (i % 2 == 0)
+	//	{
+	//		// 偶数番目 (0, 2, 4...) はチェック柄
+	//		pSprite->Initialize(spriteCommon, "Resource/uvChecker.png");
+	//	}
+	//	else
+	//	{
+	//		// 奇数番目 (1, 3...) はモンスターボール
+	//		pSprite->Initialize(spriteCommon, "Resource/monsterBall.png");
+	//	}
+	//
+	//	// 初期位置をずらす（X座標を少しずつ右へ）
+	//	Vector2 startPos = { i * 200.0f + 100.0f, 200.0f };
+	//	pSprite->SetPosition(startPos);
+	//
+	//	sprites.push_back(pSprite);
+	//}
 
-// ImGui用の変数を定義（Vector構造体は Vector.h 由来）
-Vector2 spritePosition = { 0.0f, 0.0f };
-float spriteRotation = 0.0f;
-Vector2 spriteSize = { 640.0f, 360.0f };
-Vector4 spriteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+	// ImGui用の変数を定義（Vector構造体は Vector.h 由来）
+	Vector2 spritePosition = { 0.0f, 0.0f };
+	float spriteRotation = 0.0f;
+	Vector2 spriteSize = { 640.0f, 360.0f };
+	Vector4 spriteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 	// メインループ
 	while (winApp->ProcessMessage() == false)
@@ -526,7 +540,7 @@ Vector4 spriteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 		// 入力情報の更新
 		input->Update();
 
-	
+
 		//ImGuiのフレーム開始処理
 		ImGui_ImplDX12_NewFrame();
 		ImGui_ImplWin32_NewFrame();
@@ -583,6 +597,10 @@ Vector4 spriteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 		// スプライト共通設定（ルートシグネチャ、PSO設定）
 		spriteCommon->CommonDrawSettings();
 
+		//3Dオブジェクトの描画準備。3Dオブジェクトの描画に共通のグラフィックスコマンドを積む
+		object3dCommon->CommonDrawSettings();
+
+
 		// スプライト描画
 		sprite->Draw(dxCommon->GetCommandList(), srvHandleGPU);
 
@@ -603,7 +621,10 @@ Vector4 spriteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 	ImGui_ImplDX12_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
-
+	
+	// ===============================
+	// スプライト
+	// ===============================
 	//for (Sprite* pSprite : sprites)
 	//{
 	//	delete pSprite;
@@ -611,7 +632,13 @@ Vector4 spriteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 	//sprites.clear(); // 忘れずにクリア
 	delete sprite;
 	delete spriteCommon;
-	
+
+	// ===============================
+	// object3d
+	// ===============================
+	delete object3dCommon;
+	delete object3d;
+
 	//テクスチャマネージャーの終了
 	TextureManager::GetInstance()->Finalize();
 
