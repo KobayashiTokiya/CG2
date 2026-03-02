@@ -35,7 +35,23 @@ public://メンバ関数
 	//描画
 	void Draw();
 
+	//.mtlファイルの読み取り
+	static MaterialData LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename);
+
+	//.objファイルの読み取り
+	static ModelData LoadObjFile(const std::string& directoryPath, const std::string& filename);
+
 private://
 	Object3dCommon* object3dCommon = nullptr;
+
+	//Objファイルのデータ
+	ModelData modelData;
+
+	//バッファリソース
+	
+	//バッファリソース内のデータを指すポインタ
+	VertexData* vertexData = nullptr;
+	//バッファリソースの使い道を補足するバッファビュー
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 };
 

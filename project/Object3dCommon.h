@@ -15,14 +15,15 @@ public://メンバ関数
 	//描画
 	void Draw();
 
+	//共通描画設定
+	void CommonDrawSettings();
+
+private:
 	//ルートシグネチャの作成
 	void CreateRootSignature();
 
 	//グラフィックスパイプラインの生成
 	void CreateGraphicsPipelineState();
-
-	//共通描画設定
-	void CommonDrawSettings();
 
 public://getterとsetter
 	DirectXCommon* GetDxCommon()const { return dxCommon_; }
