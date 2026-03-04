@@ -2,9 +2,13 @@
 
 void Object3dCommon::Initialize(DirectXCommon* dxCommon)
 {
-	//引数で受け取ってメンバ変数に記録する
+	// 1. まずメンバ変数をセット
 	dxCommon_ = dxCommon;
 
+	// 2. 次に「ルートシグネチャ」を作る（これが先！）
+	CreateRootSignature();
+
+	// 3. そのルートシグネチャを使って「PSO」を作る
 	CreateGraphicsPipelineState();
 }
 

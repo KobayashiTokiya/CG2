@@ -149,7 +149,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	object3dCommon->Initialize(dxCommon);
 
 	Object3d* object3d = new Object3d;
-	object3d->Initialize();
+	object3d->Initialize(object3dCommon);
 
 #pragma region コメントアウト（古い初期化コード）
 	/*
@@ -405,7 +405,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// リソース設定（頂点バッファと同じように作ります）
 	D3D12_HEAP_PROPERTIES heapPropMat{};
 	heapPropMat.Type = D3D12_HEAP_TYPE_UPLOAD;
-
+	Transform
 	D3D12_RESOURCE_DESC resDescMat{};
 	resDescMat.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 	resDescMat.Width = sizeof(TransformationMatrix); // サイズは行列構造体分
