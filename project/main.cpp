@@ -140,6 +140,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	Input* input = new Input();
 	input->Initialize(winApp);
 
+	TextureManager::GetInstance()->Initialize(dxCommon);
 	// ===============================
 	// object3d
 	// ===============================
@@ -571,6 +572,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// スプライトの更新（行列計算など）
 		sprite->Update();
 
+		object3d->Update();
+
 		//for (size_t i = 0; i < sprites.size(); ++i)
 		//{
 		//	Sprite* pSprite = sprites[i];
@@ -600,6 +603,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//3Dオブジェクトの描画準備。3Dオブジェクトの描画に共通のグラフィックスコマンドを積む
 		object3dCommon->CommonDrawSettings();
 
+		object3d->Draw();
 
 		// スプライト描画
 		sprite->Draw(dxCommon->GetCommandList(), srvHandleGPU);

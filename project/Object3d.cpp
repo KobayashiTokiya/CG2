@@ -21,42 +21,64 @@ void Object3d::Initialize(Object3dCommon* object3dCommon)
 	//読み込んだテクスチャの番号を取得
 	modelData.material.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(modelData.material.textureFilePath);
 
-	//Transform変数を作る
-	transform = { {1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} };
-	cameraTransform = { {1.0f,1.0f,1.0f},{0.3f,0.0f,0.0f},{0.0f,4.0f,-10.0f} };
+	// --- モデルの初期位置・大きさ ---
+	transform.scale = { 1.0f, 1.0f, 1.0f };      // 大きさを1倍（等倍）にする
+	transform.rotate = { 0.0f, 0.0f, 0.0f };     // 回転なし
+	transform.translate = { 0.0f, 0.0f, 0.0f };  // 原点(0,0,0)に配置
+
+	// --- カメラの初期位置・大きさ ---
+	cameraTransform.scale = { 1.0f, 1.0f, 1.0f };
+	cameraTransform.rotate = { 0.0f, 0.0f, 0.0f };
+	// ★超重要：カメラをZ軸の手前（マイナス方向）に引いて、モデルを映す！
+	cameraTransform.translate = { 0.0f, 0.0f, -5.0f };
 }
 
 void Object3d::Update()
 {
-	// [TransformからWorldMatrixを作る]
-	// ※MakeAffineMatrixはMatrix.hにある関数名に合わせてください
+	// TransformからWorldMatrixを作る
 	Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
 
-	// [cameraTransformからcameraMatrixを作る]
+	// cameraTransformからcameraMatrixを作る
 	Matrix4x4 cameraMatrix = MatrixMath::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
 
-	// [cameraMatrixからviewMatrixを作る] (逆行列にする)
+	// cameraMatrixからviewMatrixを作る(逆行列にする)
 	Matrix4x4 viewMatrix = MatrixMath::Inverse(cameraMatrix);
 
-	// [ProjectionMatrixを作って透視投影行列を書き込む]
-	// 0.45f:視野角, 1280/720:アスペクト比, 0.1f:近平面, 100.0f:遠平面
+	// ProjectionMatrixを作って透視投影行列を書き込む
 	Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix(0.45f, 1280.0f / 720.0f, 0.1f, 100.0f);
 
 	// --- 行列の合成と転送 ---
 
-	// [transformationMatrixData->WVP = worldMatrix*viewMatrix*projectionMatrix]
-	// C++では * ではなく Multiply 関数を使って掛け合わせます
+	// transformationMatrixData->WVP = worldMatrix*viewMatrix*projectionMatrix
 	Matrix4x4 worldViewProjectionMatrix =MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
 
 	// 定数バッファに書き込む
 	transformationMatrixData->WVP = worldViewProjectionMatrix;
-	// [transformationMatrixData->World = worldMatrix]
+	// transformationMatrixData->World = worldMatrix
 	transformationMatrixData->World = worldMatrix;
 }
 
 void Object3d::Draw()
 {
+	ID3D12GraphicsCommandList* commandList = object3dCommon->GetDxCommon()->GetCommandList();
 
+	// VertexBufferViewを設定
+	commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
+
+	// マテリアルCBufferの場所を設定 (CBV)
+	commandList->SetGraphicsRootConstantBufferView(0, materialResource.Get()->GetGPUVirtualAddress());
+
+	// 座標変換行列CBufferの場所を設定
+	commandList->SetGraphicsRootConstantBufferView(1, transformationResource.Get()->GetGPUVirtualAddress());
+
+	// SRVのDescriptorTableの先頭を設定 (Table)
+	commandList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSrvHandleGPU(modelData.material.textureIndex));
+
+	// 平行光源CBufferの場所を設定 (CBV)
+	commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource.Get()->GetGPUVirtualAddress());
+
+	// 描画(DrawCall/ドローコール)
+	commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
 }
 
 Object3d::MaterialData Object3d::LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename)
@@ -190,16 +212,22 @@ void Object3d::CreateVertexData()
 {
 	DirectXCommon* dxCommon = object3dCommon->GetDxCommon();
 
+	//モデルの実際の頂点数を取得する
+	UINT vertexCount = static_cast<UINT>(modelData.vertices.size());
+
 	//VertexResourceを作る
-	vertexResource = dxCommon->CreateBufferResource(sizeof(VertexData) * 6);
+	vertexResource = dxCommon->CreateBufferResource(sizeof(VertexData) * vertexCount);
 
 	//VertexBufferViewを作成する(値を設定するだけ)
 	vertexBufferView.BufferLocation = vertexResource->GetGPUVirtualAddress();
-	vertexBufferView.SizeInBytes = sizeof(VertexData)*6;
+	vertexBufferView.SizeInBytes = sizeof(VertexData)* vertexCount;
 	vertexBufferView.StrideInBytes = sizeof(VertexData);
 
 	//VertexResourceにデータを書き込むためのアドレスを取得してvertexDataに割り当てる
 	vertexResource->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
+
+	//読み込んだOBJのデータをGPUにコピー(転送)する
+	std::memcpy(vertexData, modelData.vertices.data(), sizeof(VertexData) * vertexCount);
 }
 
 void Object3d::CreateMaterialData()
