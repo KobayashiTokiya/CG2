@@ -50,7 +50,9 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 //3Dオブジェクト
 #include "Object3dCommon.h"
 #include "Object3d.h"
-
+//モデル
+#include"ModelCommon.h"
+#include"Model.h"
 
 #pragma region コメントアウト（構造体・関数）
 
@@ -151,6 +153,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	Object3d* object3d = new Object3d;
 	object3d->Initialize(object3dCommon);
+
+	// ===============================
+	// model
+	// ===============================
+	//ModelCommon を初期化する！
+	ModelCommon* modelCommon = new ModelCommon();
+	modelCommon->Initialize(dxCommon);
+
+	// モデルを生み出して初期化する
+	Model* model = new Model();
+	model->Initialize(modelCommon);
+
+	//オブジェクトにモデルをセットする
+	object3d->SetModel(model);
 
 #pragma region コメントアウト（古い初期化コード）
 	/*
@@ -535,6 +551,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	Vector2 spriteSize = { 640.0f, 360.0f };
 	Vector4 spriteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 
+	// 3Dモデル用のImGui操作変数を準備する
+	Vector3 object3dTranslate = { 0.0f, 0.0f, 0.0f };
+	Vector3 object3dRotate = { 0.0f, 0.0f, 0.0f };
+	Vector3 object3dScale = { 1.0f, 1.0f, 1.0f };
+
 	// メインループ
 	while (winApp->ProcessMessage() == false)
 	{
@@ -547,6 +568,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 
+		// ===============================
+		// スプライト用
+		// ===============================
 		//UIの構築 (スプライトクラスのセッターを使う)
 		ImGui::Begin("Sprite Controller"); // ウィンドウのタイトル
 
@@ -561,6 +585,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		ImGui::End(); // ウィンドウの終わり
 
+
+		// ===============================
+		// モデル用
+		// ===============================
+		// 3Dモデル用のImGuiウィンドウを作る
+		ImGui::Begin("Object3d Controller");
+		ImGui::DragFloat3("Translate", &object3dTranslate.x, 0.01f);
+		ImGui::DragFloat3("Rotate", &object3dRotate.x, 0.01f);
+		ImGui::DragFloat3("Scale", &object3dScale.x, 0.01f);
+		ImGui::End();
+
 		//更新処理
 
 		// ImGuiの値をスプライトに反映
@@ -571,6 +606,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		// スプライトの更新（行列計算など）
 		sprite->Update();
+
+		//ImGuiの値をObject3dにセットする！
+		object3d->SetTranslate(object3dTranslate);
+		object3d->SetRotate(object3dRotate);
+		object3d->SetScale(object3dScale);
 
 		object3d->Update();
 
@@ -642,6 +682,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// ===============================
 	delete object3dCommon;
 	delete object3d;
+
+	// ===============================
+	// model
+	// ===============================
+	delete model;
+	delete modelCommon;
 
 	//テクスチャマネージャーの終了
 	TextureManager::GetInstance()->Finalize();
