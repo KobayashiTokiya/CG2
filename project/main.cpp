@@ -53,6 +53,8 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 //モデル
 #include "ModelManager.h"
 #include"Model.h"
+//カメラ
+#include "Camera.h"
 
 #pragma region コメントアウト（構造体・関数）
 
@@ -165,6 +167,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//オブジェクトにモデルをセットする
 	object3d->SetModel("plane.obj");
+
+	// ===============================
+	// カメラ
+	// ===============================
+	Camera* camera = new Camera();
+	camera->SetRotate({ 0.0f,0.0f,0.0f });
+	camera->SetTranslate({ 0.0f,0.0f,0.0f });
+	object3dCommon->SetDefaultCamera(camera);
 
 #pragma region コメントアウト（古い初期化コード）
 	/*
@@ -594,6 +604,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		ImGui::DragFloat3("Scale", &object3dScale.x, 0.01f);
 		ImGui::End();
 
+		// ===============================
+		// camera用
+		// ===============================
+		
+
 		//更新処理
 
 		// ImGuiの値をスプライトに反映
@@ -611,6 +626,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		object3d->SetScale(object3dScale);
 
 		object3d->Update();
+
+		camera->Update();
 
 		//for (size_t i = 0; i < sprites.size(); ++i)
 		//{

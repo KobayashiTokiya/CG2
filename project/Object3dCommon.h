@@ -4,6 +4,8 @@
 
 #include "DirectXCommon.h"
 
+class Camera;
+
 //3Dオブジェクト
 class Object3dCommon
 {
@@ -28,10 +30,16 @@ private:
 public://getterとsetter
 	DirectXCommon* GetDxCommon()const { return dxCommon_; }
 
+	//カメラ
+	void SetDefaultCamera(Camera* camera) { this->defaultCamera = camera; }
+	Camera* GetDefaultCamera()const { return defaultCamera; }
+
 private:
 	DirectXCommon* dxCommon_ = nullptr;
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature>rootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState>graphicsPipelineState;
+
+	Camera* defaultCamera = nullptr;
 };
 
