@@ -9,33 +9,34 @@
 
 class  SpriteCommon;
 
-//頂点データ
-struct VertexData
-{
-	Vector4 position;
-	Vector2 texcoord;
-	Vector3 normal;
-};
-
-//マテリアル
-struct Material
-{
-	Vector4 color;
-	int32_t enableLighting;
-	float padding[3];
-	Matrix4x4 uvTransform;
-};
-
-//座標変換行列データ
-struct TransformationMatrix
-{
-	Matrix4x4 WVP;
-	Matrix4x4 World;
-};
-
 //スプライト
 class Sprite
 {
+public://インナークラス
+	//頂点データ
+	struct VertexData
+	{
+		Vector4 position;
+		Vector2 texcoord;
+		Vector3 normal;
+	};
+
+	//マテリアル
+	struct Material
+	{
+		Vector4 color;
+		int32_t enableLighting;
+		float padding[3];
+		Matrix4x4 uvTransform;
+	};
+
+	//座標変換行列データ
+	struct TransformationMatrix
+	{
+		Matrix4x4 WVP;
+		Matrix4x4 World;
+	};
+
 public:// メンバ関数
 	//初期化
 	void Initialize(SpriteCommon* spriteCommon,std::string textureFilePath);
