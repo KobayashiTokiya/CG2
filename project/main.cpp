@@ -51,7 +51,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include "Object3dCommon.h"
 #include "Object3d.h"
 //モデル
-#include"ModelCommon.h"
+#include "ModelManager.h"
 #include"Model.h"
 
 #pragma region コメントアウト（構造体・関数）
@@ -157,16 +157,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// ===============================
 	// model
 	// ===============================
-	//ModelCommon を初期化する！
-	ModelCommon* modelCommon = new ModelCommon();
-	modelCommon->Initialize(dxCommon);
+	// 3Dモデルマネージャーの初期化
+	ModelManager::GetInstance()->Initialize(dxCommon);
 
-	// モデルを生み出して初期化する
-	Model* model = new Model();
-	model->Initialize(modelCommon);
+	ModelManager::GetInstance()->LoadModel("plane.obj");
+	ModelManager::GetInstance()->LoadModel("axis.obj");
 
 	//オブジェクトにモデルをセットする
-	object3d->SetModel(model);
+	object3d->SetModel("plane.obj");
 
 #pragma region コメントアウト（古い初期化コード）
 	/*
@@ -686,8 +684,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// ===============================
 	// model
 	// ===============================
-	delete model;
-	delete modelCommon;
+	// 3Dモデルマネージャーの終了
+	ModelManager::GetInstance()->Finalize();
 
 	//テクスチャマネージャーの終了
 	TextureManager::GetInstance()->Finalize();

@@ -1,6 +1,7 @@
 #include "Object3d.h"
 #include "Object3dCommon.h"
 #include "Model.h"
+#include "ModelManager.h"
 
 void Object3d::Initialize(Object3dCommon* object3dCommon)
 {
@@ -66,7 +67,6 @@ void Object3d::Draw()
 	}
 }
 
-
 #pragma region 初期化用データ作成関数群
 void Object3d::CreateTransformationData()
 {
@@ -99,3 +99,9 @@ void Object3d::CreateDirectionalLightData()
 	directionalLightData->intensity = 1.0f;                        // 明るさ（1.0が基本）
 }
 #pragma endregion
+
+void Object3d::SetModel(const std::string& filePath)
+{
+	//モデルを検索してセットする
+	model = ModelManager::GetInstance()->FindModel(filePath);
+}

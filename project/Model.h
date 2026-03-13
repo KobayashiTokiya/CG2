@@ -14,6 +14,7 @@
 
 class ModelCommon;
 
+
 //3Dモデル
 class Model
 {
@@ -52,7 +53,7 @@ public://インナークラス
 
 public:// メンバ関数
 	//初期化
-	void Initialize(ModelCommon* modelCommon);
+	void Initialize(ModelCommon* modelCommon, const std::string directorypath, const std::string& filename);
 	void Draw();
 
 	//.mtlファイルの読み取り

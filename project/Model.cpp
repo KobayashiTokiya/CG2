@@ -2,13 +2,13 @@
 #include "TextureManager.h"
 #include "ModelCommon.h"
 
-void Model::Initialize(ModelCommon* modelCommon)
+void Model::Initialize(ModelCommon* modelCommon, const std::string directorypath, const std::string& filename)
 {
 	//ModelCommonのポインタを引数からメンバ変数に記録する
 	modelCommon_ = modelCommon;
 
 	//モデル読み込み
-	modelData_ = LoadObjFile("Resource", "plane.obj");
+	modelData_ = LoadObjFile(directorypath,filename);
 
 	// 頂点データの初期化
 	CreateVertexData();
