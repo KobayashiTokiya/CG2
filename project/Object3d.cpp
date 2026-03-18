@@ -2,6 +2,7 @@
 #include "Object3dCommon.h"
 #include "Model.h"
 #include "ModelManager.h"
+#include "Camera.h"
 
 void Object3d::Initialize(Object3dCommon* object3dCommon)
 {
@@ -17,31 +18,27 @@ void Object3d::Initialize(Object3dCommon* object3dCommon)
 	transform.rotate = { 0.0f, 0.0f, 0.0f };     // 回転なし
 	transform.translate = { 0.0f, 0.0f, 0.0f };  // 原点(0,0,0)に配置
 
-	// --- カメラの初期位置・大きさ ---
-	cameraTransform.scale = { 1.0f, 1.0f, 1.0f };
-	cameraTransform.rotate = { 0.0f, 0.0f, 0.0f };
-	// ★超重要：カメラをZ軸の手前（マイナス方向）に引いて、モデルを映す！
-	cameraTransform.translate = { 0.0f, 0.0f, -5.0f };
+	this->camera = object3dCommon->GetDefaultCamera();
 }
 
 void Object3d::Update()
 {
 	// TransformからWorldMatrixを作る
 	Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
-
-	// cameraTransformからcameraMatrixを作る
-	Matrix4x4 cameraMatrix = MatrixMath::MakeAffineMatrix(cameraTransform.scale, cameraTransform.rotate, cameraTransform.translate);
-
-	// cameraMatrixからviewMatrixを作る(逆行列にする)
-	Matrix4x4 viewMatrix = MatrixMath::Inverse(cameraMatrix);
-
-	// ProjectionMatrixを作って透視投影行列を書き込む
-	Matrix4x4 projectionMatrix = MatrixMath::MakePerspectiveFovMatrix(0.45f, 1280.0f / 720.0f, 0.1f, 100.0f);
-
 	// --- 行列の合成と転送 ---
 
 	// transformationMatrixData->WVP = worldMatrix*viewMatrix*projectionMatrix
-	Matrix4x4 worldViewProjectionMatrix =MatrixMath::Multiply(worldMatrix, MatrixMath::Multiply(viewMatrix, projectionMatrix));
+	Matrix4x4 worldViewProjectionMatrix;
+
+	if (camera)
+	{
+		const Matrix4x4& viewProjectionMatrix = camera->GetViewProjectionMatrix();
+		worldViewProjectionMatrix = MatrixMath::Multiply(worldMatrix, viewProjectionMatrix);
+	}
+	else
+	{
+		worldViewProjectionMatrix = worldMatrix;
+	}
 
 	// 定数バッファに書き込む
 	transformationMatrixData->WVP = worldViewProjectionMatrix;

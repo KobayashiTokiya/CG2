@@ -53,6 +53,8 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 //モデル
 #include "ModelManager.h"
 #include"Model.h"
+//カメラ
+#include "Camera.h"
 
 #pragma region コメントアウト（構造体・関数）
 
@@ -143,6 +145,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	input->Initialize(winApp);
 
 	TextureManager::GetInstance()->Initialize(dxCommon);
+	
 	// ===============================
 	// object3d
 	// ===============================
@@ -150,6 +153,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//3Dオブジェクト共通部の初期化
 	object3dCommon = new Object3dCommon;
 	object3dCommon->Initialize(dxCommon);
+
+	// ===============================
+	// カメラ
+	// ===============================
+	Camera* camera = new Camera();
+	camera->SetRotate({ 0.0f,0.0f,0.0f });
+	camera->SetTranslate({ 0.0f,0.0f,0.0f });
+	object3dCommon->SetDefaultCamera(camera);
 
 	Object3d* object3d = new Object3d;
 	object3d->Initialize(object3dCommon);
@@ -166,6 +177,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//オブジェクトにモデルをセットする
 	object3d->SetModel("plane.obj");
 
+	
 #pragma region コメントアウト（古い初期化コード）
 	/*
 	ID3D12Device* device = dxCommon->GetDevice();
@@ -554,6 +566,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	Vector3 object3dRotate = { 0.0f, 0.0f, 0.0f };
 	Vector3 object3dScale = { 1.0f, 1.0f, 1.0f };
 
+	//カメラ
+	Vector3 cameraTranslate = { 0.0f, 0.0f, -10.0f };
+	Vector3 cameraRotate = { 0.0f, 0.0f, 0.0f };
+
 	// メインループ
 	while (winApp->ProcessMessage() == false)
 	{
@@ -567,50 +583,60 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		ImGui::NewFrame();
 
 		// ===============================
-		// スプライト用
+		// ImGui
+		// UIの構築 (スプライトクラスのセッターを使う)
 		// ===============================
-		//UIの構築 (スプライトクラスのセッターを使う)
+		
+		// スプライト用
 		ImGui::Begin("Sprite Controller"); // ウィンドウのタイトル
-
-		// スプライトの座標
-		ImGui::DragFloat2("Position", &spritePosition.x, 1.0f);
-		// スプライトの回転
-		ImGui::DragFloat("Rotation", &spriteRotation, 0.01f);
-		// スプライトのサイズ
-		ImGui::DragFloat2("Size", &spriteSize.x, 1.0f);
-		// 色
-		ImGui::ColorEdit4("Color", &spriteColor.x);
-
+		ImGui::DragFloat2("Position", &spritePosition.x, 1.0f);	//座標
+		ImGui::DragFloat("Rotation", &spriteRotation, 0.01f);	//回転
+		ImGui::DragFloat2("Size", &spriteSize.x, 1.0f);		    //サイズ
+		ImGui::ColorEdit4("Color", &spriteColor.x);	            //色
 		ImGui::End(); // ウィンドウの終わり
 
-
-		// ===============================
-		// モデル用
-		// ===============================
-		// 3Dモデル用のImGuiウィンドウを作る
+		// 3Dモデル用
 		ImGui::Begin("Object3d Controller");
 		ImGui::DragFloat3("Translate", &object3dTranslate.x, 0.01f);
 		ImGui::DragFloat3("Rotate", &object3dRotate.x, 0.01f);
 		ImGui::DragFloat3("Scale", &object3dScale.x, 0.01f);
 		ImGui::End();
 
-		//更新処理
+		// camera用
+		ImGui::Begin("Camera Controller");
+		ImGui::DragFloat3("Translate", &cameraTranslate.x,0.01f);
+		ImGui::DragFloat3("Rotate", &cameraRotate.x, 0.01f);
+		ImGui::End();
 
-		// ImGuiの値をスプライトに反映
+		//更新処理
+		
+		// ===============================
+		// ImGuiの値を反映
+		// ===============================
+		// スプライト
 		sprite->SetPosition(spritePosition);
 		sprite->SetRotation(spriteRotation);
 		sprite->SetSize(spriteSize);
 		sprite->SetColor(spriteColor);
 
-		// スプライトの更新（行列計算など）
-		sprite->Update();
-
-		//ImGuiの値をObject3dにセットする！
+		//Object3d
 		object3d->SetTranslate(object3dTranslate);
 		object3d->SetRotate(object3dRotate);
 		object3d->SetScale(object3dScale);
 
+		//ImGuiの値をカメラにセットする！
+		camera->SetTranslate(cameraTranslate);
+		camera->SetRotate(cameraRotate);
+
+		// ===============================
+		// 更新（行列計算など）
+		// ===============================
+		// カメラ
+		camera->Update();
+		// object3d
 		object3d->Update();
+		// スプライト
+		sprite->Update();
 
 		//for (size_t i = 0; i < sprites.size(); ++i)
 		//{
@@ -665,8 +691,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	ImGui::DestroyContext();
 	
 	// ===============================
-	// スプライト
+	// 解放処理
 	// ===============================
+	
+	// スプライト
 	//for (Sprite* pSprite : sprites)
 	//{
 	//	delete pSprite;
@@ -675,15 +703,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	delete sprite;
 	delete spriteCommon;
 
-	// ===============================
 	// object3d
-	// ===============================
 	delete object3dCommon;
 	delete object3d;
 
-	// ===============================
+	// カメラ
+	delete camera;
+
 	// model
-	// ===============================
 	// 3Dモデルマネージャーの終了
 	ModelManager::GetInstance()->Finalize();
 

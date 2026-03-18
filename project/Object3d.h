@@ -12,6 +12,7 @@
 class Object3dCommon;
 class Model; //Modelクラスを使うための先行宣言
 class ModelManager;
+class Camera;
 
 //3Dオブジェクト
 class Object3d
@@ -55,6 +56,8 @@ public://セッターとゲッター
 	const Vector3& GetRotate()const { return transform.rotate; }
 	const Vector3& GetTranslate()const { return transform.translate; }
 
+	//カメラ
+	void SetCamera(Camera* camera) { this->camera = camera; }
 
 private:// 非公開メンバ関数
 	void CreateTransformationData();   //座標変換行列データ作成用の関数
@@ -82,5 +85,8 @@ private://
 
 	Transform transform;
 	Transform cameraTransform;
+
+	Camera* camera = nullptr;
+
 };
 
