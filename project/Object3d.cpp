@@ -18,12 +18,6 @@ void Object3d::Initialize(Object3dCommon* object3dCommon)
 	transform.rotate = { 0.0f, 0.0f, 0.0f };     // 回転なし
 	transform.translate = { 0.0f, 0.0f, 0.0f };  // 原点(0,0,0)に配置
 
-	// --- カメラの初期位置・大きさ ---
-	cameraTransform.scale = { 1.0f, 1.0f, 1.0f };
-	cameraTransform.rotate = { 0.0f, 0.0f, 0.0f };
-	// ★超重要：カメラをZ軸の手前（マイナス方向）に引いて、モデルを映す！
-	cameraTransform.translate = { 0.0f, 0.0f, -5.0f };
-
 	this->camera = object3dCommon->GetDefaultCamera();
 }
 
