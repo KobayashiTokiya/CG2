@@ -454,10 +454,6 @@ void DirectXCommon::PreDraw()
 	// 画面全体の深度をクリア
 	//指定した深度で画面全体をクリアする
 	commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
-	// SRV用のデスクリプタヒープを指定する
-	ID3D12DescriptorHeap* descriptorHeaps[] = { srvDscriptorHeap_.Get()};
-	commandList_->SetDescriptorHeaps(1, descriptorHeaps);
 	
 	// ビューポート領域の設定
 	commandList_->RSSetViewports(1, &viewport_);
