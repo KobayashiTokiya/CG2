@@ -29,6 +29,8 @@ public:
 
 	void PreDraw();
 
+	void SetGraphicsRootDescriptorTable(UINT RootParameterIndex,uint32_t srvIndex);
+
 private:
 	DirectXCommon* directXCommon = nullptr;
 

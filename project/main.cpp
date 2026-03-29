@@ -55,6 +55,8 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include"Model.h"
 //カメラ
 #include "Camera.h"
+//SRVマネージャー
+#include "SrvManager.h"
 
 #pragma region コメントアウト（構造体・関数）
 
@@ -134,6 +136,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//DirectXの初期化
 	dxCommon = new DirectXCommon();
 	dxCommon->Initialize(winApp);
+	
+	SrvManager* srvManeger = nullptr;
+	//SRVマネージャーの初期化
+	srvManeger = new SrvManager();
+	srvManeger->Initialize(dxCommon);
 
 	SpriteCommon* spriteCommon = nullptr;
 	//スプライト共通部の初期化
@@ -144,7 +151,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	Input* input = new Input();
 	input->Initialize(winApp);
 
-	TextureManager::GetInstance()->Initialize(dxCommon);
+	TextureManager::GetInstance()->Initialize(dxCommon,srvManeger);
 	
 	// ===============================
 	// object3d
@@ -482,7 +489,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	*/
 #pragma endregion
 
-	TextureManager::GetInstance()->Initialize(dxCommon);
+	TextureManager::GetInstance()->Initialize(dxCommon,srvManeger);
 
 	// テクスチャを読み込む (内部でリソース生成～SRV作成までやってくれる)
 	TextureManager::GetInstance()->LoadTexture("Resource/uvChecker.png");
@@ -661,6 +668,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// 描画前処理（画面クリアなど）
 		dxCommon->PreDraw();
 
+		//SrvManagerにSRVヒープをセットしてもらう
+		srvManeger->PreDraw();
+
 		// スプライト共通設定（ルートシグネチャ、PSO設定）
 		spriteCommon->CommonDrawSettings();
 
@@ -716,6 +726,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//テクスチャマネージャーの終了
 	TextureManager::GetInstance()->Finalize();
+
+	//SRVマネージャー
+	delete srvManeger;
 
 	delete dxCommon;
 	delete input;

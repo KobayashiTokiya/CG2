@@ -1,5 +1,6 @@
 #include "TextureManager.h"
 #include "DirectXCommon.h" 
+#include "SrvManager.h"
 
 // static変数の実体化
 TextureManager* TextureManager::instance = nullptr;
@@ -26,10 +27,11 @@ void TextureManager::Finalize()
 
 // 初期化
 // ★重要変更：ここで DirectXCommon のポインタを受け取って保存します
-void TextureManager::Initialize(DirectXCommon* dxCommon)
+void TextureManager::Initialize(DirectXCommon* dxCommon, SrvManager* srvManager)
 {
 	// メンバ変数に保存 (これを忘れると LoadTexture でクラッシュします)
 	this->dxCommon = dxCommon;
+	this->srvManager = srvManager;
 
 	// SRVの数と同数予約
 	textureDatas.reserve(DirectXCommon::kMaxSRVCount);
@@ -71,21 +73,16 @@ void TextureManager::LoadTexture(const std::string& filePath)
 	textureData.intermediateResource = dxCommon->UploadTextureData(textureData.resource.Get(), mipImages);
 
 	// --- 3. SRV 生成 ---
-	uint32_t srvIndex = static_cast<uint32_t>(textureDatas.size() - 1) + kSRVIndexTop; // ImGui用に+1
+	uint32_t srvIndex = srvManager->Allocate();
 
-	textureData.srvHandleCPU = dxCommon->GetSRVCPUDescriptorHandle(srvIndex);
-	textureData.srvHandleGPU = dxCommon->GetSRVGPUDescriptorHandle(srvIndex);
+	textureData.srvHandleCPU = srvManager->GetCPUDescriptorHandle(srvIndex);
+	textureData.srvHandleGPU = srvManager->GetGPUDescriptorHandle(srvIndex);
 
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-	srvDesc.Format = textureData.metadata.format;
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MipLevels = UINT(textureData.metadata.mipLevels);
-
-	dxCommon->GetDevice()->CreateShaderResourceView(
+	srvManager->CreateSRVforTexture2D(
+		srvIndex,
 		textureData.resource.Get(),
-		&srvDesc,
-		textureData.srvHandleCPU
+		textureData.metadata.format,
+		UINT(textureData.metadata.mipLevels)
 	);
 }
 

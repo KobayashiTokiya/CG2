@@ -8,6 +8,7 @@
 
 // 前方宣言
 class DirectXCommon;
+class SrvManager;
 
 // テクスチャマネージャー
 class TextureManager
@@ -19,7 +20,7 @@ public:
 	void Finalize();
 
 	// 初期化
-	void Initialize(DirectXCommon* dxCommon);
+	void Initialize(DirectXCommon* dxCommon,SrvManager* srvManager);
 
 	// テクスチャファイルの読み込み
 	void LoadTexture(const std::string& filePath);
@@ -44,7 +45,7 @@ private:
 	TextureManager& operator=(TextureManager&) = delete;
 
 	DirectXCommon* dxCommon = nullptr;
-
+	SrvManager* srvManager = nullptr;
 private:
 	// テクスチャ1枚分のデータ
 	struct TextureData

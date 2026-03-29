@@ -83,3 +83,8 @@ void SrvManager::PreDraw()
 	ID3D12DescriptorHeap* descriptorHeaps[] = { descriptorHeap.Get() };
 	directXCommon->GetCommandList()->SetDescriptorHeaps(1, descriptorHeaps);
 }
+
+void SrvManager::SetGraphicsRootDescriptorTable(UINT RootParameterIndex, uint32_t srvIndex)
+{
+	directXCommon->GetCommandList()->SetGraphicsRootDescriptorTable(RootParameterIndex, GetGPUDescriptorHandle(srvIndex));
+}
