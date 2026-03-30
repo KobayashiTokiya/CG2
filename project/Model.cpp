@@ -22,7 +22,7 @@ void Model::Initialize(ModelCommon* modelCommon, const std::string directorypath
 
 	// テクスチャ番号を取得して、メンバ変数に書き込む
 	// modelData_ の中の material (MaterialData構造体) に textureIndex を保存します
-	modelData_.material.textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(modelData_.material.textureFilePath);
+	modelData_.material.textureIndex = TextureManager::GetInstance()->GetSrvIndex(modelData_.material.textureFilePath);
 }
 
 void Model::Draw()

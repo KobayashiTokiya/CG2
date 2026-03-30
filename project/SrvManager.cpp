@@ -88,3 +88,9 @@ void SrvManager::SetGraphicsRootDescriptorTable(UINT RootParameterIndex, uint32_
 {
 	directXCommon->GetCommandList()->SetGraphicsRootDescriptorTable(RootParameterIndex, GetGPUDescriptorHandle(srvIndex));
 }
+
+bool SrvManager::CanAllocate()
+{
+	// 次に使う番号（useIndex）が、最大数（kMaxSRVCount）より小さければまだ余裕がある！
+	return useIndex < kMaxSRVCount;
+}

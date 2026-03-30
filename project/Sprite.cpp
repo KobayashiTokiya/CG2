@@ -10,7 +10,9 @@ void Sprite::Initialize(SpriteCommon* spriteCommon, std::string textureFilePath)
 	this->spriteCommon = spriteCommon;
 
 	//単位行列を書き込んでおく
-	textureIndex = TextureManager::GetInstance()->GetTextureIndexByFilePath(textureFilePath);
+	//textureIndex = TextureManager::GetInstance()->GetSrvIndex(textureFilePath);
+
+	this->textureFilePath = textureFilePath;
 
 	//初期サイズを画像の解像度に合わせる
 	AdjustTextureSize();
@@ -71,7 +73,7 @@ void Sprite::Draw(ID3D12GraphicsCommandList* commandList, const D3D12_GPU_DESCRI
 
 	//SRV（テクスチャ）のDescriptorTableを設定
 	// シェーダーのパラメータ番号2番に設定
-	commandList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSrvHandleGPU(textureIndex));
+	commandList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSrvHandleGPU(this->textureFilePath));
 
 	//描画！(DrawCall)
 	// 6頂点（三角形2枚分）を描画する
@@ -112,7 +114,7 @@ void Sprite::CreateVertexData()
 
 	//画像の元サイズ（メタデータ）を取得
 	const DirectX::TexMetadata& metadata =
-	TextureManager::GetInstance()->GetMetaData(textureIndex);
+	TextureManager::GetInstance()->GetMetaData(this->textureFilePath);
 
 	//左上座標とサイズを、0.0～1.0 の比率（UV座標）に変換
 	float tex_left = textureLeftTop.x / metadata.width;
@@ -197,7 +199,7 @@ void Sprite::CreateTransformationMatrixData()
 void Sprite::AdjustTextureSize()
 {
 	// テクスチャメタデータを取得
-	const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(textureIndex);
+	const DirectX::TexMetadata& metadata = TextureManager::GetInstance()->GetMetaData(this->textureFilePath);
 
 	// 切り出しサイズを画像の解像度に合わせる
 	textureSize.x = static_cast<float>(metadata.width);
