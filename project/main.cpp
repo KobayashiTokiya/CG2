@@ -726,7 +726,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// model
 	// 3Dモデルマネージャーの終了
 	ModelManager::GetInstance()->Finalize();
-
+	
 	//テクスチャマネージャーの終了
 	TextureManager::GetInstance()->Finalize();
 
