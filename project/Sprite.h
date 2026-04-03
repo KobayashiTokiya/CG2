@@ -105,6 +105,8 @@ private://メンバ関数(内部用)
 
 private:
 	SpriteCommon* spriteCommon = nullptr;
+	//テクスチャファイルパス(名前)
+	std::string textureFilePath;
 
 	//頂点データ
 	//バッファリソース
