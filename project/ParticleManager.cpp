@@ -21,15 +21,63 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,SrvManager* srvManager)
 	CreateRootSignature();
 	CreateGraphicsPipelineState();
 
-	for (int  i = 0; i < static_cast<int>(BlendMode::kCountOfBlendMode); ++i)
-	{
-		//モードに応じたブレンド設定をセット
-	
+	ID3D12Device* device = dxCommon_->GetDevice();
+	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
+	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
 
+	D3D12_RESOURCE_DESC resourceDesc{};
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resourceDesc.Width = sizeof(ParticleForGPU) * kNumInstances; // ★ 10個分のサイズ！
+	resourceDesc.Height = 1;
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.MipLevels = 1;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+	HRESULT hr = device->CreateCommittedResource(
+		&uploadHeapProperties, D3D12_HEAP_FLAG_NONE,
+		&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+		IID_PPV_ARGS(&instancingResource)
+	);
+	assert(SUCCEEDED(hr));
+
+	// ★ バッファに書き込むためのポインタを取得
+	instancingResource->Map(0, nullptr, reinterpret_cast<void**>(&instancingData));
+
+	// 10個の初期位置を適当に横に並べておく
+	for (int i = 0; i < kNumInstances; ++i)
+	{
+		positions_[i] = { (float)i - 5.0f, 0.0f, 0.0f }; // 横一列に並べる
 	}
 }
 
+void ParticleManager::Update()
+{
+	for (int i = 0; i < kNumInstances; ++i)
+	{
+		positions_[i].x += 0.01f;
+		if (positions_[i].x>5.0f)
+		{
+			positions_[i].x = -5.0f;
+		}
+		Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, positions_[i]);
 
+		instancingData[i].world = worldMatrix;
+		instancingData[i].WVP = worldMatrix;
+	}
+}
+
+void ParticleManager::Draw()
+{
+	auto commandList = dxCommon_->GetCommandList();
+
+	commandList->SetGraphicsRootSignature(rootSignature_.Get());
+	commandList->SetPipelineState(graphicsPipelineState_[static_cast<int>(BlendMode::kBlendModeAdd)].Get());
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	commandList->DrawInstanced(6, kNumInstances, 0, 0);
+
+}
 	
 void ParticleManager::CreateRootSignature()
 {

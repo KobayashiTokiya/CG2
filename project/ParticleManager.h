@@ -23,6 +23,12 @@ enum class BlendMode
 	kCountOfBlendMode   // 総数
 };
 
+struct ParticleForGPU
+{
+	Matrix4x4 WVP;
+	Matrix4x4 world;
+};
+
 class ParticleManager
 {
 public:
@@ -31,6 +37,10 @@ public:
 
 	//初期化
 	void Initialize(DirectXCommon* dxCommon, SrvManager* srvManager);
+	//更新
+	void Update();
+	//描画
+	void Draw();
 
 	D3D12_BLEND_DESC GetBlendDesc(BlendMode mode);
 private:
@@ -57,5 +67,14 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature>rootSignature_;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState>graphicsPipelineState_[static_cast<int>(BlendMode::kCountOfBlendMode)];
+
+	static const int kNumInstances = 10;
+
+	Vector3 positions_[kNumInstances];
+
+	Microsoft::WRL::ComPtr<ID3D12Resource>instancingResource;
+	ParticleForGPU* instancingData = nullptr; //書き込み用のポイント
+
+
 };
 
