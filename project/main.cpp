@@ -27,10 +27,10 @@
 #include "Matrix.h"
 #include "Vector.h"
 
-//#include "externals/imgui/imgui.h"
-//#include "externals/imgui/imgui_impl_dx12.h"
-//#include "externals/imgui/imgui_impl_win32.h"
-//extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM IParam);
+#include "externals/imgui/imgui.h"
+#include "externals/imgui/imgui_impl_dx12.h"
+#include "externals/imgui/imgui_impl_win32.h"
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM IParam);
 
 
 #pragma comment(lib,"d3d12.lib")
@@ -568,6 +568,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	float spriteRotation = 0.0f;
 	Vector2 spriteSize = { 640.0f, 360.0f };
 	Vector4 spriteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+	bool spriteSwitch = true;
 
 	// 3Dモデル用のImGui操作変数を準備する
 	Vector3 object3dTranslate = { 0.0f, 0.0f, 0.0f };
@@ -586,9 +587,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 		//ImGuiのフレーム開始処理
-		//ImGui_ImplDX12_NewFrame();
-		//ImGui_ImplWin32_NewFrame();
-		//ImGui::NewFrame();
+		ImGui_ImplDX12_NewFrame();
+		ImGui_ImplWin32_NewFrame();
+		ImGui::NewFrame();
 
 		// ===============================
 		// ImGui
@@ -596,12 +597,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// ===============================
 		
 		// スプライト用
-		/*
+		
 		ImGui::Begin("Sprite Controller"); // ウィンドウのタイトル
 		ImGui::DragFloat2("Position", &spritePosition.x, 1.0f);	//座標
 		ImGui::DragFloat("Rotation", &spriteRotation, 0.01f);	//回転
 		ImGui::DragFloat2("Size", &spriteSize.x, 1.0f);		    //サイズ
 		ImGui::ColorEdit4("Color", &spriteColor.x);	            //色
+		ImGui::Checkbox("Switch", &spriteSwitch);
 		ImGui::End(); // ウィンドウの終わり
 
 		// 3Dモデル用
@@ -616,7 +618,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		ImGui::DragFloat3("Translate", &cameraTranslate.x,0.01f);
 		ImGui::DragFloat3("Rotate", &cameraRotate.x, 0.01f);
 		ImGui::End();
-		*/
+		
 
 		//更新処理
 		
@@ -683,7 +685,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		object3d->Draw();
 
 		// スプライト描画
-		sprite->Draw(dxCommon->GetCommandList(), srvHandleGPU);
+		if (spriteSwitch)
+		{
+			sprite->Draw(dxCommon->GetCommandList(), srvHandleGPU);
+		}
+		
 
 		//for (Sprite* pSprite :sprites)
 		//{
@@ -692,17 +698,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 		// ImGuiの内部コマンド生成
-		//ImGui::Render();
+		ImGui::Render();
 		// ImGuiの描画コマンドを発行
-		//ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon->GetCommandList());
+		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon->GetCommandList());
 
 		// 描画後処理（フリップなど）
 		dxCommon->PostDraw();
 	}
 	// ImGuiの終了処理
-	//ImGui_ImplDX12_Shutdown();
-	//ImGui_ImplWin32_Shutdown();
-	//ImGui::DestroyContext();
+	ImGui_ImplDX12_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
 	
 	// ===============================
 	// 解放処理

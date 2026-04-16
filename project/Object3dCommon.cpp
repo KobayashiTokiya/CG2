@@ -183,9 +183,17 @@ void Object3dCommon::CreateGraphicsPipelineState()
 	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
 	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
-	HRESULT hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc,
-		IID_PPV_ARGS(&graphicsPipelineState));
-	assert(SUCCEEDED(hr));
+	for (int i = 0; i < static_cast<int>(BlendMode::kCountOfBlendMode); i++)
+	{
+		BlendMode mode = static_cast<BlendMode>(i);
+
+		graphicsPipelineStateDesc.BlendState =GetBlendDesc(mode);
+
+		HRESULT hr = device->CreateGraphicsPipelineState(&graphicsPipelineStateDesc,
+			IID_PPV_ARGS(&graphicsPipelineState[i]));
+		assert(SUCCEEDED(hr));
+	}
+	
 }
 
 void Object3dCommon::CommonDrawSettings()
@@ -197,8 +205,51 @@ void Object3dCommon::CommonDrawSettings()
 	commandList->SetGraphicsRootSignature(rootSignature.Get());
 
 	//グラフィックパイプラインステートをセットするコマンド
-	commandList->SetPipelineState(graphicsPipelineState.Get());
+	//commandList->SetPipelineState(graphicsPipelineState.Get());
 
 	//プリミティブトポロジーをセットするコマンド
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+}
+
+D3D12_BLEND_DESC Object3dCommon::GetBlendDesc(BlendMode mode)
+{
+	D3D12_BLEND_DESC blendDesc{};
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+	blendDesc.RenderTarget[0].BlendEnable = TRUE;
+
+	//アルファチャンネル設定(共通)
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+
+	switch (mode)
+	{
+	case BlendMode::kBlendModeNormal:   //通常
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+		break;
+	case BlendMode::kBlendModeAdd:      //加算
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		break;
+	case BlendMode::kBlendModeSubtract: //減算
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_REV_SUBTRACT;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		break;
+	case BlendMode::kBlendModeMultiply: //乗算
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_ZERO;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_SRC_COLOR;
+		break;
+	case BlendMode::kBlendModeScreen:   //スクリーン
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_INV_DEST_COLOR;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		break;
+	}
+	return blendDesc;
+
 }

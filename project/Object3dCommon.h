@@ -3,6 +3,7 @@
 #include<wrl.h>
 
 #include "DirectXCommon.h"
+#include "ParticleManager.h"
 
 class Camera;
 
@@ -34,11 +35,14 @@ public://getterとsetter
 	void SetDefaultCamera(Camera* camera) { this->defaultCamera = camera; }
 	Camera* GetDefaultCamera()const { return defaultCamera; }
 
+	//ブレンドモード
+	ID3D12PipelineState* GetPipelinestate(BlendMode mode) { return graphicsPipelineState[static_cast<int>(mode)].Get(); }
+	D3D12_BLEND_DESC GetBlendDesc(BlendMode mode);
 private:
 	DirectXCommon* dxCommon_ = nullptr;
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature>rootSignature;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState>graphicsPipelineState;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState>graphicsPipelineState[static_cast<int>(BlendMode::kCountOfBlendMode)];
 
 	Camera* defaultCamera = nullptr;
 };

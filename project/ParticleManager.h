@@ -5,6 +5,8 @@
 #include <list>
 #include <unordered_map>
 #include <string>
+#include <wrl.h>
+#include <d3d12.h>
 
 struct VertexParticle
 {
@@ -30,13 +32,21 @@ public:
 	//初期化
 	void Initialize(DirectXCommon* dxCommon, SrvManager* srvManager);
 
+	D3D12_BLEND_DESC GetBlendDesc(BlendMode mode);
+private:
+	//ルートシグネチャの作成
+	void CreateRootSignature();
+
+	//グラフィックスパイプラインの生成
+	void CreateGraphicsPipelineState();
+
 private:
 	ParticleManager() = default;
 	~ParticleManager()= default;
 	ParticleManager(const ParticleManager&) = delete;
 	ParticleManager& operator=(const ParticleManager&) = delete;
 
-	D3D12_BLEND_DESC GetBlendDesc(BlendMode mode);
+
 private:
 	//メンバ変数に記録するためのポインタ
 	DirectXCommon* dxCommon_ = nullptr;
@@ -45,12 +55,7 @@ private:
 	//ランダムエンジン
 	std::mt19937 randomEngine_;
 
-private:
-	//ルートシグネチャの作成
-	void CreateRootSignature();
-
-	//グラフィックスパイプラインの生成
-	void CreateGraphicsPipelineState();
-
+	Microsoft::WRL::ComPtr<ID3D12RootSignature>rootSignature_;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState>graphicsPipelineState_[static_cast<int>(BlendMode::kCountOfBlendMode)];
 };
 

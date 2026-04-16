@@ -1,4 +1,7 @@
 #include "ParticleManager.h"
+#include <d3d12.h>
+#include<wrl.h>
+
 
 ParticleManager* ParticleManager::GetInstance()
 {
@@ -85,7 +88,7 @@ void ParticleManager::CreateRootSignature()
 		0,
 		signatureBlob->GetBufferPointer(),
 		signatureBlob->GetBufferSize(),
-		IID_PPV_ARGS(&rootSignature_)); // ★メンバ変数に入れる
+		IID_PPV_ARGS(&rootSignature_));
 
 	assert(SUCCEEDED(hr));
 
@@ -128,7 +131,7 @@ void ParticleManager::CreateGraphicsPipelineState()
 
 	// PSOの共通設定
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineDesc{};
-	pipelineDesc.pRootSignature = rootSignature_;
+	pipelineDesc.pRootSignature = rootSignature_.Get();
 	pipelineDesc.InputLayout = inputLayoutDesc;
 	pipelineDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
 	pipelineDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
@@ -150,7 +153,7 @@ void ParticleManager::CreateGraphicsPipelineState()
 		pipelineDesc.BlendState = GetBlendDesc(mode);
 
 		// パイプラインを配列に保存
-		HRESULT hr = device->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(&graphicsPipelineStates_[i]));
+		HRESULT hr = device->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(&graphicsPipelineState_[i]));
 		assert(SUCCEEDED(hr));
 	}
 }
