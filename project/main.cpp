@@ -689,7 +689,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//{
 		//	pSprite->Draw(dxCommon->GetCommandList(), srvHandleGPU);
 		//}
-
+		 
 		// ImGuiの内部コマンド生成
 		ImGui::Render();
 		// ImGuiの描画コマンドを発行
