@@ -57,6 +57,8 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include "Camera.h"
 //SRVマネージャー
 #include "SrvManager.h"
+//パーティクル
+#include "ParticleManager.h"
 
 #pragma region コメントアウト（構造体・関数）
 
@@ -185,7 +187,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//オブジェクトにモデルをセットする
 	object3d->SetModel("plane.obj");
 
-	
+	// ===============================
+	//  particle
+	// ===============================
+	ParticleManager::GetInstance()->Initialize(dxCommon, srvManeger);
+
 #pragma region コメントアウト（古い初期化コード）
 	/*
 	ID3D12Device* device = dxCommon->GetDevice();
@@ -649,6 +655,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		object3d->Update();
 		// スプライト
 		sprite->Update();
+		//パーティクル
+		ParticleManager::GetInstance()->Update();
 
 		//for (size_t i = 0; i < sprites.size(); ++i)
 		//{
@@ -675,6 +683,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		//SrvManagerにSRVヒープをセットしてもらう
 		srvManeger->PreDraw();
+
+		//パーティクル描画
+		ParticleManager::GetInstance()->Draw();
 
 		// スプライト共通設定（ルートシグネチャ、PSO設定）
 		spriteCommon->CommonDrawSettings();
@@ -729,6 +740,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	// カメラ
 	delete camera;
+
+	//パーティクル
+	
 
 	// model
 	// 3Dモデルマネージャーの終了

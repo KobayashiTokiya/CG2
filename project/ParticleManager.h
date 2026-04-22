@@ -29,6 +29,13 @@ struct ParticleForGPU
 	Matrix4x4 world;
 };
 
+struct VertexData
+{
+	Vector4 position;
+	Vector2 texcoord;
+	Vector3 normal;
+};
+
 class ParticleManager
 {
 public:
@@ -41,6 +48,8 @@ public:
 	void Update();
 	//描画
 	void Draw();
+	//終了
+	void Finalize();
 
 	D3D12_BLEND_DESC GetBlendDesc(BlendMode mode);
 private:
@@ -50,6 +59,8 @@ private:
 	//グラフィックスパイプラインの生成
 	void CreateGraphicsPipelineState();
 
+	//頂点バッファを作るよう関数
+	void CreateVertexBuffer();
 private:
 	ParticleManager() = default;
 	~ParticleManager()= default;
@@ -75,6 +86,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource>instancingResource;
 	ParticleForGPU* instancingData = nullptr; //書き込み用のポイント
 
-
+	//板ポリ用頂点バッファ―とビュー
+	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
 };
 

@@ -21,13 +21,15 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,SrvManager* srvManager)
 	CreateRootSignature();
 	CreateGraphicsPipelineState();
 
+	CreateVertexBuffer();
+
 	ID3D12Device* device = dxCommon_->GetDevice();
 	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
 	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
 
 	D3D12_RESOURCE_DESC resourceDesc{};
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	resourceDesc.Width = sizeof(ParticleForGPU) * kNumInstances; // ★ 10個分のサイズ！
+	resourceDesc.Width = sizeof(ParticleForGPU) * kNumInstances;
 	resourceDesc.Height = 1;
 	resourceDesc.DepthOrArraySize = 1;
 	resourceDesc.MipLevels = 1;
@@ -41,7 +43,7 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,SrvManager* srvManager)
 	);
 	assert(SUCCEEDED(hr));
 
-	// ★ バッファに書き込むためのポインタを取得
+	//バッファに書き込むためのポインタを取得
 	instancingResource->Map(0, nullptr, reinterpret_cast<void**>(&instancingData));
 
 	// 10個の初期位置を適当に横に並べておく
@@ -75,7 +77,16 @@ void ParticleManager::Draw()
 	commandList->SetPipelineState(graphicsPipelineState_[static_cast<int>(BlendMode::kBlendModeAdd)].Get());
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+	commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
+
+	commandList->SetGraphicsRootShaderResourceView(1, instancingResource->GetGPUVirtualAddress());
+
 	commandList->DrawInstanced(6, kNumInstances, 0, 0);
+
+}
+
+void ParticleManager::Finalize()
+{
 
 }
 	
@@ -92,22 +103,29 @@ void ParticleManager::CreateRootSignature()
 	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-	// ★パーティクル用に RootParameter を 2つ にスッキリさせます
-	D3D12_ROOT_PARAMETER rootParameters[2] = {};
+	//RootParameter作成
+	D3D12_ROOT_PARAMETER rootParamenters[4] = {};
+	rootParamenters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParamenters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParamenters[0].Descriptor.ShaderRegister = 0;
 
-	// 0番: 定数バッファ (CBV)用
-	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-	rootParameters[0].Descriptor.ShaderRegister = 0;
+	rootParamenters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;//DESCRIPTORTABLEを使う
+	rootParamenters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;//VertexShaderで使う
+	rootParamenters[1].DescriptorTable.pDescriptorRanges = 0;//Tableの中身の配列を指定
+	rootParamenters[1].DescriptorTable.NumDescriptorRanges = 0;//Tableで利用する数
 
-	// 1番: テクスチャ (SRV)用
-	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters[1].DescriptorTable.pDescriptorRanges = descriptorRange;
-	rootParameters[1].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);
+	rootParamenters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParamenters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParamenters[2].DescriptorTable.pDescriptorRanges = descriptorRange;
+	rootParamenters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);
 
-	descriptionRootSignature.pParameters = rootParameters;
-	descriptionRootSignature.NumParameters = _countof(rootParameters);
+	rootParamenters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParamenters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParamenters[3].Descriptor.ShaderRegister = 1;
+
+	descriptionRootSignature.pParameters = rootParamenters;
+	descriptionRootSignature.NumParameters = _countof(rootParamenters);
+
 
 	// サンプラーの設定
 	D3D12_STATIC_SAMPLER_DESC staticSamplers[1] = {};
@@ -148,19 +166,29 @@ void ParticleManager::CreateGraphicsPipelineState()
 {
 	ID3D12Device* device = dxCommon_->GetDevice();
 
-	// ★Shaderを Particle 用に変更！
-	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dxCommon_->CompileShader(L"Resource/shaders/Particle.VS.hlsl", L"vs_6_0");
+	//Shaderを Particle 用に変更！
+	Microsoft::WRL::ComPtr<IDxcBlob> vertexShaderBlob = dxCommon_->CompileShader(L"Particle.VS.hlsl", L"vs_6_0");
 	assert(vertexShaderBlob != nullptr);
 
-	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dxCommon_->CompileShader(L"Resource/shaders/Particle.PS.hlsl", L"ps_6_0");
+	Microsoft::WRL::ComPtr<IDxcBlob> pixelShaderBlob = dxCommon_->CompileShader(L"Particle.PS.hlsl", L"ps_6_0");
 	assert(pixelShaderBlob != nullptr);
 
-	// ★インプットレイアウトを Particle 用 (POSITIONのみ) に変更！
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
+	//インプットレイアウト
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
 	inputElementDescs[0].SemanticName = "POSITION";
 	inputElementDescs[0].SemanticIndex = 0;
 	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+
+	inputElementDescs[1].SemanticName = "TEXCOORD";
+	inputElementDescs[1].SemanticIndex = 0;
+	inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+
+	inputElementDescs[2].SemanticName = "NORMAL";
+	inputElementDescs[2].SemanticIndex = 0;
+	inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
 
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};
 	inputLayoutDesc.pInputElementDescs = inputElementDescs;
@@ -171,7 +199,7 @@ void ParticleManager::CreateGraphicsPipelineState()
 	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE; // 裏面も描画
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
-	// ★DepthStencilStateの設定（書き込みを ZERO にする！）
+	// DepthStencilStateの設定（書き込みを ZERO にする！）
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
 	depthStencilDesc.DepthEnable = true;
 	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; // パーティクルはZバッファに書き込まない
@@ -192,7 +220,7 @@ void ParticleManager::CreateGraphicsPipelineState()
 	pipelineDesc.DepthStencilState = depthStencilDesc;
 	pipelineDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
-	// ★ここが一番大事！ブレンドモードの数だけループしてパイプラインを作る！
+	// ここが一番大事！ブレンドモードの数だけループしてパイプラインを作る！
 	for (int i = 0; i < static_cast<int>(BlendMode::kCountOfBlendMode); ++i)
 	{
 		BlendMode mode = static_cast<BlendMode>(i);
@@ -204,6 +232,69 @@ void ParticleManager::CreateGraphicsPipelineState()
 		HRESULT hr = device->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(&graphicsPipelineState_[i]));
 		assert(SUCCEEDED(hr));
 	}
+}
+
+void ParticleManager::CreateVertexBuffer()
+{
+	ID3D12Device* device = dxCommon_->GetDevice();
+
+	UINT vertexCount = 6;
+	UINT vertexBufferSize = sizeof(VertexData) * vertexCount;
+
+	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
+	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+
+	D3D12_RESOURCE_DESC vertexResourceDesc{};
+	vertexResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	vertexResourceDesc.Width = sizeof(VertexData) * 6;//リソースのサイズ。今回はVector4を3頂点
+	vertexResourceDesc.Height = 1;
+	vertexResourceDesc.DepthOrArraySize = 1;
+	vertexResourceDesc.MipLevels = 1;
+	vertexResourceDesc.SampleDesc.Count = 1;
+	vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+	HRESULT hr = device->CreateCommittedResource(
+		&uploadHeapProperties,D3D12_HEAP_FLAG_NONE,
+		&vertexResourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+		IID_PPV_ARGS(&vertexResource_)
+	);
+	assert(SUCCEEDED(hr));
+
+	vertexBufferView_.BufferLocation = vertexResource_->GetGPUVirtualAddress();
+	vertexBufferView_.SizeInBytes = vertexBufferSize;
+	vertexBufferView_.StrideInBytes = sizeof(VertexData);
+
+	VertexData* vertexData = nullptr;
+	vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
+
+	//１枚目の三角形
+	vertexData[0].position = { -0.5f, -0.5f, 0.0f, 1.0f };
+	vertexData[0].texcoord = { 0.0f,1.0f };
+	vertexData[0].normal = { 0.0f,0.0f,-1.0f };
+
+	vertexData[1].position = { -0.5f,  0.5f, 0.0f, 1.0f };
+	vertexData[1].texcoord = { 0.0f,0.0f };
+	vertexData[1].normal = { 0.0f,0.0f,-1.0f };
+
+	vertexData[2].position = { 0.5f, -0.5f, 0.0f, 1.0f };
+	vertexData[2].texcoord = { 1.0f,1.0f };
+	vertexData[2].normal = { 0.0f,0.0f,-1.0f };
+
+	//２枚目の三角形
+	vertexData[3].position = { -0.5f,  0.5f, 0.0f, 1.0f };
+	vertexData[3].texcoord = { 0.0f,0.0f };
+	vertexData[3].normal = { 0.0f,0.0f,-1.0f };
+
+	vertexData[4].position = { 0.5f,  0.5f, 0.0f, 1.0f };
+	vertexData[4].texcoord = { 1.0f,0.0f };
+	vertexData[4].normal = { 0.0f,0.0f,-1.0f };
+	
+	vertexData[5].position = { 0.5f, -0.5f, 0.0f, 1.0f };
+	vertexData[5].texcoord = { 1.0f,1.0f };
+	vertexData[5].normal = { 0.0f,0.0f,-1.0f };
+
+	vertexResource_->Unmap(0, nullptr);
+
 }
 
 D3D12_BLEND_DESC ParticleManager::GetBlendDesc(BlendMode mode)
