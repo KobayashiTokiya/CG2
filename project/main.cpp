@@ -625,6 +625,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		ImGui::DragFloat3("Rotate", &cameraRotate.x, 0.01f);
 		ImGui::End();
 		
+		// パーティクル用
+		ParticleManager::GetInstance()->DrawImGui();
 
 		//更新処理
 		
@@ -656,7 +658,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// スプライト
 		sprite->Update();
 		//パーティクル
-		ParticleManager::GetInstance()->Update();
+		ParticleManager::GetInstance()->Update(camera);
 
 		//for (size_t i = 0; i < sprites.size(); ++i)
 		//{
@@ -685,7 +687,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		srvManeger->PreDraw();
 
 		//パーティクル描画
-		ParticleManager::GetInstance()->Draw();
+		ParticleManager::GetInstance()->Draw(srvHandleGPU);
 
 		// スプライト共通設定（ルートシグネチャ、PSO設定）
 		spriteCommon->CommonDrawSettings();

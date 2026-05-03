@@ -7,10 +7,16 @@
 #include <string>
 #include <wrl.h>
 #include <d3d12.h>
+#include "Matrix.h"
+#include "Transform.h"
 
-struct VertexParticle
+class Camera;
+
+struct Particle
 {
-	Vector4 position;
+	Transform transform;
+	Vector3 velocity;
+	Vector4 color;
 };
 
 enum class BlendMode
@@ -27,6 +33,7 @@ struct ParticleForGPU
 {
 	Matrix4x4 WVP;
 	Matrix4x4 world;
+	Vector4 color;
 };
 
 struct VertexData
@@ -45,11 +52,13 @@ public:
 	//初期化
 	void Initialize(DirectXCommon* dxCommon, SrvManager* srvManager);
 	//更新
-	void Update();
+	void Update(Camera* camera);
 	//描画
-	void Draw();
+	void Draw(D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU);
 	//終了
 	void Finalize();
+
+	void DrawImGui();
 
 	D3D12_BLEND_DESC GetBlendDesc(BlendMode mode);
 private:
@@ -61,6 +70,8 @@ private:
 
 	//頂点バッファを作るよう関数
 	void CreateVertexBuffer();
+
+	Particle MakeNewParticle(std::mt19937& randomEngine);
 private:
 	ParticleManager() = default;
 	~ParticleManager()= default;
@@ -74,14 +85,18 @@ private:
 	SrvManager* srvManager_ = nullptr;
 
 	//ランダムエンジン
+	std::random_device seedGenerator;
 	std::mt19937 randomEngine_;
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature>rootSignature_;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState>graphicsPipelineState_[static_cast<int>(BlendMode::kCountOfBlendMode)];
 
 	static const int kNumInstances = 10;
+	
+	Particle particles_[kNumInstances];
 
-	Vector3 positions_[kNumInstances];
+	//ImGui用のパーティクル全体を動かす基準点
+	Particle base;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource>instancingResource;
 	ParticleForGPU* instancingData = nullptr; //書き込み用のポイント

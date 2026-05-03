@@ -1,7 +1,10 @@
 #include "ParticleManager.h"
 #include <d3d12.h>
 #include<wrl.h>
+#include "externals/imgui/imgui.h"
+#include <string>
 
+#include "Camera.h"
 
 ParticleManager* ParticleManager::GetInstance()
 {
@@ -15,8 +18,12 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,SrvManager* srvManager)
 	srvManager_ = srvManager;
 
 	//ランダムエンジンの初期化
-	std::random_device seedGenerator;
+	//std::random_device seedGenerator;
+	//std::mt19937 randomEngine_;
 	randomEngine_.seed(seedGenerator());
+
+	std::uniform_real_distribution<float>posDist(-1.0f, 1.0f);
+	std::uniform_real_distribution<float>velDist(-1.0f, 1.0f);
 
 	CreateRootSignature();
 	CreateGraphicsPipelineState();
@@ -46,40 +53,52 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,SrvManager* srvManager)
 	//バッファに書き込むためのポインタを取得
 	instancingResource->Map(0, nullptr, reinterpret_cast<void**>(&instancingData));
 
+	base.transform.scale = { 1.0f,1.0f,1.0f };
 	// 10個の初期位置を適当に横に並べておく
-	for (int i = 0; i < kNumInstances; ++i)
+	for (uint32_t i = 0; i < kNumInstances; ++i)
 	{
-		positions_[i] = { (float)i - 5.0f, 0.0f, 0.0f }; // 横一列に並べる
+		particles_[i] = MakeNewParticle(randomEngine_);
 	}
 }
 
-void ParticleManager::Update()
+void ParticleManager::Update(Camera* camera)
 {
+	const float kDeltaTime = 1.0f / 60.0f;
+
 	for (int i = 0; i < kNumInstances; ++i)
 	{
-		positions_[i].x += 0.01f;
-		if (positions_[i].x>5.0f)
-		{
-			positions_[i].x = -5.0f;
-		}
-		Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix({ 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, positions_[i]);
-
+		//ImGui用の
+		Particle final;
+		final.transform.scale = particles_[i].transform.scale * base.transform.scale;										  
+		final.transform.rotate = particles_[i].transform.rotate + base.transform.rotate;
+		
+		particles_[i].transform.translate += particles_[i].velocity * kDeltaTime;
+		
+		//std::uniform_real_distribution<float>distribution(-1.0f, 1.0f);
+		//particles_[i].transform = { distribution(randomEngine_),distribution(randomEngine_),distribution(randomEngine_) };
+		//particles_[i].velocity = { distribution(randomEngine_),distribution(randomEngine_),distribution(randomEngine_) };
+		
+		final.transform.translate = particles_[i].transform.translate + base.transform.translate;
+		
+		Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(final.transform.scale, final.transform.rotate, final.transform.translate);
+		
 		instancingData[i].world = worldMatrix;
-		instancingData[i].WVP = worldMatrix;
+		instancingData[i].WVP = MatrixMath::Multiply(worldMatrix,camera->GetViewProjectionMatrix());
 	}
 }
 
-void ParticleManager::Draw()
+void ParticleManager::Draw(D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU)
 {
 	auto commandList = dxCommon_->GetCommandList();
 
 	commandList->SetGraphicsRootSignature(rootSignature_.Get());
-	commandList->SetPipelineState(graphicsPipelineState_[static_cast<int>(BlendMode::kBlendModeAdd)].Get());
+	commandList->SetPipelineState(graphicsPipelineState_[static_cast<int>(BlendMode::kBlendModeNormal)].Get());
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
-	commandList->SetGraphicsRootShaderResourceView(1, instancingResource->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootShaderResourceView(0, instancingResource->GetGPUVirtualAddress()); // ★ 0にする！
+	commandList->SetGraphicsRootDescriptorTable(1, srvHandleGPU);
 
 	commandList->DrawInstanced(6, kNumInstances, 0, 0);
 
@@ -105,23 +124,29 @@ void ParticleManager::CreateRootSignature()
 
 	//RootParameter作成
 	D3D12_ROOT_PARAMETER rootParamenters[4] = {};
-	rootParamenters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	rootParamenters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	// [0] インスタンシング用 (SRV / t0 / 頂点シェーダー用)
+	rootParamenters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+	rootParamenters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 	rootParamenters[0].Descriptor.ShaderRegister = 0;
+	rootParamenters[0].Descriptor.RegisterSpace = 0;
 
-	rootParamenters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;//DESCRIPTORTABLEを使う
-	rootParamenters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;//VertexShaderで使う
-	rootParamenters[1].DescriptorTable.pDescriptorRanges = 0;//Tableの中身の配列を指定
-	rootParamenters[1].DescriptorTable.NumDescriptorRanges = 0;//Tableで利用する数
+	// [1] テクスチャ用 (DescriptorTable / t0 / ピクセルシェーダー用)
+	rootParamenters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParamenters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParamenters[1].DescriptorTable.pDescriptorRanges = descriptorRange;
+	rootParamenters[1].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);
 
-	rootParamenters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	// [2] マテリアル用 (CBV / b0 / ピクセルシェーダー用)
+	rootParamenters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParamenters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParamenters[2].DescriptorTable.pDescriptorRanges = descriptorRange;
-	rootParamenters[2].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);
+	rootParamenters[2].Descriptor.ShaderRegister = 0; // ★ b0
+	rootParamenters[2].Descriptor.RegisterSpace = 0;
 
+	// [3] ライト用 (CBV / b1 / ピクセルシェーダー用)
 	rootParamenters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParamenters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParamenters[3].Descriptor.ShaderRegister = 1;
+	rootParamenters[3].Descriptor.ShaderRegister = 1; // ★ b1
+	rootParamenters[3].Descriptor.RegisterSpace = 0;
 
 	descriptionRootSignature.pParameters = rootParamenters;
 	descriptionRootSignature.NumParameters = _countof(rootParamenters);
@@ -338,4 +363,24 @@ D3D12_BLEND_DESC ParticleManager::GetBlendDesc(BlendMode mode)
 	}
 	return blendDesc;
 
+}
+
+void ParticleManager::DrawImGui()
+{
+	ImGui::Begin("Particle Manager");
+	ImGui::DragFloat3("Position", &base.transform.translate.x, 0.01f);
+	ImGui::DragFloat3("Rotation", &base.transform.rotate.x, 0.01f);
+	ImGui::DragFloat3("Scale", &base.transform.scale.x, 0.01f);
+	ImGui::End();
+}
+
+Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine)
+{
+	std::uniform_real_distribution<float>distribution(-1.0f, 1.0f);
+	Particle particle;
+	particle.transform.scale = { 1.0f,1.0f,1.0f };
+	particle.transform.rotate = { 0.0f,0.0f,0.0f };
+	particle.transform.translate = { distribution(randomEngine),distribution(randomEngine) ,distribution(randomEngine) };
+	particle.velocity = { distribution(randomEngine) ,distribution(randomEngine) ,distribution(randomEngine) };
+	return particle;
 }
