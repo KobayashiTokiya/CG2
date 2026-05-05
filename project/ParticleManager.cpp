@@ -22,34 +22,14 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,SrvManager* srvManager)
 	//std::mt19937 randomEngine_;
 	randomEngine_.seed(seedGenerator());
 
-	std::uniform_real_distribution<float>posDist(-1.0f, 1.0f);
-	std::uniform_real_distribution<float>velDist(-1.0f, 1.0f);
 
 	CreateRootSignature();
 	CreateGraphicsPipelineState();
 
 	CreateVertexBuffer();
 
-	ID3D12Device* device = dxCommon_->GetDevice();
-	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
-	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-
-	D3D12_RESOURCE_DESC resourceDesc{};
-	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	resourceDesc.Width = sizeof(ParticleForGPU) * kNumInstances;
-	resourceDesc.Height = 1;
-	resourceDesc.DepthOrArraySize = 1;
-	resourceDesc.MipLevels = 1;
-	resourceDesc.SampleDesc.Count = 1;
-	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-	HRESULT hr = device->CreateCommittedResource(
-		&uploadHeapProperties, D3D12_HEAP_FLAG_NONE,
-		&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
-		IID_PPV_ARGS(&instancingResource)
-	);
-	assert(SUCCEEDED(hr));
-
+	instancingResource = dxCommon_->CreateBufferResource(sizeof(ParticleForGPU) * kNumInstances);
+	
 	//バッファに書き込むためのポインタを取得
 	instancingResource->Map(0, nullptr, reinterpret_cast<void**>(&instancingData));
 
@@ -84,6 +64,8 @@ void ParticleManager::Update(Camera* camera)
 		
 		instancingData[i].world = worldMatrix;
 		instancingData[i].WVP = MatrixMath::Multiply(worldMatrix,camera->GetViewProjectionMatrix());
+	
+		instancingData[i].color = particles_[i].color;
 	}
 }
 
@@ -382,5 +364,7 @@ Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine)
 	particle.transform.rotate = { 0.0f,0.0f,0.0f };
 	particle.transform.translate = { distribution(randomEngine),distribution(randomEngine) ,distribution(randomEngine) };
 	particle.velocity = { distribution(randomEngine) ,distribution(randomEngine) ,distribution(randomEngine) };
+	
+	particle.color = { 1.0f,1.0f,1.0f,1.0f };
 	return particle;
 }
