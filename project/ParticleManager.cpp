@@ -28,14 +28,14 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,SrvManager* srvManager)
 
 	CreateVertexBuffer();
 
-	instancingResource = dxCommon_->CreateBufferResource(sizeof(ParticleForGPU) * kNumInstances);
+	instancingResource = dxCommon_->CreateBufferResource(sizeof(ParticleForGPU) * kNumMaxInstance);
 	
 	//バッファに書き込むためのポインタを取得
 	instancingResource->Map(0, nullptr, reinterpret_cast<void**>(&instancingData));
 
 	base.transform.scale = { 1.0f,1.0f,1.0f };
 	// 10個の初期位置を適当に横に並べておく
-	for (uint32_t i = 0; i < kNumInstances; ++i)
+	for (uint32_t i = 0; i < kNumMaxInstance; ++i)
 	{
 		particles_[i] = MakeNewParticle(randomEngine_);
 	}
@@ -44,28 +44,36 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,SrvManager* srvManager)
 void ParticleManager::Update(Camera* camera)
 {
 	const float kDeltaTime = 1.0f / 60.0f;
-
-	for (int i = 0; i < kNumInstances; ++i)
+	numInstance = 0;//描画すべきインスタント数
+	for (uint32_t i = 0; i < kNumMaxInstance; ++i)
 	{
-		//ImGui用の
-		Particle final;
-		final.transform.scale = particles_[i].transform.scale * base.transform.scale;										  
-		final.transform.rotate = particles_[i].transform.rotate + base.transform.rotate;
-		
+		if (particles_[i].lifeTime<=particles_[i].currentTime)//生存期間を過ぎていたら更新せず描画対象にしない
+		{
+			continue;
+		}
+
 		particles_[i].transform.translate += particles_[i].velocity * kDeltaTime;
-		
+		particles_[i].currentTime += kDeltaTime;//経過時間を足す
 		//std::uniform_real_distribution<float>distribution(-1.0f, 1.0f);
 		//particles_[i].transform = { distribution(randomEngine_),distribution(randomEngine_),distribution(randomEngine_) };
 		//particles_[i].velocity = { distribution(randomEngine_),distribution(randomEngine_),distribution(randomEngine_) };
 		
+		Particle final;
+		final.transform.scale = particles_[i].transform.scale * base.transform.scale;
+		final.transform.rotate = particles_[i].transform.rotate + base.transform.rotate;
 		final.transform.translate = particles_[i].transform.translate + base.transform.translate;
-		
+
+		float alpha = 1.0f - (particles_[i].currentTime / particles_[i].lifeTime);
+
 		Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(final.transform.scale, final.transform.rotate, final.transform.translate);
 		
-		instancingData[i].world = worldMatrix;
-		instancingData[i].WVP = MatrixMath::Multiply(worldMatrix,camera->GetViewProjectionMatrix());
+		instancingData[numInstance].world = worldMatrix;
+		instancingData[numInstance].WVP = MatrixMath::Multiply(worldMatrix,camera->GetViewProjectionMatrix());
+		instancingData[numInstance].color = particles_[i].color;
+		instancingData[numInstance].color.w = alpha;
+
+		++numInstance;//生きているParticleの数を1つカウントする
 	
-		instancingData[i].color = particles_[i].color;
 	}
 }
 
@@ -82,7 +90,7 @@ void ParticleManager::Draw(D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU)
 	commandList->SetGraphicsRootShaderResourceView(0, instancingResource->GetGPUVirtualAddress()); // ★ 0にする！
 	commandList->SetGraphicsRootDescriptorTable(1, srvHandleGPU);
 
-	commandList->DrawInstanced(6, kNumInstances, 0, 0);
+	commandList->DrawInstanced((UINT)vertices_.size(), numInstance, 0, 0);
 
 }
 
@@ -245,7 +253,9 @@ void ParticleManager::CreateVertexBuffer()
 {
 	ID3D12Device* device = dxCommon_->GetDevice();
 
-	UINT vertexCount = 6;
+	vertices_.resize(6);
+
+	UINT vertexCount = (UINT)vertices_.size();
 	UINT vertexBufferSize = sizeof(VertexData) * vertexCount;
 
 	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
@@ -253,7 +263,7 @@ void ParticleManager::CreateVertexBuffer()
 
 	D3D12_RESOURCE_DESC vertexResourceDesc{};
 	vertexResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	vertexResourceDesc.Width = sizeof(VertexData) * 6;//リソースのサイズ。今回はVector4を3頂点
+	vertexResourceDesc.Width = vertexBufferSize;
 	vertexResourceDesc.Height = 1;
 	vertexResourceDesc.DepthOrArraySize = 1;
 	vertexResourceDesc.MipLevels = 1;
@@ -274,24 +284,23 @@ void ParticleManager::CreateVertexBuffer()
 	VertexData* vertexData = nullptr;
 	vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
 
-	//１枚目の三角形
+	//１枚目の三角形//２枚目の三角形
 	vertexData[0].position = { -0.5f, -0.5f, 0.0f, 1.0f };
 	vertexData[0].texcoord = { 0.0f,1.0f };
 	vertexData[0].normal = { 0.0f,0.0f,-1.0f };
-
+	
 	vertexData[1].position = { -0.5f,  0.5f, 0.0f, 1.0f };
 	vertexData[1].texcoord = { 0.0f,0.0f };
 	vertexData[1].normal = { 0.0f,0.0f,-1.0f };
-
+	
 	vertexData[2].position = { 0.5f, -0.5f, 0.0f, 1.0f };
 	vertexData[2].texcoord = { 1.0f,1.0f };
 	vertexData[2].normal = { 0.0f,0.0f,-1.0f };
-
-	//２枚目の三角形
+	
 	vertexData[3].position = { -0.5f,  0.5f, 0.0f, 1.0f };
 	vertexData[3].texcoord = { 0.0f,0.0f };
 	vertexData[3].normal = { 0.0f,0.0f,-1.0f };
-
+	
 	vertexData[4].position = { 0.5f,  0.5f, 0.0f, 1.0f };
 	vertexData[4].texcoord = { 1.0f,0.0f };
 	vertexData[4].normal = { 0.0f,0.0f,-1.0f };
@@ -366,5 +375,10 @@ Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine)
 	particle.velocity = { distribution(randomEngine) ,distribution(randomEngine) ,distribution(randomEngine) };
 	
 	particle.color = { 1.0f,1.0f,1.0f,1.0f };
+
+	std::uniform_real_distribution<float>distTime(1.0f, 3.0f);
+	particle.lifeTime = distTime(randomEngine);
+	particle.currentTime = 0;
+
 	return particle;
 }

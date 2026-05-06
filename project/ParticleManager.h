@@ -17,6 +17,8 @@ struct Particle
 	Transform transform;
 	Vector3 velocity;
 	Vector4 color;
+	float lifeTime;
+	float currentTime;
 };
 
 enum class BlendMode
@@ -91,10 +93,13 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12RootSignature>rootSignature_;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState>graphicsPipelineState_[static_cast<int>(BlendMode::kCountOfBlendMode)];
 
-	static const int kNumInstances = 10;
+	static const int kNumMaxInstance = 10;
+	uint32_t numInstance = 0;
+	//メンバ変数として頂点リストを持つようにする
+	std::vector<VertexData> vertices_;
 	
-	Particle particles_[kNumInstances];
-
+	Particle particles_[kNumMaxInstance];
+	
 	//ImGui用のパーティクル全体を動かす基準点
 	Particle base;
 
