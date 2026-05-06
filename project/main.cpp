@@ -499,11 +499,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	TextureManager::GetInstance()->Initialize(dxCommon,srvManeger);
 
 	// テクスチャを読み込む (内部でリソース生成～SRV作成までやってくれる)
-	TextureManager::GetInstance()->LoadTexture("Resource/uvChecker.png");
+	TextureManager::GetInstance()->LoadTexture("Resource/circle.png");
 
 	// スプライトで使うためのハンドルをマネージャーから取得する
 	D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU =
-		TextureManager::GetInstance()->GetSrvHandleGPU("Resource/uvChecker.png");
+		TextureManager::GetInstance()->GetSrvHandleGPU("Resource/circle.png");
 
 
 	// --- 古い処理 (TextureManagerに移植したので不要) ---
@@ -537,6 +537,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	TextureManager::GetInstance()->LoadTexture("Resource/monsterBall.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/uvChecker.png");
+	TextureManager::GetInstance()->LoadTexture("Resource/circle.png");
 
 	//スプライトを1個だけ生成
 	Sprite* sprite = new Sprite();

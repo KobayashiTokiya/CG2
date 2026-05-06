@@ -211,7 +211,7 @@ void ParticleManager::CreateGraphicsPipelineState()
 
 	// RasterizerState
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE; // 裏面も描画
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK; // 裏面も描画(D3D12_CULL_MODE_NONE)　裏面を表示しない(D3D12_CULL_MODE_BACK)　表を表示しない(D3D12_CULL_MODE_FRONT)
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	// DepthStencilStateの設定（書き込みを ZERO にする！）
