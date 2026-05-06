@@ -37,8 +37,10 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,SrvManager* srvManager)
 	// 10個の初期位置を適当に横に並べておく
 	for (uint32_t i = 0; i < kNumMaxInstance; ++i)
 	{
-		particles_[i] = MakeNewParticle(randomEngine_);
+		particles.push_back(MakeNewParticle(randomEngine_));
+		//particles_[i] = MakeNewParticle(randomEngine_);
 	}
+	
 }
 
 void ParticleManager::Update(Camera* camera)
@@ -47,10 +49,10 @@ void ParticleManager::Update(Camera* camera)
 	numInstance = 0;//描画すべきインスタント数
 	for (uint32_t i = 0; i < kNumMaxInstance; ++i)
 	{
-		if (particles_[i].lifeTime<=particles_[i].currentTime)//生存期間を過ぎていたら更新せず描画対象にしない
-		{
-			continue;
-		}
+		//if (particles_[i].lifeTime<=particles_[i].currentTime)//生存期間を過ぎていたら更新せず描画対象にしない
+		//{
+		//	continue;
+		//}
 
 		particles_[i].transform.translate += particles_[i].velocity * kDeltaTime;
 		particles_[i].currentTime += kDeltaTime;//経過時間を足す

@@ -99,7 +99,8 @@ private:
 	//メンバ変数として頂点リストを持つようにする
 	std::vector<VertexData> vertices_;
 	
-	Particle particles_[kNumMaxInstance];
+	//Particle particles_[kNumMaxInstance];
+	std::list<Particle> particles;
 	
 	//ImGui用のパーティクル全体を動かす基準点
 	Particle base;
