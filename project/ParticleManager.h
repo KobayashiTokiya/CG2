@@ -46,6 +46,14 @@ struct VertexData
 	Vector3 normal;
 };
 
+struct Emitter
+{
+	Transform transform;//エミッタのTransform
+	uint32_t count;     //発生数
+	float frequency;    //発生頻度
+	float frequencyTime;//頻度用時刻
+};
+
 class ParticleManager
 {
 public:
@@ -74,7 +82,9 @@ private:
 	//頂点バッファを作るよう関数
 	void CreateVertexBuffer();
 
-	Particle MakeNewParticle(std::mt19937& randomEngine);
+	Particle MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate);
+
+	std::list<Particle> Emit(const Emitter& emitter, std::mt19937& randomEngine);
 private:
 	ParticleManager() = default;
 	~ParticleManager()= default;
@@ -94,7 +104,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12RootSignature>rootSignature_;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState>graphicsPipelineState_[static_cast<int>(BlendMode::kCountOfBlendMode)];
 
-	static const int kNumMaxInstance = 10;
+	const uint32_t kNumMaxInstance = 100;
 	uint32_t numInstance = 0;
 	//メンバ変数として頂点リストを持つようにする
 	std::vector<VertexData> vertices_;
@@ -111,5 +121,8 @@ private:
 	//板ポリ用頂点バッファ―とビュー
 	Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
+
+	//エミッタ
+	Emitter emitter{};
 };
 

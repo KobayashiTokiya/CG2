@@ -35,47 +35,66 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,SrvManager* srvManager)
 
 	base.transform.scale = { 1.0f,1.0f,1.0f };
 	// 10個の初期位置を適当に横に並べておく
-	for (uint32_t i = 0; i < kNumMaxInstance; ++i)
-	{
-		particles.push_back(MakeNewParticle(randomEngine_));
-		//particles_[i] = MakeNewParticle(randomEngine_);
-	}
-	
+	//for (uint32_t i = 0; i < kNumMaxInstance; ++i)
+	//{
+	//particles.push_back(MakeNewParticle(randomEngine_));
+	//particles.push_back(MakeNewParticle(randomEngine_));
+	//particles.push_back(MakeNewParticle(randomEngine_));
+		//(*particleIterator) = MakeNewParticle(randomEngine_);
+	//}
+
+	//エミッタ初期化
+	emitter.count = 3;
+	emitter.frequency = 0.5f;//0.5秒ごとに発生
+	emitter.frequencyTime = 0.0f;//発生頻度用の時刻、0で初期化
+	emitter.transform.translate = { 0.0f,0.0f,0.0f };
+	emitter.transform.rotate = { 0.0f,0.0f,0.0f };
+	emitter.transform.scale = { 1.0f,1.0f,1.0f };
 }
 
 void ParticleManager::Update(Camera* camera)
 {
 	const float kDeltaTime = 1.0f / 60.0f;
 	numInstance = 0;//描画すべきインスタント数
-	for (uint32_t i = 0; i < kNumMaxInstance; ++i)
+	for (std::list<Particle>::iterator particleIterator=particles.begin();
+		particleIterator!=particles.end();)
 	{
-		//if (particles_[i].lifeTime<=particles_[i].currentTime)//生存期間を過ぎていたら更新せず描画対象にしない
-		//{
-		//	continue;
-		//}
+		if ((*particleIterator).lifeTime<=(*particleIterator).currentTime)
+		{
+			particleIterator = particles.erase(particleIterator);
+			continue;
+		}
 
-		particles_[i].transform.translate += particles_[i].velocity * kDeltaTime;
-		particles_[i].currentTime += kDeltaTime;//経過時間を足す
-		//std::uniform_real_distribution<float>distribution(-1.0f, 1.0f);
-		//particles_[i].transform = { distribution(randomEngine_),distribution(randomEngine_),distribution(randomEngine_) };
-		//particles_[i].velocity = { distribution(randomEngine_),distribution(randomEngine_),distribution(randomEngine_) };
-		
-		Particle final;
-		final.transform.scale = particles_[i].transform.scale * base.transform.scale;
-		final.transform.rotate = particles_[i].transform.rotate + base.transform.rotate;
-		final.transform.translate = particles_[i].transform.translate + base.transform.translate;
+		(*particleIterator).transform.translate += (*particleIterator).velocity * kDeltaTime;
+		(*particleIterator).currentTime += kDeltaTime;//経過時間を足す
 
-		float alpha = 1.0f - (particles_[i].currentTime / particles_[i].lifeTime);
 
-		Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(final.transform.scale, final.transform.rotate, final.transform.translate);
-		
-		instancingData[numInstance].world = worldMatrix;
-		instancingData[numInstance].WVP = MatrixMath::Multiply(worldMatrix,camera->GetViewProjectionMatrix());
-		instancingData[numInstance].color = particles_[i].color;
-		instancingData[numInstance].color.w = alpha;
+		if (numInstance<kNumMaxInstance)
+		{
+			Particle final;
+			final.transform.scale = (*particleIterator).transform.scale * base.transform.scale;
+			final.transform.rotate = (*particleIterator).transform.rotate + base.transform.rotate;
+			final.transform.translate = (*particleIterator).transform.translate + base.transform.translate;
 
-		++numInstance;//生きているParticleの数を1つカウントする
-	
+			Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(final.transform.scale, final.transform.rotate, final.transform.translate);
+
+			instancingData[numInstance].world = worldMatrix;
+			instancingData[numInstance].WVP = MatrixMath::Multiply(worldMatrix, camera->GetViewProjectionMatrix());
+			instancingData[numInstance].color = (*particleIterator).color;
+			float alpha = 1.0f - ((*particleIterator).currentTime / (*particleIterator).lifeTime);
+			instancingData[numInstance].color.w = alpha;
+
+			instancingData[numInstance].WVP = MatrixMath::Multiply(camera->GetViewProjectionMatrix(), worldMatrix);
+			++numInstance;//生きているParticleの数を1つカウントする
+		}
+
+		++particleIterator;
+	}
+	emitter.frequencyTime += kDeltaTime;//時刻を進める
+	if (emitter.frequency <= emitter.frequencyTime)//頻度よりも大きいなら発生
+	{
+		particles.splice(particles.end(), Emit(emitter, randomEngine_));//発生処理
+		emitter.frequencyTime -= emitter.frequency;//余計に過ぎた時間も加味して頻度計算する
 	}
 }
 
@@ -364,16 +383,24 @@ void ParticleManager::DrawImGui()
 	ImGui::DragFloat3("Position", &base.transform.translate.x, 0.01f);
 	ImGui::DragFloat3("Rotation", &base.transform.rotate.x, 0.01f);
 	ImGui::DragFloat3("Scale", &base.transform.scale.x, 0.01f);
+	
+	ImGui::DragFloat3("EmitterTranslate", &emitter.transform.translate.x, 0.01f, -100.0f, 100.0f);
+	if (ImGui::Button("Add Particle"))
+	{
+		particles.splice(particles.end(), Emit(emitter, randomEngine_));
+	}
+
 	ImGui::End();
 }
 
-Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine)
+Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine,const Vector3& translate)
 {
 	std::uniform_real_distribution<float>distribution(-1.0f, 1.0f);
 	Particle particle;
 	particle.transform.scale = { 1.0f,1.0f,1.0f };
 	particle.transform.rotate = { 0.0f,0.0f,0.0f };
-	particle.transform.translate = { distribution(randomEngine),distribution(randomEngine) ,distribution(randomEngine) };
+	Vector3 randomTranslate = { distribution(randomEngine),distribution(randomEngine) ,distribution(randomEngine) };
+	particle.transform.translate = translate + randomTranslate;
 	particle.velocity = { distribution(randomEngine) ,distribution(randomEngine) ,distribution(randomEngine) };
 	
 	particle.color = { 1.0f,1.0f,1.0f,1.0f };
@@ -383,4 +410,14 @@ Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine)
 	particle.currentTime = 0;
 
 	return particle;
+}
+
+std::list<Particle> ParticleManager::Emit(const Emitter& emitter, std::mt19937& randomEngine)
+{
+	std::list<Particle>particles;
+	for (uint32_t count = 0; count < emitter.count; ++count)
+	{
+		particles.push_back(MakeNewParticle(randomEngine,emitter.transform.translate));
+	}
+	return particles;
 }
