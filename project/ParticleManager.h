@@ -10,6 +10,7 @@
 #include "Matrix.h"
 #include "Transform.h"
 #include "numbers"
+#include "Collision.h"
 
 class Camera;
 
@@ -52,6 +53,12 @@ struct Emitter
 	uint32_t count;     //発生数
 	float frequency;    //発生頻度
 	float frequencyTime;//頻度用時刻
+};
+
+struct AccelerationField
+{
+	Vector3 acceleration; //加速度
+	AABB area;            //範囲
 };
 
 class ParticleManager
@@ -124,5 +131,9 @@ private:
 
 	//エミッタ
 	Emitter emitter{};
+
+	//Field
+	AccelerationField accelerationField;
+	bool useAccelerationField = false;
 };
 

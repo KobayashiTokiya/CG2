@@ -50,6 +50,11 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,SrvManager* srvManager)
 	emitter.transform.translate = { 0.0f,0.0f,0.0f };
 	emitter.transform.rotate = { 0.0f,0.0f,0.0f };
 	emitter.transform.scale = { 1.0f,1.0f,1.0f };
+
+	//Field初期化
+	accelerationField.acceleration = { 15.0f,0.0f,0.0f };
+	accelerationField.area.min = { -1.0f,-1.0f,-1.0f };
+	accelerationField.area.max = { 1.0f,1.0f,1.0f };
 }
 
 void ParticleManager::Update(Camera* camera)
@@ -63,6 +68,14 @@ void ParticleManager::Update(Camera* camera)
 		{
 			particleIterator = particles.erase(particleIterator);
 			continue;
+		}
+		
+		if (useAccelerationField)
+		{
+			if (Collision::IsCollision(accelerationField.area, (*particleIterator).transform.translate))
+			{
+				(*particleIterator).velocity += accelerationField.acceleration * kDeltaTime;
+			}
 		}
 
 		(*particleIterator).transform.translate += (*particleIterator).velocity * kDeltaTime;
@@ -389,6 +402,13 @@ void ParticleManager::DrawImGui()
 	{
 		particles.splice(particles.end(), Emit(emitter, randomEngine_));
 	}
+
+	ImGui::Checkbox("AccelerationField", &useAccelerationField);
+	if (useAccelerationField)
+	{
+		ImGui::DragFloat3("Field Accel", &accelerationField.acceleration.x, 0.01f);
+	}
+
 
 	ImGui::End();
 }
