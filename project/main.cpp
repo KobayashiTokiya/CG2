@@ -306,7 +306,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	D3D12_BLEND_DESC blendDesc{};
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
-
+	 
 	//RasterizerState
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
 	//裏面(FRONT)(NONE)
@@ -626,8 +626,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		ImGui::DragFloat3("Rotate", &cameraRotate.x, 0.01f);
 		ImGui::End();
 		
+
 		// パーティクル用
 		ParticleManager::GetInstance()->DrawImGui();
+
 
 		//更新処理
 		
@@ -709,7 +711,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//{
 		//	pSprite->Draw(dxCommon->GetCommandList(), srvHandleGPU);
 		//}
-
 
 		// ImGuiの内部コマンド生成
 		ImGui::Render();
