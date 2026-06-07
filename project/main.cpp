@@ -185,7 +185,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	ModelManager::GetInstance()->LoadModel("axis.obj");
 
 	//オブジェクトにモデルをセットする
-	object3d->SetModel("plane.obj");
+	object3d->SetModel("axis.obj");
 
 	// ===============================
 	//  particle
