@@ -50,6 +50,7 @@ void Object3d::Draw()
 {
 	ID3D12GraphicsCommandList* commandList = object3dCommon->GetDxCommon()->GetCommandList();
 
+	commandList->SetPipelineState(object3dCommon->GetPipelinestate(blendMode_));
 	// ⭕ Object3dの担当：座標変換行列（位置）と 平行光源（光）のセットだけ！
 	// 座標変換行列CBufferの場所を設定 (番号:1)
 	commandList->SetGraphicsRootConstantBufferView(1, transformationResource.Get()->GetGPUVirtualAddress());

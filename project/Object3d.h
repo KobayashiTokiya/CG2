@@ -3,6 +3,7 @@
 #include "Matrix.h"
 #include "Vector.h"
 #include "Transform.h"
+#include "ParticleManager.h"
 
 #include <string>
 
@@ -59,6 +60,9 @@ public://セッターとゲッター
 	//カメラ
 	void SetCamera(Camera* camera) { this->camera = camera; }
 
+	//ブレンドモード
+	void SetBlendMode(BlendMode mode) { blendMode_ = mode; }
+
 private:// 非公開メンバ関数
 	void CreateTransformationData();   //座標変換行列データ作成用の関数
 	void CreateDirectionalLightData(); //平行光源データ作成用の関数
@@ -87,6 +91,8 @@ private://
 	Transform cameraTransform;
 
 	Camera* camera = nullptr;
+
+	BlendMode blendMode_ = BlendMode::kBlendModeNormal;
 
 };
 

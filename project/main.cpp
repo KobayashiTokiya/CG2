@@ -57,6 +57,8 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include "Camera.h"
 //SRVマネージャー
 #include "SrvManager.h"
+//パーティクル
+#include "ParticleManager.h"
 
 #pragma region コメントアウト（構造体・関数）
 
@@ -183,9 +185,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	ModelManager::GetInstance()->LoadModel("axis.obj");
 
 	//オブジェクトにモデルをセットする
-	object3d->SetModel("plane.obj");
+	object3d->SetModel("axis.obj");
 
-	
+	// ===============================
+	//  particle
+	// ===============================
+	ParticleManager::GetInstance()->Initialize(dxCommon, srvManeger);
+
 #pragma region コメントアウト（古い初期化コード）
 	/*
 	ID3D12Device* device = dxCommon->GetDevice();
@@ -493,11 +499,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	TextureManager::GetInstance()->Initialize(dxCommon,srvManeger);
 
 	// テクスチャを読み込む (内部でリソース生成～SRV作成までやってくれる)
-	TextureManager::GetInstance()->LoadTexture("Resource/uvChecker.png");
+	TextureManager::GetInstance()->LoadTexture("Resource/circle.png");
 
 	// スプライトで使うためのハンドルをマネージャーから取得する
 	D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU =
-		TextureManager::GetInstance()->GetSrvHandleGPU("Resource/uvChecker.png");
+		TextureManager::GetInstance()->GetSrvHandleGPU("Resource/circle.png");
 
 
 	// --- 古い処理 (TextureManagerに移植したので不要) ---
@@ -531,6 +537,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	TextureManager::GetInstance()->LoadTexture("Resource/monsterBall.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/uvChecker.png");
+	TextureManager::GetInstance()->LoadTexture("Resource/circle.png");
 
 	//スプライトを1個だけ生成
 	Sprite* sprite = new Sprite();
@@ -568,6 +575,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	float spriteRotation = 0.0f;
 	Vector2 spriteSize = { 640.0f, 360.0f };
 	Vector4 spriteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+	bool spriteSwitch = true;
 
 	// 3Dモデル用のImGui操作変数を準備する
 	Vector3 object3dTranslate = { 0.0f, 0.0f, 0.0f };
@@ -602,6 +610,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		ImGui::DragFloat("Rotation", &spriteRotation, 0.01f);	//回転
 		ImGui::DragFloat2("Size", &spriteSize.x, 1.0f);		    //サイズ
 		ImGui::ColorEdit4("Color", &spriteColor.x);	            //色
+		ImGui::Checkbox("Switch", &spriteSwitch);
 		ImGui::End(); // ウィンドウの終わり
 
 		// 3Dモデル用
@@ -617,6 +626,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		ImGui::DragFloat3("Rotate", &cameraRotate.x, 0.01f);
 		ImGui::End();
 		
+
+		// パーティクル用
+		ParticleManager::GetInstance()->DrawImGui();
+
 
 		//更新処理
 		
@@ -647,6 +660,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		object3d->Update();
 		// スプライト
 		sprite->Update();
+		//パーティクル
+		ParticleManager::GetInstance()->Update(camera);
 
 		//for (size_t i = 0; i < sprites.size(); ++i)
 		//{
@@ -674,6 +689,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//SrvManagerにSRVヒープをセットしてもらう
 		srvManeger->PreDraw();
 
+		//パーティクル描画
+		ParticleManager::GetInstance()->Draw(srvHandleGPU);
+
 		// スプライト共通設定（ルートシグネチャ、PSO設定）
 		spriteCommon->CommonDrawSettings();
 
@@ -683,13 +701,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		object3d->Draw();
 
 		// スプライト描画
-		sprite->Draw(dxCommon->GetCommandList(), srvHandleGPU);
+		if (spriteSwitch)
+		{
+			sprite->Draw(dxCommon->GetCommandList(), srvHandleGPU);
+		}
+		
 
 		//for (Sprite* pSprite :sprites)
 		//{
 		//	pSprite->Draw(dxCommon->GetCommandList(), srvHandleGPU);
 		//}
-		 
+
 		// ImGuiの内部コマンド生成
 		ImGui::Render();
 		// ImGuiの描画コマンドを発行
@@ -722,6 +744,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	// カメラ
 	delete camera;
+
+	//パーティクル
+	
 
 	// model
 	// 3Dモデルマネージャーの終了
