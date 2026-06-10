@@ -87,8 +87,8 @@ private://
 	DirectionalLight* directionalLightData = nullptr;
 #pragma endregion
 
-	Transform transform;
-	Transform cameraTransform;
+	Transform transform{};
+	Transform cameraTransform{};
 
 	Camera* camera = nullptr;
 

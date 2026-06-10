@@ -1,9 +1,7 @@
 #include <Windows.h>
-#include <cstdint>
+
 #include <string>
-#include <format>
-#include <filesystem>
-#include <fstream>
+
 #include <chrono>
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -59,6 +57,9 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include "SrvManager.h"
 //パーティクル
 #include "ParticleManager.h"
+//スカイボックス
+#include "Skybox.h"
+#include "SkyboxCommon.h"
 
 #pragma region コメントアウト（構造体・関数）
 
@@ -157,19 +158,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	TextureManager::GetInstance()->Initialize(dxCommon,srvManeger);
 	
 	// ===============================
+	// カメラ
+	// ===============================
+	Camera* camera = new Camera();
+	camera->SetRotate({ 0.0f,0.0f,0.0f });
+	camera->SetTranslate({ 0.0f,0.0f,0.0f });
+
+	// ===============================
 	// object3d
 	// ===============================
 	Object3dCommon* object3dCommon = nullptr;
 	//3Dオブジェクト共通部の初期化
 	object3dCommon = new Object3dCommon;
 	object3dCommon->Initialize(dxCommon);
-
-	// ===============================
-	// カメラ
-	// ===============================
-	Camera* camera = new Camera();
-	camera->SetRotate({ 0.0f,0.0f,0.0f });
-	camera->SetTranslate({ 0.0f,0.0f,0.0f });
 	object3dCommon->SetDefaultCamera(camera);
 
 	Object3d* object3d = new Object3d;
@@ -191,6 +192,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//  particle
 	// ===============================
 	ParticleManager::GetInstance()->Initialize(dxCommon, srvManeger);
+
+	// ===============================
+	// スカイボックス
+	// ===============================
+	SkyboxCommon* skyboxCommon = nullptr;
+	skyboxCommon = new SkyboxCommon;
+	skyboxCommon->Initialize(dxCommon);
+	skyboxCommon->SetDefaultCamera(camera);
+
+	std::string skyboxDDSPath = "Resource/rostock_laage_airport_4k.dds";
+	TextureManager::GetInstance()->LoadTexture(skyboxDDSPath);
+	D3D12_GPU_DESCRIPTOR_HANDLE skyboxSRVHandleGPU = TextureManager::GetInstance()->GetSrvHandleGPU(skyboxDDSPath);
+
+	Skybox* skybox = new Skybox;
+	skybox->Initialize(skyboxCommon, skyboxSRVHandleGPU);
+
 
 #pragma region コメントアウト（古い初期化コード）
 	/*
@@ -503,7 +520,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	// スプライトで使うためのハンドルをマネージャーから取得する
 	D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU =
-		TextureManager::GetInstance()->GetSrvHandleGPU("Resource/circle.png");
+	TextureManager::GetInstance()->GetSrvHandleGPU("Resource/circle.png");
 
 
 	// --- 古い処理 (TextureManagerに移植したので不要) ---
@@ -656,6 +673,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// ===============================
 		// カメラ
 		camera->Update();
+		// スカイボックス
+		skybox->Update(camera);
 		// object3d
 		object3d->Update();
 		// スプライト
@@ -681,7 +700,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//	pSprite->Update();
 		//}
 
-		//描画処理
+		// =========================================================
+		// 描画処理
+		// =========================================================
 
 		// 描画前処理（画面クリアなど）
 		dxCommon->PreDraw();
@@ -689,17 +710,30 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//SrvManagerにSRVヒープをセットしてもらう
 		srvManeger->PreDraw();
 
-		//パーティクル描画
+		// ---------------------------------------------------------
+		// 1. パーティクル描画
+		// ---------------------------------------------------------
 		ParticleManager::GetInstance()->Draw(srvHandleGPU);
 
-		// スプライト共通設定（ルートシグネチャ、PSO設定）
-		spriteCommon->CommonDrawSettings();
-
+		// ---------------------------------------------------------
+		// 2. 3Dオブジェクトの描画
+		// ---------------------------------------------------------
 		//3Dオブジェクトの描画準備。3Dオブジェクトの描画に共通のグラフィックスコマンドを積む
 		object3dCommon->CommonDrawSettings();
-
 		object3d->Draw();
+		
+		// ---------------------------------------------------------
+		// 3. スカイボックスの描画
+		// ---------------------------------------------------------
+		//スカイボックスの描画
+		skyboxCommon->CommonDrawSettings(dxCommon->GetCommandList());
+		skybox->Draw();
 
+		// ---------------------------------------------------------
+		// 4. スプライトの描画 (2Dは3Dより後に描画するのが鉄則です)
+		// ---------------------------------------------------------
+		// スプライト共通設定（ルートシグネチャ、PSO設定）
+		spriteCommon->CommonDrawSettings();
 		// スプライト描画
 		if (spriteSwitch)
 		{
@@ -747,6 +781,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//パーティクル
 	
+	//スカイボックス
+	delete skybox;
+	delete skyboxCommon;
 
 	// model
 	// 3Dモデルマネージャーの終了

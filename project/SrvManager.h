@@ -40,7 +40,7 @@ private:
 	//最大SRV数(最大テクスチャ枚数)
 	static const uint32_t kMaxSRVCount;
 	//SRV用のデスクリプタサイズ
-	uint32_t descriptorSize;
+	uint32_t descriptorSize = 0;
 	//SRV用デスクリプタヒープ
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap;
 

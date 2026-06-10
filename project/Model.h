@@ -78,7 +78,7 @@ private:
 	//VertexResourceにデータを書き込むためのポインタ バッファリソース内のデータを指すポインタ
 	VertexData* vertexData = nullptr;
 	//バッファリソースの使い道を補足するバッファビュー
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
 
 	// --- マテリアル ---
 	//バッファリソース（マテリアル用）
