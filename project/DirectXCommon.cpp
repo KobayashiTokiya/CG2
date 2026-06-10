@@ -657,6 +657,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource>DirectXCommon::CreateTextureResource(const
 #pragma endregion
 
 #pragma region リソース転送関数・テクスチャデータの転送
+/*
 Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCommon::UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImage)
 {
 	std::vector<D3D12_SUBRESOURCE_DATA> subresources;
@@ -726,6 +727,82 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCommon::UploadTextureData(const Mi
 	// 次の命令のためにコマンドリストをリセットしておく
 	commandAllocator_->Reset();
 	commandList_->Reset(commandAllocator_.Get(), nullptr);
+
+	return intermediateResource;
+}
+*/
+Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCommon::UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImage)
+{
+	std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+	DirectX::PrepareUpload(device_.Get(), mipImage.GetImages(), mipImage.GetImageCount(), mipImage.GetMetadata(), subresources);
+
+	uint64_t intermediateSize = GetRequiredIntermediateSize(texture.Get(), 0, UINT(subresources.size()));
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource;
+	D3D12_HEAP_PROPERTIES uploadHeapProps{};
+	uploadHeapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
+
+	D3D12_RESOURCE_DESC bufferDesc{};
+	bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	bufferDesc.Width = intermediateSize;
+	bufferDesc.Height = 1;
+	bufferDesc.DepthOrArraySize = 1;
+	bufferDesc.MipLevels = 1;
+	bufferDesc.SampleDesc.Count = 1;
+	bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+	device_->CreateCommittedResource(
+		&uploadHeapProps,
+		D3D12_HEAP_FLAG_NONE,
+		&bufferDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&intermediateResource)
+	);
+
+	// =================================================================
+	// ✨【修正の要】メインの commandList_ を汚さないよう、使い捨てのリストを作る
+	// =================================================================
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> tempAllocator;
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> tempCommandList;
+
+	// この転送のためだけの使い捨てアロケーターとコマンドリストを生成
+	device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&tempAllocator));
+	device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, tempAllocator.Get(), nullptr, IID_PPV_ARGS(&tempCommandList));
+
+	// 使い捨てのコマンドリスト（tempCommandList）にデータを転送するコマンドを積む
+	UpdateSubresources(tempCommandList.Get(), texture.Get(), intermediateResource.Get(), 0, 0, UINT(subresources.size()), subresources.data());
+
+	// リソースバリアの設定
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = texture.Get();
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+	tempCommandList->ResourceBarrier(1, &barrier);
+
+	// コマンドリストを閉じて、キューで実行
+	tempCommandList->Close();
+
+	ID3D12CommandList* commandLists[] = { tempCommandList.Get() };
+	commandQueue_->ExecuteCommandLists(1, commandLists);
+
+	// フェンスで安全に待機（ここは元のロジックのままでOK）
+	fenceValue_++;
+	commandQueue_->Signal(fence_.Get(), fenceValue_);
+
+	if (fence_->GetCompletedValue() < fenceValue_)
+	{
+		fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
+		WaitForSingleObject(fenceEvent_, INFINITE);
+	}
+
+	// ❌ 元あった「commandAllocator_->Reset()」と「commandList_->Reset()」は、
+	// メインループの描画データを破壊してしまうため【完全に削除】します。
+	// 使い捨ての tempAllocator / tempCommandList は、関数を抜ければ自動で安全に破棄されます。
 
 	return intermediateResource;
 }
