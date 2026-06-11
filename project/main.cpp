@@ -182,11 +182,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// 3Dモデルマネージャーの初期化
 	ModelManager::GetInstance()->Initialize(dxCommon);
 
-	ModelManager::GetInstance()->LoadModel("plane.obj");
 	ModelManager::GetInstance()->LoadModel("axis.obj");
+	ModelManager::GetInstance()->LoadModel("plane.obj");
+	
 
 	//オブジェクトにモデルをセットする
-	object3d->SetModel("axis.obj");
+	object3d->SetModel("plane.obj");
 
 	// ===============================
 	//  particle

@@ -1,4 +1,4 @@
-#include "object3d.hlsli"
+#include "Sprite.hlsli"
 
 struct TransformationMatrix
 {
@@ -21,6 +21,5 @@ VertexShaderOutput main(VertexShaderInput input)
     output.position = mul(input.position, gTransformationMatrix.WVP);
     
     output.normal = normalize(mul(input.normal, (float32_t3x3) gTransformationMatrix.World));
-    output.worldPosition = mul(input.position, gTransformationMatrix.World).xyz;
     return output;
 }

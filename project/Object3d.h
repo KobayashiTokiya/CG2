@@ -4,6 +4,7 @@
 #include "Vector.h"
 #include "Transform.h"
 #include "ParticleManager.h"
+#include "TextureManager.h"
 
 #include <string>
 
@@ -33,6 +34,7 @@ public://インナークラス
 		Vector4 color;
 		Vector3 direction;
 		float intensity;
+		Vector4 cameraWorldPosition;
 	};
 #pragma endregion
 
@@ -62,6 +64,10 @@ public://セッターとゲッター
 
 	//ブレンドモード
 	void SetBlendMode(BlendMode mode) { blendMode_ = mode; }
+
+	//テクスチャ
+	void SetTextureIndex(uint32_t textureIndex) { textureIndex_ = textureIndex; }
+	void SetEnvironmentTexture(uint32_t environmentTextureIndex) { environmentTextureIndex_ = environmentTextureIndex; }
 
 private:// 非公開メンバ関数
 	void CreateTransformationData();   //座標変換行列データ作成用の関数
@@ -94,5 +100,6 @@ private://
 
 	BlendMode blendMode_ = BlendMode::kBlendModeNormal;
 
+	uint32_t textureIndex_ = 0;
+	uint32_t environmentTextureIndex_ = 0;
 };
-
