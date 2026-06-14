@@ -44,7 +44,7 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,SrvManager* srvManager)
 	//}
 
 	//エミッタ初期化
-	emitter.count = 3;
+	emitter.count = 8;
 	emitter.frequency = 0.5f;//0.5秒ごとに発生
 	emitter.frequencyTime = 0.0f;//発生頻度用の時刻、0で初期化
 	emitter.transform.translate = { 0.0f,0.0f,0.0f };
@@ -116,7 +116,7 @@ void ParticleManager::Draw(D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU)
 	auto commandList = dxCommon_->GetCommandList();
 
 	commandList->SetGraphicsRootSignature(rootSignature_.Get());
-	commandList->SetPipelineState(graphicsPipelineState_[static_cast<int>(BlendMode::kBlendModeNormal)].Get());
+	commandList->SetPipelineState(graphicsPipelineState_[static_cast<int>(BlendMode::kBlendModeAdd)].Get());
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
@@ -415,14 +415,19 @@ void ParticleManager::DrawImGui()
 
 Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine,const Vector3& translate)
 {
-	std::uniform_real_distribution<float>distribution(-1.0f, 1.0f);
+	std::uniform_real_distribution<float>distribution(0.0f, 0.0f);
+	std::uniform_real_distribution<float>distRotate(-std::numbers::pi_v<float>, std::numbers::pi_v<float>);
+	std::uniform_real_distribution<float>distScale(0.4f, 1.5f);
+	
 	Particle particle;
-	particle.transform.scale = { 1.0f,1.0f,1.0f };
-	particle.transform.rotate = { 0.0f,0.0f,0.0f };
+	particle.transform.scale = { 0.05f,distScale(randomEngine),0.5f};
+	particle.transform.rotate = { 0.0f,0.0f,distRotate(randomEngine)};
+	
 	Vector3 randomTranslate = { distribution(randomEngine),distribution(randomEngine) ,distribution(randomEngine) };
 	particle.transform.translate = translate + randomTranslate;
-	particle.velocity = { distribution(randomEngine) ,distribution(randomEngine) ,distribution(randomEngine) };
-	
+	//particle.velocity = { distribution(randomEngine) ,distribution(randomEngine) ,distribution(randomEngine) };
+	particle.velocity = { 0.0f,0.0f,0.0f };
+
 	particle.color = { 1.0f,1.0f,1.0f,1.0f };
 
 	std::uniform_real_distribution<float>distTime(1.0f, 3.0f);
