@@ -34,10 +34,14 @@ void Object3d::Update()
 	{
 		const Matrix4x4& viewProjectionMatrix = camera->GetViewProjectionMatrix();
 		worldViewProjectionMatrix = MatrixMath::Multiply(worldMatrix, viewProjectionMatrix);
+
+		Vector3 camPos = camera->GetTranslate();
+		directionalLightData->cameraWorldPosition = Vector4(camPos.x, camPos.y, camPos.z, 1.0f);
 	}
 	else
 	{
 		worldViewProjectionMatrix = worldMatrix;
+		directionalLightData->cameraWorldPosition = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
 	}
 
 	// 定数バッファに書き込む
@@ -55,8 +59,14 @@ void Object3d::Draw()
 	// 座標変換行列CBufferの場所を設定 (番号:1)
 	commandList->SetGraphicsRootConstantBufferView(1, transformationResource.Get()->GetGPUVirtualAddress());
 
+	D3D12_GPU_DESCRIPTOR_HANDLE textureGPUHandle = TextureManager::GetInstance()->GetSrvHandleGPU(textureIndex_);
+	commandList->SetGraphicsRootDescriptorTable(2, textureGPUHandle);
+
 	// 平行光源CBufferの場所を設定 (番号:3)
 	commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource.Get()->GetGPUVirtualAddress());
+
+	D3D12_GPU_DESCRIPTOR_HANDLE envTexureGPUHandle = TextureManager::GetInstance()->GetSrvHandleGPU(environmentTextureIndex_);
+	commandList->SetGraphicsRootDescriptorTable(4, envTexureGPUHandle);
 
 	//3Dモデルが割り当てられていれば描画する
 	if (model)

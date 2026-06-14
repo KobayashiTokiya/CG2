@@ -1,4 +1,4 @@
-#include "object3d.hlsli"
+#include "Sprite.hlsli"
 
 struct Material
 {
@@ -12,19 +12,12 @@ struct DirectionalLight
     float32_t4 color;
     float32_t3 direction;
     float intensity;
-    float32_t4 cameraWorldPosition;
-};
-
-struct Camera
-{
-    float32_t3 worldPosition;
 };
 
 Texture2D<float32_t4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
 ConstantBuffer<Material> gMaterial : register(b0);
 ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
-TextureCube<float32_t4> gEnvironmentTexture : register(t1);
 
 struct PixelShaderOutput
 {
@@ -47,11 +40,5 @@ PixelShaderOutput main(VertexShaderOutput input)
     {
         discard;
     }
-    
-    float32_t3 cameraToPosition = normalize(input.worldPosition - gDirectionalLight.cameraWorldPosition);
-    float32_t3 reflectedVector = reflect(cameraToPosition, normalize(input.normal));
-    float32_t4 environmentColor = gEnvironmentTexture.Sample(gSampler, reflectedVector);
-    
-    output.color.rgb += environmentColor.rgb;
     return output;
 }
