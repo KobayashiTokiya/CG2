@@ -33,7 +33,7 @@ void Model::Draw()
 	// マテリアルCBufferの場所を設定 (CBV)
 	commandList->SetGraphicsRootConstantBufferView(0, materialResource.Get()->GetGPUVirtualAddress());
 	// SRVのDescriptorTableの先頭を設定 (Table)
-	commandList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSrvHandleGPU(modelData_.material.textureIndex));
+	//commandList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSrvHandleGPU(modelData_.material.textureIndex));
 	// 描画(DrawCall/ドローコール)
 	commandList->DrawInstanced(UINT(modelData_.vertices.size()), 1, 0, 0);
 }

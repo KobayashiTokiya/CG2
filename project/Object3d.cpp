@@ -65,7 +65,8 @@ void Object3d::Draw()
 	// 平行光源CBufferの場所を設定 (番号:3)
 	commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource.Get()->GetGPUVirtualAddress());
 
-	commandList->SetGraphicsRootDescriptorTable(4, textureGPUHandle);
+	D3D12_GPU_DESCRIPTOR_HANDLE envTexureGPUHandle = TextureManager::GetInstance()->GetSrvHandleGPU(environmentTextureIndex_);
+	commandList->SetGraphicsRootDescriptorTable(4, envTexureGPUHandle);
 
 	//3Dモデルが割り当てられていれば描画する
 	if (model)
