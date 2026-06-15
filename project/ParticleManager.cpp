@@ -44,8 +44,8 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,SrvManager* srvManager)
 	//}
 
 	//エミッタ初期化
-	emitter.count = 8;
-	emitter.frequency = 0.5f;//0.5秒ごとに発生
+	emitter.count = 2;
+	emitter.frequency = 0.1f;//0.5秒ごとに発生
 	emitter.frequencyTime = 0.0f;//発生頻度用の時刻、0で初期化
 	emitter.transform.translate = { 0.0f,0.0f,0.0f };
 	emitter.transform.rotate = { 0.0f,0.0f,0.0f };
@@ -60,59 +60,79 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,SrvManager* srvManager)
 void ParticleManager::Update(Camera* camera)
 {
 	const float kDeltaTime = 1.0f / 60.0f;
-	numInstance = 0;//描画すべきインスタント数
-	for (std::list<Particle>::iterator particleIterator=particles.begin();
-		particleIterator!=particles.end();)
+	numInstance = 0; // ループの前にインスタンス数をリセット
+
+	emitter.frequencyTime += kDeltaTime;
+	if (emitter.frequencyTime >= emitter.frequency)
 	{
-		if ((*particleIterator).lifeTime<=(*particleIterator).currentTime)
+		// 時間が経ったら自動でパーティクルをリストに追加
+		particles.splice(particles.end(), Emit(emitter, randomEngine_));
+		emitter.frequencyTime -= emitter.frequency; // タイマーを戻す
+	}
+	// 発生している全パーティクルの更新ループ
+	for (auto it = particles.begin(); it != particles.end(); )
+	{
+		// 1. 寿命のカウントと削除チェック
+		it->currentTime += kDeltaTime;
+		if (it->currentTime >= it->lifeTime)
 		{
-			particleIterator = particles.erase(particleIterator);
+			it = particles.erase(it); // 寿命が尽きたらリストから削除して次の要素へ
 			continue;
 		}
-		
+
+		// 2. 加速度フィールドの適用
 		if (useAccelerationField)
 		{
-			if (Collision::IsCollision(accelerationField.area, (*particleIterator).transform.translate))
-			{
-				(*particleIterator).velocity += accelerationField.acceleration * kDeltaTime;
-			}
+			it->velocity.x += accelerationField.acceleration.x * kDeltaTime;
+			it->velocity.y += accelerationField.acceleration.y * kDeltaTime;
+			it->velocity.z += accelerationField.acceleration.z * kDeltaTime;
 		}
 
-		(*particleIterator).transform.translate += (*particleIterator).velocity * kDeltaTime;
-		(*particleIterator).currentTime += kDeltaTime;//経過時間を足す
+		// 3. 速度による移動
+		it->transform.translate.x += it->velocity.x * kDeltaTime;
+		it->transform.translate.y += it->velocity.y * kDeltaTime;
+		it->transform.translate.z += it->velocity.z * kDeltaTime;
 
+		// 4. 各パーティクルのワールド行列を計算
+		// 床（X-Z平面）に水平に寝かせるため、X軸を90度回転
+		Matrix4x4 rotateXMatrix = MatrixMath::MakeRotateXMatrix(1.570796f);
+		Matrix4x4 rotateYMatrix = MatrixMath::MakeRotateYMatrix(it->transform.rotate.y);
+		Matrix4x4 rotateZMatrix = MatrixMath::MakeRotateZMatrix(it->transform.rotate.z);
 
-		if (numInstance<kNumMaxInstance)
+		Matrix4x4 rotateMatrix = MatrixMath::Multiply(rotateXMatrix, rotateYMatrix);
+		rotateMatrix = MatrixMath::Multiply(rotateMatrix, rotateZMatrix);
+
+		Matrix4x4 scaleMatrix = MatrixMath::MakeScaleMatrix(it->transform.scale);
+		Matrix4x4 translateMatrix = MatrixMath::MakeTranslateMatrix(it->transform.translate);
+
+		Matrix4x4 worldMatrix = MatrixMath::Multiply(scaleMatrix, rotateMatrix);
+		worldMatrix = MatrixMath::Multiply(worldMatrix, translateMatrix);
+
+		// 5. 最大数を超えないようにグラフィックメモリ（インスタンス用バッファ）に転送
+		if (numInstance < kNumMaxInstance)
 		{
-			Particle final;
-			final.transform.scale = (*particleIterator).transform.scale * base.transform.scale;
-			final.transform.rotate = (*particleIterator).transform.rotate + base.transform.rotate;
-			final.transform.translate = (*particleIterator).transform.translate + base.transform.translate;
-
-			Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(final.transform.scale, final.transform.rotate, final.transform.translate);
-
 			instancingData[numInstance].world = worldMatrix;
-			instancingData[numInstance].WVP = MatrixMath::Multiply(worldMatrix, camera->GetViewProjectionMatrix());
-			instancingData[numInstance].color = (*particleIterator).color;
-			float alpha = 1.0f - ((*particleIterator).currentTime / (*particleIterator).lifeTime);
-			instancingData[numInstance].color.w = alpha;
 
-			instancingData[numInstance].WVP = MatrixMath::Multiply(camera->GetViewProjectionMatrix(), worldMatrix);
-			++numInstance;//生きているParticleの数を1つカウントする
+			// WVPの計算
+			Matrix4x4 worldView = MatrixMath::Multiply(worldMatrix, camera->GetViewMatrix());
+			instancingData[numInstance].WVP = MatrixMath::Multiply(worldView, camera->GetProjectionMatrix());
+
+			// 生存時間（currentTime / lifeTime）に応じてアルファ値を下げ、フワッと消えさせる
+			float alpha = 1.0f - (it->currentTime / it->lifeTime);
+			instancingData[numInstance].color = { it->color.x, it->color.y, it->color.z, alpha };
+
+			numInstance++; // 描画するインスタンス数をカウントアップ
 		}
 
-		++particleIterator;
-	}
-	emitter.frequencyTime += kDeltaTime;//時刻を進める
-	if (emitter.frequency <= emitter.frequencyTime)//頻度よりも大きいなら発生
-	{
-		particles.splice(particles.end(), Emit(emitter, randomEngine_));//発生処理
-		emitter.frequencyTime -= emitter.frequency;//余計に過ぎた時間も加味して頻度計算する
+		++it;
 	}
 }
 
 void ParticleManager::Draw(D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU)
 {
+	// 描画するパーティクルが画面に1つもない時は処理をスキップ
+	if (numInstance == 0) return;
+
 	auto commandList = dxCommon_->GetCommandList();
 
 	commandList->SetGraphicsRootSignature(rootSignature_.Get());
@@ -121,11 +141,11 @@ void ParticleManager::Draw(D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU)
 
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 
-	commandList->SetGraphicsRootShaderResourceView(0, instancingResource->GetGPUVirtualAddress()); // ★ 0にする！
+	commandList->SetGraphicsRootShaderResourceView(0, instancingResource->GetGPUVirtualAddress());
 	commandList->SetGraphicsRootDescriptorTable(1, srvHandleGPU);
 
+	// ★第2引数を「numInstance」に変更。これで生成された数だけ一括で描画されます
 	commandList->DrawInstanced((UINT)vertices_.size(), numInstance, 0, 0);
-
 }
 
 void ParticleManager::Finalize()
@@ -180,7 +200,7 @@ void ParticleManager::CreateRootSignature()
 	D3D12_STATIC_SAMPLER_DESC staticSamplers[1] = {};
 	staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
 	staticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-	staticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
 	staticSamplers[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 	staticSamplers[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
 	staticSamplers[0].MaxLOD = D3D12_FLOAT32_MAX;
@@ -245,7 +265,7 @@ void ParticleManager::CreateGraphicsPipelineState()
 
 	// RasterizerState
 	D3D12_RASTERIZER_DESC rasterizerDesc{};
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK; // 裏面も描画(D3D12_CULL_MODE_NONE)　裏面を表示しない(D3D12_CULL_MODE_BACK)　表を表示しない(D3D12_CULL_MODE_FRONT)
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE; // 裏面も描画(D3D12_CULL_MODE_NONE)　裏面を表示しない(D3D12_CULL_MODE_BACK)　表を表示しない(D3D12_CULL_MODE_FRONT)
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	// DepthStencilStateの設定（書き込みを ZERO にする！）
@@ -287,11 +307,19 @@ void ParticleManager::CreateVertexBuffer()
 {
 	ID3D12Device* device = dxCommon_->GetDevice();
 
-	vertices_.resize(6);
+	// ★スライド4枚目の仕様通りに設定
+	const uint32_t kRingDivide = 32;
+	const float kOuterRadius = 1.0f;
+	const float kInnerRadius = 0.2f;
+	const float radianPerDivide = 2.0f * std::numbers::pi_v<float> / float(kRingDivide);
+
+	// 1つの分割につき2つの三角形（6頂点）を作るので、合計頂点数を計算
+	vertices_.resize(kRingDivide * 6);
 
 	UINT vertexCount = (UINT)vertices_.size();
 	UINT vertexBufferSize = sizeof(VertexData) * vertexCount;
 
+	// ヒープとリソースの作成（既存のコードの通り）
 	D3D12_HEAP_PROPERTIES uploadHeapProperties{};
 	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
 
@@ -305,7 +333,7 @@ void ParticleManager::CreateVertexBuffer()
 	vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
 	HRESULT hr = device->CreateCommittedResource(
-		&uploadHeapProperties,D3D12_HEAP_FLAG_NONE,
+		&uploadHeapProperties, D3D12_HEAP_FLAG_NONE,
 		&vertexResourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
 		IID_PPV_ARGS(&vertexResource_)
 	);
@@ -318,33 +346,31 @@ void ParticleManager::CreateVertexBuffer()
 	VertexData* vertexData = nullptr;
 	vertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
 
-	//１枚目の三角形//２枚目の三角形
-	vertexData[0].position = { -0.5f, -0.5f, 0.0f, 1.0f };
-	vertexData[0].texcoord = { 0.0f,1.0f };
-	vertexData[0].normal = { 0.0f,0.0f,-1.0f };
-	
-	vertexData[1].position = { -0.5f,  0.5f, 0.0f, 1.0f };
-	vertexData[1].texcoord = { 0.0f,0.0f };
-	vertexData[1].normal = { 0.0f,0.0f,-1.0f };
-	
-	vertexData[2].position = { 0.5f, -0.5f, 0.0f, 1.0f };
-	vertexData[2].texcoord = { 1.0f,1.0f };
-	vertexData[2].normal = { 0.0f,0.0f,-1.0f };
-	
-	vertexData[3].position = { -0.5f,  0.5f, 0.0f, 1.0f };
-	vertexData[3].texcoord = { 0.0f,0.0f };
-	vertexData[3].normal = { 0.0f,0.0f,-1.0f };
-	
-	vertexData[4].position = { 0.5f,  0.5f, 0.0f, 1.0f };
-	vertexData[4].texcoord = { 1.0f,0.0f };
-	vertexData[4].normal = { 0.0f,0.0f,-1.0f };
-	
-	vertexData[5].position = { 0.5f, -0.5f, 0.0f, 1.0f };
-	vertexData[5].texcoord = { 1.0f,1.0f };
-	vertexData[5].normal = { 0.0f,0.0f,-1.0f };
+	// ★スライドのアルゴリズムに従って頂点データをループ生成
+	size_t vIdx = 0;
+	for (uint32_t index = 0; index < kRingDivide; ++index)
+	{
+		float sin = std::sin(index * radianPerDivide);
+		float cos = std::cos(index * radianPerDivide);
+		float sinNext = std::sin((index + 1) * radianPerDivide);
+		float cosNext = std::cos((index + 1) * radianPerDivide);
+
+		// 円周方向は固定（0.5f）、内側・外側の半径方向で 0.0f 〜 1.0f のグラデーションを作ります
+		// ※もしこれで見た目が変わらない、あるいはまだトゲトゲする場合は、
+		// 下記の {0.5f, 0.0f} と {0.5f, 1.0f} の中身を {0.0f, 0.5f} と {1.0f, 0.5f} に入れ替えてみてください。
+
+		// 三角形1枚目 (① -> ② -> ③)
+		vertexData[vIdx++] = { {cos * kOuterRadius, 0.0f, sin * kOuterRadius, 1.0f}, {0.5f, 0.0f}, {0.0f, 1.0f, 0.0f} }; // ① 外側1
+		vertexData[vIdx++] = { {cos * kInnerRadius, 0.0f, sin * kInnerRadius, 1.0f}, {0.5f, 1.0f}, {0.0f, 1.0f, 0.0f} }; // ③ 内側1
+		vertexData[vIdx++] = { {cosNext * kOuterRadius, 0.0f, sinNext * kOuterRadius, 1.0f}, {0.5f, 0.0f}, {0.0f, 1.0f, 0.0f} }; // ② 外側2
+
+		// 三角形2枚目 (② -> ④ -> ③)
+		vertexData[vIdx++] = { {cosNext * kOuterRadius, 0.0f, sinNext * kOuterRadius, 1.0f}, {0.5f, 0.0f}, {0.0f, 1.0f, 0.0f} }; // ② 外側2
+		vertexData[vIdx++] = { {cos * kInnerRadius, 0.0f, sin * kInnerRadius, 1.0f}, {0.5f, 1.0f}, {0.0f, 1.0f, 0.0f} }; // ③ 内側1
+		vertexData[vIdx++] = { {cosNext * kInnerRadius, 0.0f, sinNext * kInnerRadius, 1.0f}, {0.5f, 1.0f}, {0.0f, 1.0f, 0.0f} }; // ④ 内側2
+	}
 
 	vertexResource_->Unmap(0, nullptr);
-
 }
 
 D3D12_BLEND_DESC ParticleManager::GetBlendDesc(BlendMode mode)
@@ -413,26 +439,54 @@ void ParticleManager::DrawImGui()
 	ImGui::End();
 }
 
-Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine,const Vector3& translate)
+Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate)
 {
-	std::uniform_real_distribution<float>distribution(0.0f, 0.0f);
-	std::uniform_real_distribution<float>distRotate(-std::numbers::pi_v<float>, std::numbers::pi_v<float>);
-	std::uniform_real_distribution<float>distScale(0.4f, 1.5f);
-	
 	Particle particle;
-	particle.transform.scale = { 0.05f,distScale(randomEngine),0.5f};
-	particle.transform.rotate = { 0.0f,0.0f,distRotate(randomEngine)};
-	
-	Vector3 randomTranslate = { distribution(randomEngine),distribution(randomEngine) ,distribution(randomEngine) };
-	particle.transform.translate = translate + randomTranslate;
-	//particle.velocity = { distribution(randomEngine) ,distribution(randomEngine) ,distribution(randomEngine) };
-	particle.velocity = { 0.0f,0.0f,0.0f };
 
-	particle.color = { 1.0f,1.0f,1.0f,1.0f };
+	// 1. サイズの設定（正方形の板ポリゴン）
+	std::uniform_real_distribution<float> distScale(0.1f, 0.3f);
+	float size = distScale(randomEngine);
+	particle.transform.scale = { size, size, 1.0f };
 
-	std::uniform_real_distribution<float>distTime(1.0f, 3.0f);
+	// 2. Z軸（画面内の回転）だけランダムにする
+	std::uniform_real_distribution<float> distRotate(-std::numbers::pi_v<float>, std::numbers::pi_v<float>);
+	particle.transform.rotate = { 0.0f, 0.0f, distRotate(randomEngine) };
+
+	// =============================================================
+	// ★【超重要】円環（Ring）状に広げるための計算
+	// =============================================================
+	// 0〜360度（0〜2π）のランダムな角度を決定する
+	std::uniform_real_distribution<float> distAngle(0.0f, std::numbers::pi_v<float> *2.0f);
+	float angle = distAngle(randomEngine);
+
+	// 角度から「円の方向（サイン・コサイン）」を計算する（X-Z平面に広げる場合）
+	float directionX = std::cos(angle);
+	float directionZ = std::sin(angle);
+
+	// もしX-Y平面（2D的）に広げたい場合はこちらを使ってください：
+	// float directionX = std::cos(angle);
+	// float directionY = std::sin(angle);
+
+	// 3. 初期位置の設定（エミッターの位置から、少し円状に外側にずらして発生させる）
+	float startRadius = 0.5f; // 発生する輪の初期半径（0にすれば中心から広がります）
+	particle.transform.translate.x = translate.x + directionX * startRadius;
+	particle.transform.translate.y = translate.y; // X-Z平面ならYはそのまま
+	particle.transform.translate.z = translate.z + directionZ * startRadius;
+
+	// 4. 速度の設定（★計算した円の外側に向かって勢いよく飛ばす）
+	float speed = 5.0f; // 広がるスピード（お好みで調整してください）
+	particle.velocity.x = directionX * speed;
+	particle.velocity.y = 0.0f; // 上下には動かさない
+	particle.velocity.z = directionZ * speed;
+
+	// =============================================================
+
+	// 5. 色と生存時間の設定
+	particle.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+	std::uniform_real_distribution<float> distTime(1.0f, 2.0f);
 	particle.lifeTime = distTime(randomEngine);
-	particle.currentTime = 0;
+	particle.currentTime = 0.0f;
 
 	return particle;
 }
