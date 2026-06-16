@@ -444,41 +444,16 @@ Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine, const Vect
 	Particle particle;
 
 	// 1. サイズの設定（正方形の板ポリゴン）
-	std::uniform_real_distribution<float> distScale(0.1f, 0.3f);
-	float size = distScale(randomEngine);
-	particle.transform.scale = { size, size, 1.0f };
+	particle.transform.scale = { 3.0f, 3.0f, 3.0f };
 
 	// 2. Z軸（画面内の回転）だけランダムにする
 	std::uniform_real_distribution<float> distRotate(-std::numbers::pi_v<float>, std::numbers::pi_v<float>);
 	particle.transform.rotate = { 0.0f, 0.0f, distRotate(randomEngine) };
 
-	// =============================================================
-	// ★【超重要】円環（Ring）状に広げるための計算
-	// =============================================================
-	// 0〜360度（0〜2π）のランダムな角度を決定する
-	std::uniform_real_distribution<float> distAngle(0.0f, std::numbers::pi_v<float> *2.0f);
-	float angle = distAngle(randomEngine);
-
-	// 角度から「円の方向（サイン・コサイン）」を計算する（X-Z平面に広げる場合）
-	float directionX = std::cos(angle);
-	float directionZ = std::sin(angle);
-
-	// もしX-Y平面（2D的）に広げたい場合はこちらを使ってください：
-	// float directionX = std::cos(angle);
-	// float directionY = std::sin(angle);
-
 	// 3. 初期位置の設定（エミッターの位置から、少し円状に外側にずらして発生させる）
-	float startRadius = 0.5f; // 発生する輪の初期半径（0にすれば中心から広がります）
-	particle.transform.translate.x = translate.x + directionX * startRadius;
-	particle.transform.translate.y = translate.y; // X-Z平面ならYはそのまま
-	particle.transform.translate.z = translate.z + directionZ * startRadius;
-
-	// 4. 速度の設定（★計算した円の外側に向かって勢いよく飛ばす）
-	float speed = 5.0f; // 広がるスピード（お好みで調整してください）
-	particle.velocity.x = directionX * speed;
-	particle.velocity.y = 0.0f; // 上下には動かさない
-	particle.velocity.z = directionZ * speed;
-
+	particle.transform.translate = translate ;
+	
+	particle.velocity = {0.0f,0.0f,0.0f};
 	// =============================================================
 
 	// 5. 色と生存時間の設定
