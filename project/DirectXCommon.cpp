@@ -278,22 +278,30 @@ D3D12_GPU_DESCRIPTOR_HANDLE DirectXCommon::GetSRVGPUDescriptorHandle(uint32_t in
 //RTV専用のデスクリプタハンドル取得関数を作成
 D3D12_CPU_DESCRIPTOR_HANDLE DirectXCommon::GetRTVCPUDescriptorHandle(uint32_t index)
 {
-	return GetCPUDescriptorHandle(srvDscriptorHeap_, descriptorSizeSRV_, index);
+	D3D12_CPU_DESCRIPTOR_HANDLE handle = rtvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart();
+	handle.ptr += (index * descriptorSizeRTV_);
+	return handle;
 }
 D3D12_GPU_DESCRIPTOR_HANDLE DirectXCommon::GetRTVGPUDescriptorHandle(uint32_t index)
 {
-	return GetGPUDescriptorHandle(srvDscriptorHeap_, descriptorSizeSRV_, index);
+	D3D12_GPU_DESCRIPTOR_HANDLE handle = rtvDescriptorHeap_->GetGPUDescriptorHandleForHeapStart();
+	handle.ptr += (index * descriptorSizeRTV_);
+	return handle;
 }
 #pragma endregion
 #pragma region DSVに特化した公開用の関数(実装)
 //DSV専用のデスクリプタハンドル取得関数を作成
 D3D12_CPU_DESCRIPTOR_HANDLE DirectXCommon::GetDSVCPUDescriptorHandle(uint32_t index)
 {
-	return GetCPUDescriptorHandle(srvDscriptorHeap_, descriptorSizeSRV_, index);
+	D3D12_CPU_DESCRIPTOR_HANDLE handle = dsvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart();
+	handle.ptr += (index * descriptorSizeDSV_);
+	return handle;
 }
 D3D12_GPU_DESCRIPTOR_HANDLE DirectXCommon::GetDSVGPUDescriptorHandle(uint32_t index)
 {
-	return GetGPUDescriptorHandle(srvDscriptorHeap_, descriptorSizeSRV_, index);
+	D3D12_GPU_DESCRIPTOR_HANDLE handle = dsvDescriptorHeap_->GetGPUDescriptorHandleForHeapStart();
+	handle.ptr += (index * descriptorSizeDSV_);
+	return handle;
 }
 #pragma endregion
 
