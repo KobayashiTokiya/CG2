@@ -122,6 +122,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	TextureManager::GetInstance()->LoadTexture("Resource/monsterBall.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/uvChecker.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/circle.png");
+	TextureManager::GetInstance()->LoadTexture("Resource/gradationLine.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/rostock_laage_airport_4k.dds"); // スカイボックス兼環境マップ
 	
 	uint32_t uvCheckerTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/uvChecker.png");
@@ -158,7 +159,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	skybox->Initialize(skyboxCommon, skyboxSRVHandleGPU);
 
 	// スプライトで使うためのハンドルをマネージャーから取得する
-	D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU =TextureManager::GetInstance()->GetSrvHandleGPU("Resource/circle.png");
+	//パーティクル用
+	D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU =TextureManager::GetInstance()->GetSrvHandleGPU("Resource/gradationLine.png");
 
 	//スプライトを1個だけ生成
 	Sprite* sprite = new Sprite();
@@ -245,14 +247,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		object3d->SetScale(object3dScale);
 
 		//ImGuiの値をカメラにセットする！
-		camera->SetTranslate(cameraTranslate);
-		camera->SetRotate(cameraRotate);
+		cameraTranslate = camera->GetTranslate();
+		cameraRotate = camera->GetRotate();
 
 		// ===============================
 		// 更新（行列計算など）
 		// ===============================
 		// カメラ
-		camera->Update();
+		camera->DebugUpdate(input);
 		// スカイボックス
 		skybox->Update(camera);
 		// object3d

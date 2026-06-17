@@ -14,6 +14,12 @@
 
 class Camera;
 
+enum class ParticleType
+{
+	kRing,
+	kCylinder
+};
+
 struct Particle
 {
 	Transform transform;
@@ -21,6 +27,7 @@ struct Particle
 	Vector4 color;
 	float lifeTime;
 	float currentTime;
+	ParticleType type;
 };
 
 enum class BlendMode
@@ -88,6 +95,8 @@ private:
 
 	//頂点バッファを作るよう関数
 	void CreateVertexBuffer();
+	//シリンダー用頂点バッファを作るよう関数
+	void CreateCylinderVertexBuffer();
 
 	Particle MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate);
 
@@ -135,5 +144,10 @@ private:
 	//Field
 	AccelerationField accelerationField;
 	bool useAccelerationField = false;
-};
 
+	ParticleType currentSpawnType = ParticleType::kRing;
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> cylinderVertexResource_;
+	D3D12_VERTEX_BUFFER_VIEW cylinderVertexBufferView_{};
+	std::vector<VertexData> cylinderVertices_;
+};

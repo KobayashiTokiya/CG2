@@ -27,6 +27,7 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,SrvManager* srvManager)
 	CreateGraphicsPipelineState();
 
 	CreateVertexBuffer();
+	CreateCylinderVertexBuffer();
 
 	instancingResource = dxCommon_->CreateBufferResource(sizeof(ParticleForGPU) * kNumMaxInstance);
 	
@@ -62,13 +63,19 @@ void ParticleManager::Update(Camera* camera)
 	const float kDeltaTime = 1.0f / 60.0f;
 	numInstance = 0; // ループの前にインスタンス数をリセット
 
-	emitter.frequencyTime += kDeltaTime;
-	if (emitter.frequencyTime >= emitter.frequency)
+	if (!particles.empty()&&particles.front().type!=currentSpawnType)
 	{
-		// 時間が経ったら自動でパーティクルをリストに追加
-		particles.splice(particles.end(), Emit(emitter, randomEngine_));
-		emitter.frequencyTime -= emitter.frequency; // タイマーを戻す
+		particles.clear();
 	}
+
+	//emitter.frequencyTime += kDeltaTime;
+	//if (emitter.frequencyTime >= emitter.frequency)
+	//{
+	//	// 時間が経ったら自動でパーティクルをリストに追加
+	//	particles.splice(particles.end(), Emit(emitter, raandomEngine_));
+	//	emitter.frequencyTime -= emitter.frequency; // タイマーを戻す
+	//}
+
 	// 発生している全パーティクルの更新ループ
 	for (auto it = particles.begin(); it != particles.end(); )
 	{
@@ -80,27 +87,38 @@ void ParticleManager::Update(Camera* camera)
 			continue;
 		}
 
-		// 2. 加速度フィールドの適用
-		if (useAccelerationField)
+		float expansionSpeed = 5.0f;
+		if (it->type==ParticleType::kRing)
 		{
-			it->velocity.x += accelerationField.acceleration.x * kDeltaTime;
-			it->velocity.y += accelerationField.acceleration.y * kDeltaTime;
-			it->velocity.z += accelerationField.acceleration.z * kDeltaTime;
+			it->transform.scale.x += expansionSpeed * kDeltaTime;
+			it->transform.scale.z += expansionSpeed * kDeltaTime;
+		}
+		else
+		{
+			it->transform.scale.x += expansionSpeed * kDeltaTime;
+			it->transform.scale.z += expansionSpeed * kDeltaTime;
+			it->transform.scale.y = 2.0f;
 		}
 
-		// 3. 速度による移動
-		it->transform.translate.x += it->velocity.x * kDeltaTime;
-		it->transform.translate.y += it->velocity.y * kDeltaTime;
-		it->transform.translate.z += it->velocity.z * kDeltaTime;
+		Matrix4x4 rotateMatrix;
+		if (it->type==ParticleType::kRing)
+		{
+			Matrix4x4 rotateXMatrix = MatrixMath::MakeRotateXMatrix(0.0f);
+			Matrix4x4 rotateYMatrix = MatrixMath::MakeRotateYMatrix(it->transform.rotate.y);
+			Matrix4x4 rotateZMatrix = MatrixMath::MakeRotateZMatrix(it->transform.rotate.z);
+		
+			rotateMatrix = MatrixMath::Multiply(rotateXMatrix, rotateYMatrix);
+			rotateMatrix = MatrixMath::Multiply(rotateMatrix, rotateZMatrix);
+		}
+		else
+		{
+			Matrix4x4 rotateXMatrix = MatrixMath::MakeRotateXMatrix(0.0f);
+			Matrix4x4 rotateYMatrix = MatrixMath::MakeRotateYMatrix(it->transform.rotate.y);
+			Matrix4x4 rotateZMatrix = MatrixMath::MakeRotateZMatrix(it->transform.rotate.z);
 
-		// 4. 各パーティクルのワールド行列を計算
-		// 床（X-Z平面）に水平に寝かせるため、X軸を90度回転
-		Matrix4x4 rotateXMatrix = MatrixMath::MakeRotateXMatrix(1.570796f);
-		Matrix4x4 rotateYMatrix = MatrixMath::MakeRotateYMatrix(it->transform.rotate.y);
-		Matrix4x4 rotateZMatrix = MatrixMath::MakeRotateZMatrix(it->transform.rotate.z);
-
-		Matrix4x4 rotateMatrix = MatrixMath::Multiply(rotateXMatrix, rotateYMatrix);
-		rotateMatrix = MatrixMath::Multiply(rotateMatrix, rotateZMatrix);
+			rotateMatrix = MatrixMath::Multiply(rotateXMatrix, rotateYMatrix);
+			rotateMatrix = MatrixMath::Multiply(rotateMatrix, rotateZMatrix);
+		}
 
 		Matrix4x4 scaleMatrix = MatrixMath::MakeScaleMatrix(it->transform.scale);
 		Matrix4x4 translateMatrix = MatrixMath::MakeTranslateMatrix(it->transform.translate);
@@ -139,13 +157,20 @@ void ParticleManager::Draw(D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU)
 	commandList->SetPipelineState(graphicsPipelineState_[static_cast<int>(BlendMode::kBlendModeAdd)].Get());
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
-
 	commandList->SetGraphicsRootShaderResourceView(0, instancingResource->GetGPUVirtualAddress());
 	commandList->SetGraphicsRootDescriptorTable(1, srvHandleGPU);
 
-	// ★第2引数を「numInstance」に変更。これで生成された数だけ一括で描画されます
-	commandList->DrawInstanced((UINT)vertices_.size(), numInstance, 0, 0);
+	if (currentSpawnType==ParticleType::kRing)
+	{
+		commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
+		commandList->DrawInstanced((UINT)vertices_.size(), numInstance, 0, 0);
+	}
+	else
+	{
+		commandList->IASetVertexBuffers(0, 1, &cylinderVertexBufferView_);
+		commandList->DrawInstanced((UINT)cylinderVertices_.size(), numInstance, 0, 0);
+	}
+
 }
 
 void ParticleManager::Finalize()
@@ -429,34 +454,35 @@ void ParticleManager::DrawImGui()
 		particles.splice(particles.end(), Emit(emitter, randomEngine_));
 	}
 
-	ImGui::Checkbox("AccelerationField", &useAccelerationField);
-	if (useAccelerationField)
+	if (ImGui::RadioButton("Ring", currentSpawnType == ParticleType::kRing))
 	{
-		ImGui::DragFloat3("Field Accel", &accelerationField.acceleration.x, 0.01f);
+		currentSpawnType = ParticleType::kRing;
 	}
-
-
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Cylinder", currentSpawnType == ParticleType::kCylinder))
+	{
+		currentSpawnType = ParticleType::kCylinder;
+	}
 	ImGui::End();
 }
 
 Particle ParticleManager::MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate)
 {
 	Particle particle;
+	particle.type = currentSpawnType;
 
-	// 1. サイズの設定（正方形の板ポリゴン）
-	particle.transform.scale = { 3.0f, 3.0f, 3.0f };
+	if (particle.type==ParticleType::kRing)
+	{
+		particle.transform.scale = { 3.0f,3.0f,3.0f };
+	}
+	else
+	{
+		particle.transform.scale = { 2.0f,3.0f,2.0f };
+	}
 
-	// 2. Z軸（画面内の回転）だけランダムにする
-	std::uniform_real_distribution<float> distRotate(-std::numbers::pi_v<float>, std::numbers::pi_v<float>);
-	particle.transform.rotate = { 0.0f, 0.0f, distRotate(randomEngine) };
-
-	// 3. 初期位置の設定（エミッターの位置から、少し円状に外側にずらして発生させる）
-	particle.transform.translate = translate ;
-	
-	particle.velocity = {0.0f,0.0f,0.0f};
-	// =============================================================
-
-	// 5. 色と生存時間の設定
+	particle.transform.rotate = { 0.0f,0.0f,0.0f };
+	particle.transform.translate = translate;
+	particle.velocity = { 0.0f,0.0f,0.0f };
 	particle.color = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 	std::uniform_real_distribution<float> distTime(1.0f, 2.0f);
@@ -474,4 +500,61 @@ std::list<Particle> ParticleManager::Emit(const Emitter& emitter, std::mt19937& 
 		particles.push_back(MakeNewParticle(randomEngine,emitter.transform.translate));
 	}
 	return particles;
+}
+
+void ParticleManager::CreateCylinderVertexBuffer()
+{
+	ID3D12Device* device = dxCommon_->GetDevice();
+
+	const uint32_t kCylinderDivide = 32;
+	const float kTopRadius = 1.0f;
+	const float kBottomRadius = 1.0f;
+	const float kHeight = 3.0f;
+	const float radianperDivide = 2.0f*std::numbers::pi_v<float>/float(kCylinderDivide);
+
+	cylinderVertices_.resize(kCylinderDivide * 6);
+	UINT vertexCount = (UINT)cylinderVertices_.size();
+	UINT vertexBufferSize = sizeof(VertexData) * vertexCount;
+
+	D3D12_HEAP_PROPERTIES uploadHeapProperties{ .Type = D3D12_HEAP_TYPE_UPLOAD };
+	D3D12_RESOURCE_DESC  vertexResourceDesc{
+		.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
+		.Width = vertexBufferSize,
+		.Height = 1,.DepthOrArraySize = 1,.MipLevels = 1,
+		.SampleDesc = {.Count = 1},.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR
+	};
+
+	HRESULT hr = device->CreateCommittedResource(
+		&uploadHeapProperties, D3D12_HEAP_FLAG_NONE,
+		&vertexResourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+		IID_PPV_ARGS(&cylinderVertexResource_)
+	);
+	assert(SUCCEEDED(hr));
+
+	cylinderVertexBufferView_.BufferLocation = cylinderVertexResource_->GetGPUVirtualAddress();
+	cylinderVertexBufferView_.SizeInBytes = vertexBufferSize;
+	cylinderVertexBufferView_.StrideInBytes = sizeof(VertexData);
+
+	VertexData* vertexData = nullptr;
+	cylinderVertexResource_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
+
+	size_t vIdx = 0;
+	for (uint32_t index = 0; index < kCylinderDivide; index++)
+	{
+		float sin = std::sin(index * radianperDivide);
+		float cos = std::cos(index * radianperDivide);
+		float sinNext = std::sin((index+1)* radianperDivide);
+		float cosNext = std::cos((index + 1) * radianperDivide);
+		float u = float(index) / float(kCylinderDivide);
+		float uNext = float(index + 1) / float(kCylinderDivide);
+
+		vertexData[vIdx++] = { {-sin * kTopRadius,kHeight,cos * kTopRadius,1.0f},{u,0.0f},{-sin,0.0f,cos} };
+		vertexData[vIdx++] = { {-sinNext * kTopRadius,kHeight,cosNext * kTopRadius,1.0f},{uNext,0.0f},{-sinNext,0.0f,cosNext} };
+		vertexData[vIdx++] = { {-sin * kBottomRadius,0.0f,cos * kBottomRadius,1.0f},{u,1.0f},{-sin,0.0f,cos} };
+		vertexData[vIdx++] = { {-sin * kBottomRadius,0.0f,cos * kBottomRadius,1.0f},{u,1.0f},{-sin,0.0f,cos} };
+		vertexData[vIdx++] = { {-sinNext * kTopRadius,kHeight,cosNext * kTopRadius,1.0f},{uNext,0.0f},{-sinNext,0.0f,cosNext} };
+		vertexData[vIdx++] = { {-sinNext * kBottomRadius,0.0f,cosNext * kBottomRadius,1.0f},{uNext,1.0f},{-sinNext,0.0f,cosNext} };
+	}
+	cylinderVertexResource_->Unmap(0, nullptr);
+
 }
