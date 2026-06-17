@@ -6,6 +6,7 @@
 
 #include <string>
 
+class Input;
 
 // カメラ
 class Camera
@@ -13,6 +14,10 @@ class Camera
 public://メンバ変数に
 	//更新
 	void Update();
+
+	// 自由移動用の更新関数を追加
+	void DebugUpdate(Input* input);
+
 	//コントラスト
 	Camera();
 public:
@@ -32,6 +37,8 @@ public:
 	const Vector3& GetRotate()const { return transform.rotate; }
 	const Vector3& GetTranslate() const { return transform.translate; }
 
+	Vector3& GetRotateRef() { return transform.rotate; }
+	Vector3& GetTranslateRef() { return transform.translate; }
 private:
 	Transform transform;
 	Matrix4x4 worldMatrix;
@@ -45,5 +52,8 @@ private:
 
 	Matrix4x4 viewProjectionMatrix;
 
+	//デバック用速度設定
+	float moveSpeed = 0.2f;
+	float rotateSpeed = 0.02f;
 };
 
