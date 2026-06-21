@@ -17,7 +17,9 @@ class Camera;
 enum class ParticleType
 {
 	kRing,
-	kCylinder
+	kCylinder,
+	kSphere,
+	kLightning
 };
 
 struct Particle
@@ -28,6 +30,7 @@ struct Particle
 	float lifeTime;
 	float currentTime;
 	ParticleType type;
+	Matrix4x4 worldMatrix;
 };
 
 enum class BlendMode
@@ -79,9 +82,14 @@ public:
 	//更新
 	void Update(Camera* camera);
 	//描画
-	void Draw(D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU);
-	//終了
-	void Finalize();
+	void Draw(
+		Camera* camera,
+		D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU,
+		D3D12_GPU_DESCRIPTOR_HANDLE cylinderSrvHandle,
+		D3D12_GPU_DESCRIPTOR_HANDLE sphereSrvHandle,
+		D3D12_GPU_DESCRIPTOR_HANDLE lightningSrvHandle);
+	
+	void EmitComboExplosion(const Vector3& position);
 
 	void DrawImGui();
 
@@ -97,6 +105,10 @@ private:
 	void CreateVertexBuffer();
 	//シリンダー用頂点バッファを作るよう関数
 	void CreateCylinderVertexBuffer();
+	//球体
+	void CreateSphereVertexBuffer();
+	//稲妻
+	void CreateLightningVertexBuffer();
 
 	Particle MakeNewParticle(std::mt19937& randomEngine, const Vector3& translate);
 
@@ -147,7 +159,23 @@ private:
 
 	ParticleType currentSpawnType = ParticleType::kRing;
 
+	//シリンダー
 	Microsoft::WRL::ComPtr<ID3D12Resource> cylinderVertexResource_;
 	D3D12_VERTEX_BUFFER_VIEW cylinderVertexBufferView_{};
 	std::vector<VertexData> cylinderVertices_;
+
+	//球体
+	Microsoft::WRL::ComPtr<ID3D12Resource> sphereVertexResource_;
+	D3D12_VERTEX_BUFFER_VIEW sphereVertexBufferView_{};
+	std::vector<VertexData> sphereVertices_;
+	float currentSphereScale = 2.0f; // 球体の現在の大きさを追跡する変数
+
+	//稲妻
+	std::vector<VertexData> lightningVertices_;
+	Microsoft::WRL::ComPtr<ID3D12Resource> lightningVertexResource_;
+	D3D12_VERTEX_BUFFER_VIEW lightningVertexBufferView_;
+
+	bool isTriggeredInazumaBreak = false; // イナズマブレイク中かどうかのフラグ
+	float inazumaBreakTimer = 0.0f;       // 演出開始からの経過時間
+	Vector3 inazumaBreakPosition;         // 発生させる座標
 };
