@@ -124,7 +124,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	TextureManager::GetInstance()->LoadTexture("Resource/circle.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/gradationLine.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/rostock_laage_airport_4k.dds"); // スカイボックス兼環境マップ
-	
+	TextureManager::GetInstance()->LoadTexture("Resource/lightning.png");
+	TextureManager::GetInstance()->LoadTexture("Resource/white.png");
+
 	uint32_t uvCheckerTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/uvChecker.png");
 	uint32_t monsterBallTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/monsterBall.png");
 	uint32_t circleTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/circle.png");
@@ -144,6 +146,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// ===============================
 	ParticleManager::GetInstance()->Initialize(dxCommon, srvManeger);
 
+	D3D12_GPU_DESCRIPTOR_HANDLE ringTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/circle.png");          // リング用
+	D3D12_GPU_DESCRIPTOR_HANDLE cylinderTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/gradationLine.png"); // シリンダー用
+	D3D12_GPU_DESCRIPTOR_HANDLE sphereTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/white.png");     // 球体用
+	D3D12_GPU_DESCRIPTOR_HANDLE lightningTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/white.png");       // 稲妻用
 	// ===============================
 	// スカイボックス
 	// ===============================
@@ -158,20 +164,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	Skybox* skybox = new Skybox;
 	skybox->Initialize(skyboxCommon, skyboxSRVHandleGPU);
 
-	// スプライトで使うためのハンドルをマネージャーから取得する
-	//パーティクル用
-	D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU =TextureManager::GetInstance()->GetSrvHandleGPU("Resource/gradationLine.png");
-
-	//スプライトを1個だけ生成
+	// ===============================
+	// スプライト
+	// ===============================
 	Sprite* sprite = new Sprite();
 	sprite->Initialize(spriteCommon, "Resource/uvChecker.png");
 
-	// ImGui用の変数を定義（Vector構造体は Vector.h 由来）
+	// ===============================
+	// ImGui
+	// ===============================
 	Vector2 spritePosition = { 0.0f, 0.0f };
 	float spriteRotation = 0.0f;
 	Vector2 spriteSize = { 640.0f, 360.0f };
 	Vector4 spriteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-	bool spriteSwitch = true;
+	bool spriteSwitch = false;
 
 	// 3Dモデル用のImGui操作変数を準備する
 	Vector3 object3dTranslate = { 0.0f, 0.0f, 0.0f };
@@ -183,7 +189,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	Vector3 cameraRotate = { 0.0f, 0.0f, 0.0f };
 
 	//スカイドーム
-	bool skydomeSwitch = true;
+	bool skydomeSwitch = false;
 
 	// メインループ
 	while (winApp->ProcessMessage() == false)
@@ -246,15 +252,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		object3d->SetRotate(object3dRotate);
 		object3d->SetScale(object3dScale);
 
-		//ImGuiの値をカメラにセットする！
+		//カメラ
+		camera->DebugUpdate(input);
 		cameraTranslate = camera->GetTranslate();
 		cameraRotate = camera->GetRotate();
 
 		// ===============================
 		// 更新（行列計算など）
 		// ===============================
-		// カメラ
-		camera->DebugUpdate(input);
 		// スカイボックス
 		skybox->Update(camera);
 		// object3d
@@ -277,7 +282,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// ---------------------------------------------------------
 		// 1. パーティクル描画
 		// ---------------------------------------------------------
-		ParticleManager::GetInstance()->Draw(srvHandleGPU);
+		ParticleManager::GetInstance()->Draw(
+			camera,
+			ringTexHandle,
+			cylinderTexHandle,
+			sphereTexHandle,
+			lightningTexHandle
+		);
 
 		// ---------------------------------------------------------
 		// 2. 3Dオブジェクトの描画
@@ -304,7 +315,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// スプライト描画
 		if (spriteSwitch)
 		{
-			sprite->Draw(dxCommon->GetCommandList(), srvHandleGPU);
+			sprite->Draw(dxCommon->GetCommandList(), lightningTexHandle);
 		}
 		
 
