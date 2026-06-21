@@ -48,7 +48,7 @@ PixelShaderOutput main(VertexShaderOutput input)
         discard;
     }
     
-    float32_t3 cameraToPosition = normalize(input.worldPosition - gDirectionalLight.cameraWorldPosition);
+    float32_t3 cameraToPosition = normalize(input.worldPosition.xyz - gDirectionalLight.cameraWorldPosition.xyz);
     float32_t3 reflectedVector = reflect(cameraToPosition, normalize(input.normal));
     float32_t4 environmentColor = gEnvironmentTexture.Sample(gSampler, reflectedVector);
     
