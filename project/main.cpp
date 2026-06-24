@@ -1,35 +1,11 @@
 #include <Windows.h>
-
 #include <string>
-
-#include <chrono>
 #include <d3d12.h>
-#include <dxgi1_6.h>
-#include <cassert>
-#include <dbghelp.h>
-#include <strsafe.h>
-#include <dxgidebug.h>
-
-#include <dxcapi.h>
-#include <vector>
-#include <sstream>
-//コムポインタ
-#include <wrl.h>
-
-#include <numbers>
-
-
-#include "externals/DirectXTex/DirectXTex.h"
-#include "externals/DirectXTex/d3dx12.h"
-
-#include "Matrix.h"
-#include "Vector.h"
 
 #include "externals/imgui/imgui.h"
 #include "externals/imgui/imgui_impl_dx12.h"
 #include "externals/imgui/imgui_impl_win32.h"
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM IParam);
-
 
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
@@ -37,6 +13,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #pragma comment(lib,"dxguid.lib")
 #pragma comment(lib,"dxcompiler.lib")
 
+#include "Vector.h"
 #include "Input.h"
 #include "WinApp.h"
 #include "DirectXCommon.h"
@@ -60,6 +37,9 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 //スカイボックス
 #include "Skybox.h"
 #include "SkyboxCommon.h"
+//
+#include "RenderTexture.h"
+#include "PostProcess.h"
 
 // メイン関数
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
@@ -94,6 +74,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//テクスチャマネージャーの初期化
 	TextureManager::GetInstance()->Initialize(dxCommon,srvManeger);
 	
+	// ===============================
+	// オフスクリーンレンダリング
+	// ===============================
+	RenderTexture* renderTexture = new RenderTexture();
+	Vector4 rtClearColor = { 0.1f,0.2f,0.5f,1.0f };
+	renderTexture->Create(dxCommon, srvManeger, 1280, 720, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, rtClearColor);
+
+	PostProcess* postProcess = new PostProcess();
+	postProcess->Initialize(dxCommon);
+
 	// ===============================
 	// カメラ
 	// ===============================
@@ -191,6 +181,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//スカイドーム
 	bool skydomeSwitch = false;
 
+	//オフスクリーンレンダリング
+	bool postProcessEnable = true;
+	Vector3 colorScale = {1.0f,0.0f,0.0f};
+
 	// メインループ
 	while (winApp->ProcessMessage() == false)
 	{
@@ -230,6 +224,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 		ImGui::Text("Skydome");
 		ImGui::Checkbox("Skydome Switch", &skydomeSwitch);
+
+		ImGui::Text("PostProcess");
+		ImGui::Checkbox("PostProcess", &postProcessEnable);
+		ImGui::SliderFloat3("Color", &colorScale.x, 0.0f, 100.0f);
 
 		ImGui::End(); // ウィンドウの終わり
 
@@ -272,9 +270,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// =========================================================
 		// 描画処理
 		// =========================================================
+		renderTexture->ChangeState(dxCommon->GetCommandList(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-		// 描画前処理（画面クリアなど）
-		dxCommon->PreDraw();
+		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = renderTexture->GetRtvHandle();
+		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dxCommon->GetDSVCPUDescriptorHandle(0);
+		dxCommon->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE,&dsvHandle);
+
+		float clearColor[4] = { rtClearColor.x,rtClearColor.y,rtClearColor.z,rtClearColor.w };
+		dxCommon->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+		dxCommon->GetCommandList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+
+		D3D12_VIEWPORT viewport{ 0.0f,0.0f,1280.0f,720.0f,0.0f,1.0f };
+		D3D12_RECT scissor{ 0,0,1280,720 };
+		dxCommon->GetCommandList()->RSSetViewports(1, &viewport);
+		dxCommon->GetCommandList()->RSSetScissorRects(1, &scissor);
 
 		//SrvManagerにSRVヒープをセットしてもらう
 		srvManeger->PreDraw();
@@ -324,9 +334,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		//	pSprite->Draw(dxCommon->GetCommandList(), srvHandleGPU);
 		//}
 
-		// ImGuiの内部コマンド生成
+		// 1. レンダーテクスチャへの書き込みが終了したので、テクスチャとして読める状態に遷移
+		renderTexture->ChangeState(dxCommon->GetCommandList(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+		// 2. 描画先を本来の「画面（バックバッファ）」に切り替えつつ、画面をクリアする
+		dxCommon->PreDraw();
+
+		// 3. SRVマネージャーのヒープを再セット
+		srvManeger->PreDraw();
+
+		// 4. ポストプロセス用のパイプラインを起動し、レンダーテクスチャの内容を画面に描画
+		postProcess->Draw(dxCommon->GetCommandList(), renderTexture,postProcessEnable,colorScale);
+
+		// 5. ImGuiの内部コマンド生成と発行
 		ImGui::Render();
-		// ImGuiの描画コマンドを発行
 		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon->GetCommandList());
 
 		// 描画後処理（フリップなど）
@@ -340,7 +361,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// ===============================
 	// 解放処理
 	// ===============================
-	
+	//オフスクリーンレンダリング
+	delete postProcess;
+	delete renderTexture;
+
 	// スプライト
 	delete sprite;
 	delete spriteCommon;

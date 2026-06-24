@@ -116,6 +116,9 @@ public://メンバ関数
 	D3D12_CPU_DESCRIPTOR_HANDLE GetDSVCPUDescriptorHandle(uint32_t index);
 	//DSVの指定番号のGPUデスクリプタハンドルを取得
 	D3D12_GPU_DESCRIPTOR_HANDLE GetDSVGPUDescriptorHandle(uint32_t index);
+
+	// 現在のバックバッファのRTVハンドルを取得する関数
+	D3D12_CPU_DESCRIPTOR_HANDLE GetBackBufferRtvHandle() const;
 #pragma endregion
 
 	//最大SRV数(最大テクスチャ枚数)

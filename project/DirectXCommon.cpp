@@ -202,7 +202,7 @@ void DirectXCommon::CreatingVariousDescriptorTeaps()
 	descriptorSizeDSV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
 	//DSV用のヒープでディスクリプタの数は１。DSVはShader内で触るものではないので、ShaderVisibleはfalse
-	rtvDescriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
+	rtvDescriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 3, false);
 	srvDscriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
 	dsvDescriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
 	// DescriptorSizeを取得
@@ -304,6 +304,15 @@ D3D12_GPU_DESCRIPTOR_HANDLE DirectXCommon::GetDSVGPUDescriptorHandle(uint32_t in
 	return handle;
 }
 #pragma endregion
+
+D3D12_CPU_DESCRIPTOR_HANDLE DirectXCommon::GetBackBufferRtvHandle() const
+{
+	// 現在のバックバッファ（表裏）のインデックス（0 または 1）を取得
+	UINT backBufferIndex = swapChain_->GetCurrentBackBufferIndex();
+
+	// 管理されている配列から、該当する画面用のRTVハンドルを返す
+	return rtvHandles_[backBufferIndex];
+}
 
 #pragma region 深度ステンシルビューの初期化
 void DirectXCommon::DepthStencilViewInitializing()
