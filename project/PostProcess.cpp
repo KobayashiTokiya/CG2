@@ -64,7 +64,7 @@ void PostProcess::Initialize(DirectXCommon* dxCommon)
 	// 2. シェーダーのコンパイル (安定バージョン 6_5 へ引き上げ)
 	// =========================================================
 	Microsoft::WRL::ComPtr<IDxcBlob> vsBlob = dxCommon->CompileShader(L"Resource/shaders/Fullscreen.VS.hlsl", L"vs_6_5");
-	Microsoft::WRL::ComPtr<IDxcBlob> psBlob = dxCommon->CompileShader(L"Resource/shaders/Grayscale.PS.hlsl", L"ps_6_5");
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlob = dxCommon->CompileShader(L"Resource/shaders/PostProcess.PS.hlsl", L"ps_6_5");
 
 	// シェーダーが正常に読み込めているか厳密にアサートチェック
 	assert(vsBlob != nullptr && vsBlob->GetBufferPointer() != nullptr);
@@ -151,9 +151,10 @@ void PostProcess::Initialize(DirectXCommon* dxCommon)
 	assert(SUCCEEDED(hr));
 }
 
-void PostProcess::Draw(ID3D12GraphicsCommandList* commandList, RenderTexture* renderTexture,bool enable, const Vector3& colorScale)
+void PostProcess::Draw(ID3D12GraphicsCommandList* commandList, RenderTexture* renderTexture,bool enable, int effectModel, const Vector3& colorScale)
 {
 	cBufferData_->enable = enable ? 1 : 0;
+	cBufferData_->effectMode = effectModel;
 	cBufferData_->colorScale = colorScale;
 
 	// 各種シグネチャとPSOのセット
