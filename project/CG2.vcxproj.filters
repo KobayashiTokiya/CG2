@@ -139,11 +139,9 @@
   <ItemGroup>
     <FxCompile Include="Resource\shaders\Object3D.VS.hlsl" />
     <FxCompile Include="Resource\shaders\Object3D.PS.hlsl" />
-    <FxCompile Include="Particle.PS.hlsl" />
-    <FxCompile Include="Particle.VS.hlsl" />
     <FxCompile Include="Resource\shaders\Particle.PS.hlsl" />
     <FxCompile Include="Resource\shaders\Particle.VS.hlsl" />
-    <FxCompile Include="Resource\shaders\CopyImage.PS.hlsl" />
+    <FxCompile Include="Resource\shaders\PostProcess.PS.hlsl" />
     <FxCompile Include="Resource\shaders\Fullscreen.VS.hlsl" />
     <FxCompile Include="Resource\shaders\Grayscale.PS.hlsl" />
   </ItemGroup>
@@ -247,7 +245,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resource\shaders\Object3d.hlsli" />
-    <None Include="Particle.hlsli" />
     <None Include="Resource\shaders\Sprite.hlsli" />
     <None Include="Resource\shaders\Sprite.PS.hlsl" />
     <None Include="Resource\shaders\Sprite.VS.hlsl" />

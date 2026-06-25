@@ -183,7 +183,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	//オフスクリーンレンダリング
 	bool postProcessEnable = true;
-	Vector3 colorScale = {1.0f,0.0f,0.0f};
+	int effectMode = 0;
+	Vector3 colorScale = {100.0f,0.0f,0.0f};
 
 	// メインループ
 	while (winApp->ProcessMessage() == false)
@@ -204,13 +205,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		
 		// スプライト用
 		ImGui::Begin("Controller"); // ウィンドウのタイトル
-		ImGui::Text("Sprite");
-		ImGui::DragFloat2("Position", &spritePosition.x, 1.0f);	//座標
-		ImGui::DragFloat("Rotation", &spriteRotation, 0.01f);	//回転
-		ImGui::DragFloat2("Size", &spriteSize.x, 1.0f);		    //サイズ
-		ImGui::ColorEdit4("Color", &spriteColor.x);	            //色
-		ImGui::Checkbox("Switch", &spriteSwitch);
-		
+		ImGui::Checkbox("SpriteSwitch", &spriteSwitch);
+		if (spriteSwitch)
+		{
+			ImGui::DragFloat2("Position", &spritePosition.x, 1.0f);	//座標
+			ImGui::DragFloat("Rotation", &spriteRotation, 0.01f);	//回転
+			ImGui::DragFloat2("Size", &spriteSize.x, 1.0f);		    //サイズ
+			ImGui::ColorEdit4("Color", &spriteColor.x);	            //色
+		}
+	
 		// 3Dモデル用
 		ImGui::Text("Object3d");
 		ImGui::DragFloat3("Translate", &object3dTranslate.x, 0.01f);
@@ -221,14 +224,30 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		ImGui::Text("Camera");
 		ImGui::DragFloat3("Translate", &cameraTranslate.x,0.01f);
 		ImGui::DragFloat3("Rotate", &cameraRotate.x, 0.01f);
-
+		//スカイドーム
 		ImGui::Text("Skydome");
 		ImGui::Checkbox("Skydome Switch", &skydomeSwitch);
-
+		//ポストエフェクト
 		ImGui::Text("PostProcess");
-		ImGui::Checkbox("PostProcess", &postProcessEnable);
-		ImGui::SliderFloat3("Color", &colorScale.x, 0.0f, 100.0f);
+		ImGui::Checkbox("PostProcess ON/OFF", &postProcessEnable);
 
+		// ラジオボタンを2つ並べることで、effectMode の値を 0 と 1 で切り替えられるようにします
+		if (postProcessEnable)
+		{
+			ImGui::RadioButton("Background Color Change", &effectMode, 0);
+			ImGui::RadioButton("Grayscale", &effectMode, 1);
+
+			// 現在選択されているモードに応じて、表示するスライダーを完全に切り替える
+			if (effectMode == 0)
+			{
+				ImGui::SliderFloat3("BG Color (RGB)", &colorScale.x, 0.0f, 100.0f);
+			}
+			else
+			{
+				ImGui::SliderFloat("Grayscale Strength", &colorScale.x, 0.0f, 100.0f); // X値だけを使う
+			}
+		}
+		
 		ImGui::End(); // ウィンドウの終わり
 
 		// パーティクル用
@@ -344,7 +363,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		srvManeger->PreDraw();
 
 		// 4. ポストプロセス用のパイプラインを起動し、レンダーテクスチャの内容を画面に描画
-		postProcess->Draw(dxCommon->GetCommandList(), renderTexture,postProcessEnable,colorScale);
+		postProcess->Draw(dxCommon->GetCommandList(), renderTexture,postProcessEnable,effectMode,colorScale);
 
 		// 5. ImGuiの内部コマンド生成と発行
 		ImGui::Render();

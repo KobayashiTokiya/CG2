@@ -9,7 +9,7 @@ class PostProcess
 {
 public:
 	void Initialize(DirectXCommon* dxCommon);
-	void Draw(ID3D12GraphicsCommandList* commandList, RenderTexture* renderTexture,bool enable,const Vector3& colorScale);
+	void Draw(ID3D12GraphicsCommandList* commandList, RenderTexture* renderTexture,bool enable,int effectModel,const Vector3& colorScale);
 private:
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
@@ -17,7 +17,8 @@ private:
 	struct PostProcessData
 	{
 		int32_t enable;
-		float padding[3];
+		int32_t effectMode;
+		float padding[2];
 		Vector3 colorScale;
 	};
 	Microsoft::WRL::ComPtr<ID3D12Resource> constBuffer_;
