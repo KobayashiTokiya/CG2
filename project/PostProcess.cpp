@@ -63,8 +63,8 @@ void PostProcess::Initialize(DirectXCommon* dxCommon)
 	// =========================================================
 	// 2. シェーダーのコンパイル (安定バージョン 6_5 へ引き上げ)
 	// =========================================================
-	Microsoft::WRL::ComPtr<IDxcBlob> vsBlob = dxCommon->CompileShader(L"Resource/shaders/CopyImage.VS.hlsl", L"vs_6_5");
-	Microsoft::WRL::ComPtr<IDxcBlob> psBlob = dxCommon->CompileShader(L"Resource/shaders/CopyImage.PS.hlsl", L"ps_6_5");
+	Microsoft::WRL::ComPtr<IDxcBlob> vsBlob = dxCommon->CompileShader(L"Resource/shaders/Fullscreen.VS.hlsl", L"vs_6_5");
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlob = dxCommon->CompileShader(L"Resource/shaders/Grayscale.PS.hlsl", L"ps_6_5");
 
 	// シェーダーが正常に読み込めているか厳密にアサートチェック
 	assert(vsBlob != nullptr && vsBlob->GetBufferPointer() != nullptr);
