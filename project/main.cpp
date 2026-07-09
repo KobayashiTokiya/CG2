@@ -40,6 +40,8 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 //
 #include "RenderTexture.h"
 #include "PostProcess.h"
+//ImGui
+#include "ImGuiManager.h"
 
 // メイン関数
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
@@ -163,6 +165,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// ===============================
 	// ImGui
 	// ===============================
+	//ImGuiManager* imguiManager = new ImGuiManager();
+	//imguiManager->Initialize();
+
 	Vector2 spritePosition = { 0.0f, 0.0f };
 	float spriteRotation = 0.0f;
 	Vector2 spriteSize = { 640.0f, 360.0f };
@@ -414,6 +419,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	delete dxCommon;
 	delete input;
 	delete winApp;
+	//delete imguiManager;
 
 	return 0;
 }
