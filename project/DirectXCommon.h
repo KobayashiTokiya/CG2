@@ -2,7 +2,7 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
-
+#include <iterator>
 #include <cassert>
 
 //ファイルやディレクトリに関する操作を行うライブラリ
@@ -118,6 +118,7 @@ public://メンバ関数
 	//最大SRV数(最大テクスチャ枚数)
 	static constexpr uint32_t kMaxSRVCount = 512;
 
+	size_t GetSwapChainResourceNums() const { return std::size(renderTargets_); }
 private:
 	//DirectX12デバイス
 	Microsoft::WRL::ComPtr<ID3D12Device> device_;

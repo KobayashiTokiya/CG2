@@ -165,8 +165,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// ===============================
 	// ImGui
 	// ===============================
-	//ImGuiManager* imguiManager = new ImGuiManager();
-	//imguiManager->Initialize();
+	ImGuiManager* imguiManager = new ImGuiManager();
+	imguiManager->Initialize(winApp, dxCommon, srvManeger);
 
 	Vector2 spritePosition = { 0.0f, 0.0f };
 	float spriteRotation = 0.0f;
@@ -377,10 +377,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// 描画後処理（フリップなど）
 		dxCommon->PostDraw();
 	}
-	// ImGuiの終了処理
-	ImGui_ImplDX12_Shutdown();
-	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();
 	
 	// ===============================
 	// 解放処理
@@ -413,13 +409,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//テクスチャマネージャーの終了
 	TextureManager::GetInstance()->Finalize();
 
+	if (imguiManager)
+	{
+		imguiManager->Finalize();
+		delete imguiManager;
+	}
+	
 	//SRVマネージャー
 	delete srvManeger;
 
 	delete dxCommon;
 	delete input;
 	delete winApp;
-	//delete imguiManager;
 
 	return 0;
 }

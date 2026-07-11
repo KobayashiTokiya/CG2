@@ -7,7 +7,9 @@ class SrvManager;
 class ImGuiManager
 {
 public:
-	void Initialize(WinApp* winApp, DirectXCommon* dxCommon);
+	void Initialize(WinApp* winApp, DirectXCommon* dxCommon, SrvManager* srvManager);
+
+	void Finalize();
 
 private:
 	WinApp* winApp_ = nullptr;
