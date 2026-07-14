@@ -319,3 +319,8 @@ DirectXGame/DirectXGame.exe
 # DirectXTex Compiled Shaders
 **/DirectXTex/Shaders/Compiled/
 #/Dumps
+[Xx]64/
+[Dd]evelopment/
+Generated/
+[Dd]ebug/
+[Rr]elease/

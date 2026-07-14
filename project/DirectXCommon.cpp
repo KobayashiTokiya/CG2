@@ -25,7 +25,6 @@ void DirectXCommon::Initialize(WinApp* winApp)
 	ViewportInitializing();
 	ScissorRectInitializing();
 	DXCCompilerGeneration();
-	ImGuiInitializing();
 }
 
 #pragma region デバイスの初期化
@@ -314,6 +313,11 @@ D3D12_CPU_DESCRIPTOR_HANDLE DirectXCommon::GetBackBufferRtvHandle() const
 	return rtvHandles_[backBufferIndex];
 }
 
+uint32_t DirectXCommon::GetBackBufferCount()const
+{
+	return swapChainDesc_.BufferCount;
+}
+
 #pragma region 深度ステンシルビューの初期化
 void DirectXCommon::DepthStencilViewInitializing()
 {
@@ -382,38 +386,6 @@ void DirectXCommon::DXCCompilerGeneration()
 	//現時点でincludeはしないが、includeに対応するための設定を行っておく
 	hr = dxcUtils_->CreateDefaultIncludeHandler(&includeHandler_);
 	assert(SUCCEEDED(hr));
-}
-#pragma endregion
-
-#pragma region ImGuiの初期化
-void DirectXCommon::ImGuiInitializing()
-{
-	//バージョンチェック
-	IMGUI_CHECKVERSION();
-
-	//コンテキストの生成
-	ImGui::CreateContext();
-
-	//スタイルの設定
-	ImGui::StyleColorsDark();
-
-	//Win32用の初期化
-	ImGui_ImplWin32_Init(winApp->GetHwnd());
-
-	//RTVフォーマット
-	DXGI_FORMAT rtvFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-
-	D3D12_CPU_DESCRIPTOR_HANDLE fontSrvHandleCPU = GetSRVCPUDescriptorHandle(0);
-	D3D12_GPU_DESCRIPTOR_HANDLE fontSrvHandleGPU = GetSRVGPUDescriptorHandle(0);
-
-	//DirectX12の初期化
-	ImGui_ImplDX12_Init(
-		device_.Get(),
-		swapChainDesc_.BufferCount,
-		rtvFormat,
-		srvDscriptorHeap_.Get(),
-		srvDscriptorHeap_->GetCPUDescriptorHandleForHeapStart(),
-		srvDscriptorHeap_->GetGPUDescriptorHandleForHeapStart());
 }
 #pragma endregion
 

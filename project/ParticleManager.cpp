@@ -1,7 +1,10 @@
 #include "ParticleManager.h"
 #include <d3d12.h>
 #include<wrl.h>
+
 #include "externals/imgui/imgui.h"
+
+
 #include <string>
 
 #include "Camera.h"
@@ -300,6 +303,7 @@ void ParticleManager::EmitComboExplosion(const Vector3& position)
 
 void ParticleManager::DrawImGui()
 {
+#ifdef USE_IMGUI
 	ImGui::Begin("Particle Manager");
 	ImGui::DragFloat3("Position", &base.transform.translate.x, 0.01f);
 	ImGui::DragFloat3("Rotation", &base.transform.rotate.x, 0.01f);
@@ -318,6 +322,7 @@ void ParticleManager::DrawImGui()
 		EmitComboExplosion(emitter.transform.translate);
 	}
 	ImGui::End();
+#endif // USE_IMGUI
 }
 
 	

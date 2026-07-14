@@ -2,7 +2,7 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
-
+#include <iterator>
 #include <cassert>
 
 //ファイルやディレクトリに関する操作を行うライブラリ
@@ -16,10 +16,6 @@
 #pragma comment(lib,"dxgi.lib")
 
 #include <dxcapi.h>
-
-#include "externals/imgui/imgui.h"
-#include "externals/imgui/imgui_impl_dx12.h"
-#include "externals/imgui/imgui_impl_win32.h"
 
 using namespace Microsoft::WRL;
 
@@ -73,9 +69,6 @@ public://メンバ関数
 	//DXCコンパイラの生成
 	void DXCCompilerGeneration();
 
-	//ImGuiの初期化
-	void ImGuiInitializing();
-
 	//getter
 	ID3D12CommandQueue* GetCommandQueue() const { return commandQueue_.Get(); }
 	ID3D12CommandAllocator* GetCommandAllocator() const { return commandAllocator_.Get(); }
@@ -101,6 +94,7 @@ public://メンバ関数
 
 	ID3D12DescriptorHeap* GetSRVDescriptorHeap()const { return srvDscriptorHeap_.Get(); }
 
+	uint32_t GetBackBufferCount()const;
 #pragma region 公開用の関数(宣言)
 	//SRVの指定番号のCPUデスクリプタハンドルを取得
 	D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUDescriptorHandle(uint32_t index);
@@ -124,6 +118,7 @@ public://メンバ関数
 	//最大SRV数(最大テクスチャ枚数)
 	static constexpr uint32_t kMaxSRVCount = 512;
 
+	size_t GetSwapChainResourceNums() const { return std::size(renderTargets_); }
 private:
 	//DirectX12デバイス
 	Microsoft::WRL::ComPtr<ID3D12Device> device_;
