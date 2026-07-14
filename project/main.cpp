@@ -2,11 +2,6 @@
 #include <string>
 #include <d3d12.h>
 
-#include "externals/imgui/imgui.h"
-#include "externals/imgui/imgui_impl_dx12.h"
-#include "externals/imgui/imgui_impl_win32.h"
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM IParam);
-
 #pragma comment(lib,"d3d12.lib")
 #pragma comment(lib,"dxgi.lib")
 #pragma comment(lib,"Dbghelp.lib")
@@ -41,8 +36,9 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #include "RenderTexture.h"
 #include "PostProcess.h"
 //ImGui
+#ifdef USE_IMGUI
 #include "ImGuiManager.h"
-
+#endif
 // メイン関数
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -165,31 +161,31 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// ===============================
 	// ImGui
 	// ===============================
+#ifdef USE_IMGUI
 	ImGuiManager* imguiManager = new ImGuiManager();
 	imguiManager->Initialize(winApp, dxCommon, srvManeger);
+#endif
 
 	Vector2 spritePosition = { 0.0f, 0.0f };
 	float spriteRotation = 0.0f;
 	Vector2 spriteSize = { 640.0f, 360.0f };
 	Vector4 spriteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-	bool spriteSwitch = false;
-
+	bool spriteSwitch = true;
 	// 3Dモデル用のImGui操作変数を準備する
 	Vector3 object3dTranslate = { 0.0f, 0.0f, 0.0f };
 	Vector3 object3dRotate = { 0.0f, 0.0f, 0.0f };
 	Vector3 object3dScale = { 1.0f, 1.0f, 1.0f };
 
 	//カメラ
-	Vector3 cameraTranslate = { 0.0f, 0.0f, -10.0f };
+	Vector3 cameraTranslate = { 0.0f, 0.0f, -100.0f };
 	Vector3 cameraRotate = { 0.0f, 0.0f, 0.0f };
-
 	//スカイドーム
-	bool skydomeSwitch = false;
+	bool skydomeSwitch = true;
 
 	//オフスクリーンレンダリング
 	bool postProcessEnable = true;
 	int effectMode = 0;
-	Vector3 colorScale = {100.0f,0.0f,0.0f};
+	Vector3 colorScale = { 100.0f,0.0f,0.0f };
 
 	// メインループ
 	while (winApp->ProcessMessage() == false)
@@ -199,70 +195,25 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 		//ImGuiのフレーム開始処理
-		ImGui_ImplDX12_NewFrame();
-		ImGui_ImplWin32_NewFrame();
-		ImGui::NewFrame();
+#ifdef USE_IMGUI
+		imguiManager->Begin();
+		imguiManager->UpdateUI(spritePosition, spriteRotation, spriteSize, spriteColor, spriteSwitch,
+			object3dTranslate, object3dRotate, object3dScale,
+			cameraTranslate, cameraRotate,
+			skydomeSwitch,
+			postProcessEnable, effectMode, colorScale);
 
-		// ===============================
-		// ImGui
-		// UIの構築 (スプライトクラスのセッターを使う)
-		// ===============================
-		
-		// スプライト用
-		ImGui::Begin("Controller"); // ウィンドウのタイトル
-		ImGui::Checkbox("SpriteSwitch", &spriteSwitch);
-		if (spriteSwitch)
-		{
-			ImGui::DragFloat2("Position", &spritePosition.x, 1.0f);	//座標
-			ImGui::DragFloat("Rotation", &spriteRotation, 0.01f);	//回転
-			ImGui::DragFloat2("Size", &spriteSize.x, 1.0f);		    //サイズ
-			ImGui::ColorEdit4("Color", &spriteColor.x);	            //色
-		}
-	
-		// 3Dモデル用
-		ImGui::Text("Object3d");
-		ImGui::DragFloat3("Translate", &object3dTranslate.x, 0.01f);
-		ImGui::DragFloat3("Rotate", &object3dRotate.x, 0.01f);
-		ImGui::DragFloat3("Scale", &object3dScale.x, 0.01f);
-
-		// camera用
-		ImGui::Text("Camera");
-		ImGui::DragFloat3("Translate", &cameraTranslate.x,0.01f);
-		ImGui::DragFloat3("Rotate", &cameraRotate.x, 0.01f);
-		//スカイドーム
-		ImGui::Text("Skydome");
-		ImGui::Checkbox("Skydome Switch", &skydomeSwitch);
-		//ポストエフェクト
-		ImGui::Text("PostProcess");
-		ImGui::Checkbox("PostProcess ON/OFF", &postProcessEnable);
-
-		// ラジオボタンを2つ並べることで、effectMode の値を 0 と 1 で切り替えられるようにします
-		if (postProcessEnable)
-		{
-			ImGui::RadioButton("Background Color Change", &effectMode, 0);
-			ImGui::RadioButton("Grayscale", &effectMode, 1);
-
-			// 現在選択されているモードに応じて、表示するスライダーを完全に切り替える
-			if (effectMode == 0)
-			{
-				ImGui::SliderFloat3("BG Color (RGB)", &colorScale.x, 0.0f, 100.0f);
-			}
-			else
-			{
-				ImGui::SliderFloat("Grayscale Strength", &colorScale.x, 0.0f, 100.0f); // X値だけを使う
-			}
-		}
-		
-		ImGui::End(); // ウィンドウの終わり
-
-		// パーティクル用
-		ParticleManager::GetInstance()->DrawImGui();
+#endif // USE_IMGUI
 
 		//更新処理
 		
 		// ===============================
 		// ImGuiの値を反映
 		// ===============================
+
+		// パーティクル用
+		ParticleManager::GetInstance()->DrawImGui();
+
 		// スプライト
 		sprite->SetPosition(spritePosition);
 		sprite->SetRotation(spriteRotation);
@@ -275,10 +226,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		object3d->SetScale(object3dScale);
 
 		//カメラ
+		//camera->SetTranslate(cameraTranslate);
+		//camera->SetRotate(cameraRotate);
+		//cameraTranslate = camera->GetTranslate();
+		//cameraRotate = camera->GetRotate();
+		// ImGuiは無いので、キーボードなどの通常のデバッグ操作のみ行う
 		camera->DebugUpdate(input);
-		cameraTranslate = camera->GetTranslate();
-		cameraRotate = camera->GetRotate();
-
+		
 		// ===============================
 		// 更新（行列計算など）
 		// ===============================
@@ -336,11 +290,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		// ---------------------------------------------------------
 		//スカイボックスの描画
 		skyboxCommon->CommonDrawSettings(dxCommon->GetCommandList());
+
 		if (skydomeSwitch)
 		{
 			skybox->Draw();
 		}
-		
+
 		// ---------------------------------------------------------
 		// 4. スプライトの描画 (2Dは3Dより後に描画するのが鉄則です)
 		// ---------------------------------------------------------
@@ -351,7 +306,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		{
 			sprite->Draw(dxCommon->GetCommandList(), lightningTexHandle);
 		}
-		
 
 		//for (Sprite* pSprite :sprites)
 		//{
@@ -371,9 +325,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		postProcess->Draw(dxCommon->GetCommandList(), renderTexture,postProcessEnable,effectMode,colorScale);
 
 		// 5. ImGuiの内部コマンド生成と発行
-		ImGui::Render();
-		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon->GetCommandList());
-
+#ifdef USE_IMGUI
+		imguiManager->End();
+		imguiManager->Draw();
+#endif
 		// 描画後処理（フリップなど）
 		dxCommon->PostDraw();
 	}
@@ -381,6 +336,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	// ===============================
 	// 解放処理
 	// ===============================
+	//ImGuiの終了処理 
+#ifdef USE_IMGUI
+	if (imguiManager)
+	{
+		imguiManager->Finalize();
+		delete imguiManager;
+	}
+#endif // USE_IMGUI
+
 	//オフスクリーンレンダリング
 	delete postProcess;
 	delete renderTexture;
@@ -409,11 +373,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	//テクスチャマネージャーの終了
 	TextureManager::GetInstance()->Finalize();
 
-	if (imguiManager)
-	{
-		imguiManager->Finalize();
-		delete imguiManager;
-	}
 	
 	//SRVマネージャー
 	delete srvManeger;
