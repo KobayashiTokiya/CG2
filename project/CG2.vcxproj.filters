@@ -128,6 +128,7 @@
     <FxCompile Include="Resource\shaders\Grayscale.PS.hlsl" />
     <FxCompile Include="Resource\shaders\Vignette.PS.hlsl" />
     <FxCompile Include="Resource\shaders\BoxFilter.PS.hlsl" />
+    <FxCompile Include="Resource\shaders\GaussianFilter.PS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\math\Matrix.h">
