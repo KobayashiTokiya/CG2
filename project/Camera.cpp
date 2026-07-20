@@ -39,7 +39,7 @@ void Camera::DebugUpdate(Input* input)
 	Matrix4x4 rotationZMatrix = MatrixMath::MakeRotateZMatrix(transform.rotate.z);
 	
 	Matrix4x4 rotationMatrix = MatrixMath::Multiply(rotationXMatrix, rotationYMatrix);
-	rotationMatrix = MatrixMath::Multiply(rotationYMatrix, rotationZMatrix);
+	rotationMatrix = MatrixMath::Multiply(rotationMatrix, rotationZMatrix);
 
 
 	// ローカルな方向ベクトル（Z前、X右、Y上）に回転を適用する
