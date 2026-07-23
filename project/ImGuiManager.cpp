@@ -4,6 +4,12 @@
 #include "SrvManager.h"
 #pragma comment(lib, "imgui.lib")
 
+ImGuiManager* ImGuiManager::GetInstance()
+{
+	static ImGuiManager instance;
+	return &instance;
+}
+
 void ImGuiManager::Initialize([[maybe_unused]]WinApp* winApp, [[maybe_unused]]DirectXCommon* dxCommon, [[maybe_unused]]SrvManager* srvManager)
 {
 	winApp_ = winApp;

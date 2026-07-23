@@ -14,6 +14,11 @@ class DirectXCommon;
 class SrvManager
 {
 public:
+	static SrvManager* GetInstance();
+
+	SrvManager(const SrvManager&) = delete;
+	SrvManager& operator=(const SrvManager&) = delete;
+
 	//初期化
 	void Initialize(DirectXCommon* dxCommon);
 
@@ -36,6 +41,9 @@ public:
 
 	ID3D12DescriptorHeap* GetDescriptorHeap() const { return descriptorHeap.Get(); }
 private:
+	SrvManager() = default;
+	~SrvManager() = default;
+
 	DirectXCommon* directXCommon = nullptr;
 
 	//最大SRV数(最大テクスチャ枚数)

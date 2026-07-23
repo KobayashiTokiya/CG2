@@ -4,11 +4,8 @@
 #include "ModelManager.h"
 #include "Camera.h"
 
-void Object3d::Initialize(Object3dCommon* object3dCommon)
+void Object3d::Initialize()
 {
-	//引数で受け取ってメンバ変数に記録する
-	this->object3dCommon = object3dCommon;
-
 	//初期化の呼び出し
 	CreateTransformationData();   //座標変換行列データ
 	CreateDirectionalLightData(); //平行光源データ
@@ -18,7 +15,7 @@ void Object3d::Initialize(Object3dCommon* object3dCommon)
 	transform.rotate = { 0.0f, 0.0f, 0.0f };     // 回転なし
 	transform.translate = { 0.0f, 0.0f, 0.0f };  // 原点(0,0,0)に配置
 
-	this->camera = object3dCommon->GetDefaultCamera();
+	this->camera = Object3dCommon::GetInstance()->GetDefaultCamera();
 }
 
 void Object3d::Update()
@@ -52,10 +49,11 @@ void Object3d::Update()
 
 void Object3d::Draw()
 {
-	ID3D12GraphicsCommandList* commandList = object3dCommon->GetDxCommon()->GetCommandList();
+	auto common = Object3dCommon::GetInstance();
+	ID3D12GraphicsCommandList* commandList = common->GetDxCommon()->GetCommandList();
 
-	commandList->SetPipelineState(object3dCommon->GetPipelinestate(blendMode_));
-	// ⭕ Object3dの担当：座標変換行列（位置）と 平行光源（光）のセットだけ！
+	commandList->SetPipelineState(common->GetPipelinestate(blendMode_));
+	// Object3dの担当：座標変換行列（位置）と 平行光源（光）のセットだけ！
 	// 座標変換行列CBufferの場所を設定 (番号:1)
 	commandList->SetGraphicsRootConstantBufferView(1, transformationResource.Get()->GetGPUVirtualAddress());
 
@@ -78,10 +76,10 @@ void Object3d::Draw()
 #pragma region 初期化用データ作成関数群
 void Object3d::CreateTransformationData()
 {
-	DirectXCommon* dxCommon = object3dCommon->GetDxCommon();
+	DirectXCommon::GetInstance();
 
 	//座標変換行列リソースを作る
-	transformationResource = dxCommon->CreateBufferResource(sizeof(TransformationMatrix));
+	transformationResource = DirectXCommon::GetInstance()->CreateBufferResource(sizeof(TransformationMatrix));
 
 	//座標変換行列リソースにデータを書き込むためのアドレスを取得してtransformationMatrixDataに割り当てる
 	transformationResource->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData));
@@ -93,10 +91,10 @@ void Object3d::CreateTransformationData()
 
 void Object3d::CreateDirectionalLightData()
 {
-	DirectXCommon* dxCommon = object3dCommon->GetDxCommon();
+	DirectXCommon::GetInstance();
 
 	//平行光源リソースを作る
-	directionalLightResource = dxCommon->CreateBufferResource(sizeof(DirectionalLight));
+	directionalLightResource = DirectXCommon::GetInstance()->CreateBufferResource(sizeof(DirectionalLight));
 
 	//平行光源リソースにデータを書き込むためのアドレスを取得してdirectionalLightDataに割り当てる
 	directionalLightResource->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData));

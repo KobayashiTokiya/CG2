@@ -1,5 +1,11 @@
 #include "SkyboxCommon.h"
 
+SkyboxCommon* SkyboxCommon::GetInstance()
+{
+	static SkyboxCommon instance;
+	return &instance;
+}
+
 void SkyboxCommon::Initialize(DirectXCommon* dxCommon)
 {
 	// 1. まずメンバ変数をセット

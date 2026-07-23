@@ -8,7 +8,14 @@ class Camera;
 
 class SkyboxCommon
 {
-public://メンバ関数
+public:
+	//インスタンスを取得する関数
+	static SkyboxCommon* GetInstance();
+
+	SkyboxCommon(const SkyboxCommon&) = delete;
+	SkyboxCommon& operator=(const SkyboxCommon&) = delete;
+	
+	//メンバ関数
 	//初期化
 	void Initialize(DirectXCommon* dxCommon);
 	//共通描画設定
@@ -35,5 +42,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12PipelineState>graphicsPipelineState;
 
 	Camera* defaultCamera = nullptr;
+
+	SkyboxCommon() = default;
+	~SkyboxCommon() = default;
 };
 

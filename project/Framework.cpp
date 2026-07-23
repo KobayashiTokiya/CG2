@@ -26,61 +26,42 @@ void Framework::Run()
 void Framework::Initialize()
 {
 	// WindowsAPIの初期化
-	winApp = new WinApp();
-	winApp->Initialize();
+	WinApp::GetInstance()->Initialize();
 
 	// DirectXの初期化
-	dxCommon = new DirectXCommon();
-	dxCommon->Initialize(winApp);
-
+	DirectXCommon::GetInstance()->Initialize(WinApp::GetInstance());
+	
 	// SRVマネージャーの初期化
-	srvManeger = new SrvManager();
-	srvManeger->Initialize(dxCommon);
+	SrvManager::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
 	// 入力クラスの初期化
-	input = new Input();
-	input->Initialize(winApp);
+	Input::GetInstance()->Initialize(WinApp::GetInstance());
 
 	// ImGui
 #ifdef USE_IMGUI
-	imguiManager = new ImGuiManager();
-	imguiManager->Initialize(winApp, dxCommon, srvManeger);
+	ImGuiManager::GetInstance()->Initialize(WinApp::GetInstance(),DirectXCommon::GetInstance(),SrvManager::GetInstance());
 #endif
 }
 
 void Framework::Update()
 {
 	// OSメッセージの処理と終了チェック
-	if (winApp->ProcessMessage())
+	if (WinApp::GetInstance()->ProcessMessage())
 	{
 		endRequst_ = true;
 		return;
 	}
 
 	// 入力情報の更新
-	input->Update();
+	Input::GetInstance()->Update();
 }
 
 void Framework::Finalize()
 {
 #ifdef USE_IMGUI
-	if (imguiManager)
+	if (ImGuiManager::GetInstance())
 	{
-		imguiManager->Finalize();
-		delete imguiManager;
-		imguiManager = nullptr;
+		ImGuiManager::GetInstance()->Finalize();
 	}
 #endif
-
-	delete srvManeger;
-	srvManeger = nullptr;
-
-	delete input;
-	input = nullptr;
-
-	delete dxCommon;
-	dxCommon = nullptr;
-
-	delete winApp;
-	winApp = nullptr;
 }

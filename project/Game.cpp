@@ -4,19 +4,23 @@ void Game::Initialize()
 {
 	Framework::Initialize();
 
+	//ゲームプレイシーンの生成
+	scene_ = new GamePlayScene();
+	//ゲームプレイシーンの初期化
+	scene_->Initialize();
+	
 	// スプライト共通部の初期化
-	spriteCommon = new SpriteCommon();
-	spriteCommon->Initialize(dxCommon);
+	SpriteCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
 	// テクスチャマネージャーの初期化
-	TextureManager::GetInstance()->Initialize(dxCommon, srvManeger);
+	TextureManager::GetInstance()->Initialize(DirectXCommon::GetInstance(), SrvManager::GetInstance());
 
 	// オフスクリーンレンダリング
 	renderTexture = new RenderTexture();
-	renderTexture->Create(dxCommon, srvManeger, 1280, 720, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, rtClearColor);
+	renderTexture->Create(DirectXCommon::GetInstance(), SrvManager::GetInstance(), 1280, 720, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, rtClearColor);
 
 	postProcess = new PostProcess();
-	postProcess->Initialize(dxCommon);
+	postProcess->Initialize(DirectXCommon::GetInstance());
 
 	// カメラ
 	camera = new Camera();
@@ -24,15 +28,15 @@ void Game::Initialize()
 	camera->SetTranslate({ 0.0f, 0.0f, 0.0f });
 
 	// 3Dオブジェクト共通部＆生成
-	object3dCommon = new Object3dCommon();
-	object3dCommon->Initialize(dxCommon);
-	object3dCommon->SetDefaultCamera(camera);
+	Object3dCommon::GetInstance();
+	Object3dCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
+	Object3dCommon::GetInstance()->SetDefaultCamera(camera);
 
 	object3d = new Object3d();
-	object3d->Initialize(object3dCommon);
+	object3d->Initialize();
 
 	// 3Dモデルマネージャーの初期化
-	ModelManager::GetInstance()->Initialize(dxCommon);
+	ModelManager::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
 	// アセットロード
 	TextureManager::GetInstance()->LoadTexture("Resource/monsterBall.png");
@@ -56,7 +60,7 @@ void Game::Initialize()
 	object3d->SetEnvironmentTexture(envTexIndex);
 
 	// パーティクルマネージャー
-	ParticleManager::GetInstance()->Initialize(dxCommon, srvManeger);
+	ParticleManager::GetInstance()->Initialize(DirectXCommon::GetInstance(), SrvManager::GetInstance());
 
 	ringTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/circle.png");
 	cylinderTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/gradationLine.png");
@@ -64,15 +68,14 @@ void Game::Initialize()
 	lightningTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/white.png");
 
 	// スカイボックス
-	skyboxCommon = new SkyboxCommon();
-	skyboxCommon->Initialize(dxCommon);
-	skyboxCommon->SetDefaultCamera(camera);
+	SkyboxCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
+	SkyboxCommon::GetInstance()->SetDefaultCamera(camera);
 
 	std::string skyboxDDSPath = "Resource/rostock_laage_airport_4k.dds";
 	D3D12_GPU_DESCRIPTOR_HANDLE skyboxSRVHandleGPU = TextureManager::GetInstance()->GetSrvHandleGPU(skyboxDDSPath);
 
 	skybox = new Skybox();
-	skybox->Initialize(skyboxCommon, skyboxSRVHandleGPU);
+	skybox->Initialize( skyboxSRVHandleGPU);
 
 	// スプライト
 	sprite = new Sprite();
@@ -81,12 +84,15 @@ void Game::Initialize()
 
 void Game::Update()
 {
+	//基底クラスの更新処理
 	Framework::Update();
+	//シーンの更新処理
+	scene_->Update();
 
 	// ImGuiのフレーム開始処理
 #ifdef USE_IMGUI
-	imguiManager->Begin();
-	imguiManager->UpdateUI(spritePosition, spriteRotation, spriteSize, spriteColor, spriteSwitch,
+	ImGuiManager::GetInstance()->Begin();
+	ImGuiManager::GetInstance()->UpdateUI(spritePosition, spriteRotation, spriteSize, spriteColor, spriteSwitch,
 		object3dTranslate, object3dRotate, object3dScale,
 		cameraTranslate, cameraRotate,
 		skydomeSwitch,
@@ -105,7 +111,7 @@ void Game::Update()
 	object3d->SetRotate(object3dRotate);
 	object3d->SetScale(object3dScale);
 
-	camera->DebugUpdate(input);
+	camera->DebugUpdate(Input::GetInstance());
 
 	// 各種更新（行列計算など）
 	skybox->Update(camera);
@@ -117,23 +123,23 @@ void Game::Update()
 void Game::Draw()
 {
 	// 描画先の変更・クリア
-	renderTexture->ChangeState(dxCommon->GetCommandList(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+	renderTexture->ChangeState(DirectXCommon::GetInstance()->GetCommandList(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = renderTexture->GetRtvHandle();
-	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dxCommon->GetDSVCPUDescriptorHandle(0);
-	dxCommon->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = DirectXCommon::GetInstance()->GetDSVCPUDescriptorHandle(0);
+	DirectXCommon::GetInstance()->GetCommandList()->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 
 	float clearColor[4] = { rtClearColor.x, rtClearColor.y, rtClearColor.z, rtClearColor.w };
-	dxCommon->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-	dxCommon->GetCommandList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+	DirectXCommon::GetInstance()->GetCommandList()->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	DirectXCommon::GetInstance()->GetCommandList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 	D3D12_VIEWPORT viewport{ 0.0f, 0.0f, 1280.0f, 720.0f, 0.0f, 1.0f };
 	D3D12_RECT scissor{ 0, 0, 1280, 720 };
-	dxCommon->GetCommandList()->RSSetViewports(1, &viewport);
-	dxCommon->GetCommandList()->RSSetScissorRects(1, &scissor);
+	DirectXCommon::GetInstance()->GetCommandList()->RSSetViewports(1, &viewport);
+	DirectXCommon::GetInstance()->GetCommandList()->RSSetScissorRects(1, &scissor);
 
 	// SRVヒープの再セット
-	srvManeger->PreDraw();
+	SrvManager::GetInstance()->PreDraw();
 
 	// 1. パーティクル描画
 	ParticleManager::GetInstance()->Draw(
@@ -145,39 +151,43 @@ void Game::Draw()
 	);
 
 	// 2. 3Dオブジェクトの描画
-	object3dCommon->CommonDrawSettings();
+	Object3dCommon::GetInstance()->CommonDrawSettings();
 	object3d->Draw();
 
 	// 3. スカイボックスの描画
-	skyboxCommon->CommonDrawSettings(dxCommon->GetCommandList());
+	SkyboxCommon::GetInstance()->CommonDrawSettings(DirectXCommon::GetInstance()->GetCommandList());
 	if (skydomeSwitch)
 	{
 		skybox->Draw();
 	}
 
 	// 4. スプライトの描画
-	spriteCommon->CommonDrawSettings();
+	SpriteCommon::GetInstance()->CommonDrawSettings();
 	if (spriteSwitch)
 	{
-		sprite->Draw(dxCommon->GetCommandList(), lightningTexHandle);
+		sprite->Draw(DirectXCommon::GetInstance()->GetCommandList(), lightningTexHandle);
 	}
 
 	// 5. バックバッファへ描画＆ポストプロセス
-	renderTexture->ChangeState(dxCommon->GetCommandList(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	renderTexture->ChangeState(DirectXCommon::GetInstance()->GetCommandList(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-	dxCommon->PreDraw();
-	srvManeger->PreDraw();
+	DirectXCommon::GetInstance()->PreDraw();
+	
+	//シーン描画
+	scene_->Draw();
+	
+	SrvManager::GetInstance()->PreDraw();
 
-	postProcess->Draw(dxCommon->GetCommandList(), renderTexture, postProcessEnable, effectMode, colorScale);
+	postProcess->Draw(DirectXCommon::GetInstance()->GetCommandList(), renderTexture, postProcessEnable, effectMode, colorScale);
 
 	// ImGui描画
 #ifdef USE_IMGUI
-	imguiManager->End();
-	imguiManager->Draw();
+	ImGuiManager::GetInstance()->End();
+	ImGuiManager::GetInstance()->Draw();
 #endif
 
 	// フリップ
-	dxCommon->PostDraw();
+	DirectXCommon::GetInstance()->PostDraw();
 }
 
 void Game::Finalize()
@@ -191,20 +201,11 @@ void Game::Finalize()
 	delete sprite;
 	sprite = nullptr;
 
-	delete spriteCommon;
-	spriteCommon = nullptr;
-
 	delete object3d;
 	object3d = nullptr;
 
-	delete object3dCommon;
-	object3dCommon = nullptr;
-
 	delete skybox;
 	skybox = nullptr;
-
-	delete skyboxCommon;
-	skyboxCommon = nullptr;
 
 	delete camera;
 	camera = nullptr;
@@ -213,4 +214,8 @@ void Game::Finalize()
 	TextureManager::GetInstance()->Finalize();
 
 	Framework::Finalize();
+	//シーンの終了処理
+	scene_->Finalize();
+	//シーンの解放
+	delete scene_;
 }

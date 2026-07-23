@@ -34,16 +34,6 @@ public:
 	//終了フラグのチェック
 	virtual bool IsEndRequst() { return endRequst_; }
 protected:
-	// エンジン基盤系ポインタ
-	WinApp* winApp = nullptr;
-	DirectXCommon* dxCommon = nullptr;
-	SrvManager* srvManeger = nullptr;
-	Input* input = nullptr;
-
-#ifdef USE_IMGUI
-	ImGuiManager* imguiManager = nullptr;
-#endif
-	
 	//ゲーム終了フラグ
 	bool endRequst_ = false;
 };

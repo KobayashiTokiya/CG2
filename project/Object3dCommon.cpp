@@ -1,5 +1,11 @@
 #include "Object3dCommon.h"
 
+Object3dCommon* Object3dCommon::GetInstance()
+{
+	static Object3dCommon instance;
+	return &instance;
+}
+
 void Object3dCommon::Initialize(DirectXCommon* dxCommon)
 {
 	// 1. まずメンバ変数をセット
@@ -209,7 +215,7 @@ void Object3dCommon::CreateGraphicsPipelineState()
 void Object3dCommon::CommonDrawSettings()
 {
 	//コマンドリストを取得
-	auto commandList = dxCommon_->GetCommandList();
+	auto commandList = DirectXCommon::GetInstance()->GetCommandList();
 
 	//ルートシグネチャをセットするコマンド
 	commandList->SetGraphicsRootSignature(rootSignature.Get());
