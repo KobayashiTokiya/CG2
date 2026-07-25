@@ -3,6 +3,7 @@
 #include <d3d12.h>
 #include<string>
 #include "DirectXCommon.h"
+#include "Vector.h"
 
 // 前方宣言
 class Camera;

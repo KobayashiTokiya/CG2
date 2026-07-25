@@ -82,6 +82,8 @@ public:
 
 	//初期化
 	void Initialize(DirectXCommon* dxCommon, SrvManager* srvManager);
+	//終了処理
+	void Finalize();
 	//更新
 	void Update(Camera* camera);
 	//描画

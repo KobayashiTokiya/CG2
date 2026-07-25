@@ -63,6 +63,40 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,SrvManager* srvManager)
 	accelerationField.area.max = { 1.0f,1.0f,1.0f };
 }
 
+void ParticleManager::Finalize()
+{
+	// 1. インスタンシングバッファのマッピング解除（Unmap）
+	if (instancingResource && instancingData)
+	{
+		instancingResource->Unmap(0, nullptr);
+		instancingData = nullptr;
+	}
+
+	// 2. リスト・ベクター系の動的メモリのクリア
+	particles.clear();
+	vertices_.clear();
+	cylinderVertices_.clear();
+	sphereVertices_.clear();
+	lightningVertices_.clear();
+
+	// 3. DirectX 12 リソース（ComPtr）の解放
+	instancingResource.Reset();
+	vertexResource_.Reset();
+	cylinderVertexResource_.Reset();
+	sphereVertexResource_.Reset();
+	lightningVertexResource_.Reset();
+
+	rootSignature_.Reset();
+	for (int i = 0; i < static_cast<int>(BlendMode::kCountOfBlendMode); ++i)
+	{
+		graphicsPipelineState_[i].Reset();
+	}
+
+	// 4. 外部参照ポインタのクリア
+	dxCommon_ = nullptr;
+	srvManager_ = nullptr;
+};
+
 void ParticleManager::Update(Camera* camera)
 {
 	const float kDeltaTime = 1.0f / 60.0f;
