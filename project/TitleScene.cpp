@@ -1,4 +1,4 @@
-#include "GamePlayScene.h"
+#include "TitleScene.h"
 #include "DirectXCommon.h"
 #include "SrvManager.h"
 #include "TextureManager.h"
@@ -17,8 +17,9 @@
 #ifdef USE_IMGUI
 #include "ImGuiManager.h"
 #endif
+#include "SceneManager.h"
 
-void GamePlayScene::Initialize()
+void TitleScene::Initialize()
 {
 	// スプライト共通部の初期化
 	SpriteCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
@@ -33,15 +34,15 @@ void GamePlayScene::Initialize()
 	// カメラ
 	camera = new Camera();
 	camera->SetRotate({ 0.0f, 0.0f, 0.0f });
-	camera->SetTranslate({ 0.0f, 0.0f, -50.0f });
+	camera->SetTranslate({ 0.0f, 0.0f, 0.0f });
 
 	// 3Dオブジェクト共通部＆生成
 	Object3dCommon::GetInstance();
 	Object3dCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
 	Object3dCommon::GetInstance()->SetDefaultCamera(camera);
 
-	object3d = new Object3d();
-	object3d->Initialize();
+	//object3d = new Object3d();
+	//object3d->Initialize();
 
 	// アセットロード
 	TextureManager::GetInstance()->LoadTexture("Resource/monsterBall.png");
@@ -60,14 +61,14 @@ void GamePlayScene::Initialize()
 	ModelManager::GetInstance()->LoadModel("sphere.obj");
 
 	// オブジェクトにモデルをセットする
-	object3d->SetModel("sphere.obj");
-	object3d->SetTextureIndex(uvCheckerTexIndex);
-	object3d->SetEnvironmentTexture(envTexIndex);
+	//object3d->SetModel("sphere.obj");
+	//object3d->SetTextureIndex(uvCheckerTexIndex);
+	//object3d->SetEnvironmentTexture(envTexIndex);
 
-	ringTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/circle.png");
-	cylinderTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/gradationLine.png");
-	sphereTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/white.png");
-	lightningTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/white.png");
+	//ringTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/circle.png");
+	//cylinderTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/gradationLine.png");
+	//sphereTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/white.png");
+	//lightningTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/white.png");
 
 	// スカイボックス
 	SkyboxCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
@@ -80,40 +81,11 @@ void GamePlayScene::Initialize()
 	skybox->Initialize(skyboxSRVHandleGPU);
 
 	// スプライト
-	sprite = new Sprite();
-	sprite->Initialize(SpriteCommon::GetInstance(), "Resource/uvChecker.png");
-
-	// 1. JSON のロード
-	LevelData* levelData = LevelLoader::LoadLevelFile("scene");
-
-	// 2. MESH タイプのデータから Object3d を生成して配置
-	for (const auto& objectData : levelData->objects)
-	{
-		if (objectData.type != "MESH") continue;
-
-		std::string modelFileName = objectData.fileName + ".obj";
-		ModelManager::GetInstance()->LoadModel(modelFileName);
-
-		Object3d* newObj = new Object3d();
-		newObj->Initialize();
-		newObj->SetModel(modelFileName);
-		newObj->SetTextureIndex(uvCheckerTexIndex);
-		newObj->SetEnvironmentTexture(envTexIndex);
-
-		//JSONで指定されたトランスフォームをセット
-		newObj->SetTranslate(objectData.transform.translation);
-		newObj->SetRotate(objectData.transform.rotation);
-		newObj->SetScale(objectData.transform.scaling);
-
-		objects3d_.push_back(newObj);
-	}
-
-	//使わなくなったlevelData は削除
-	delete levelData;
-
+	//sprite = new Sprite();
+	//sprite->Initialize(SpriteCommon::GetInstance(), "Resource/uvChecker.png");
 }
 
-void GamePlayScene::Update()
+void TitleScene::Update()
 {
 	// ImGuiのフレーム開始処理
 #ifdef USE_IMGUI
@@ -128,27 +100,32 @@ void GamePlayScene::Update()
 	// パラメータの反映
 	ParticleManager::GetInstance()->DrawImGui();
 
-	sprite->SetPosition(spritePosition);
-	sprite->SetRotation(spriteRotation);
-	sprite->SetSize(spriteSize);
-	sprite->SetColor(spriteColor);
-
-	object3d->SetTranslate(object3dTranslate);
-	object3d->SetRotate(object3dRotate);
-	object3d->SetScale(object3dScale);
+	//sprite->SetPosition(spritePosition);
+	//sprite->SetRotation(spriteRotation);
+	//sprite->SetSize(spriteSize);
+	//sprite->SetColor(spriteColor);
+	//
+	//object3d->SetTranslate(object3dTranslate);
+	//object3d->SetRotate(object3dRotate);
+	//object3d->SetScale(object3dScale);
 
 	camera->DebugUpdate(Input::GetInstance());
 
 	// 各種更新（行列計算など）
 	skybox->Update(camera);
-	object3d->Update();
-	sprite->Update();
+	//object3d->Update();
+	//sprite->Update();
 	ParticleManager::GetInstance()->Update(camera);
 
-	for (auto* obj : objects3d_) { obj->Update(); }
+	//ENTERキーを押したら
+	if (Input::GetInstance()->TriggerKey(DIK_RETURN))
+	{
+		//シーン切り換え依頼
+		SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
+	}
 }
 
-void GamePlayScene::Draw()
+void TitleScene::Draw()
 {
 	// 描画先の変更・クリア
 	renderTexture->ChangeState(DirectXCommon::GetInstance()->GetCommandList(), D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -182,9 +159,6 @@ void GamePlayScene::Draw()
 	Object3dCommon::GetInstance()->CommonDrawSettings();
 	//object3d->Draw();
 
-	Object3dCommon::GetInstance()->CommonDrawSettings();
-	for (auto* obj : objects3d_) { obj->Draw(); }
-
 	// 3. スカイボックスの描画
 	SkyboxCommon::GetInstance()->CommonDrawSettings(DirectXCommon::GetInstance()->GetCommandList());
 	if (skydomeSwitch)
@@ -196,7 +170,7 @@ void GamePlayScene::Draw()
 	SpriteCommon::GetInstance()->CommonDrawSettings();
 	if (spriteSwitch)
 	{
-		sprite->Draw(DirectXCommon::GetInstance()->GetCommandList(), lightningTexHandle);
+		//sprite->Draw(DirectXCommon::GetInstance()->GetCommandList(), lightningTexHandle);
 	}
 
 	// 5. バックバッファへ描画＆ポストプロセス
@@ -216,7 +190,7 @@ void GamePlayScene::Draw()
 	DirectXCommon::GetInstance()->PostDraw();
 }
 
-void GamePlayScene::Finalize()
+void TitleScene::Finalize()
 {
 	delete postProcess;
 	postProcess = nullptr;
@@ -224,18 +198,15 @@ void GamePlayScene::Finalize()
 	delete renderTexture;
 	renderTexture = nullptr;
 
-	delete sprite;
-	sprite = nullptr;
-
-	delete object3d;
-	object3d = nullptr;
+	//delete sprite;
+	//sprite = nullptr;
+	//
+	//delete object3d;
+	//object3d = nullptr;
 
 	delete skybox;
 	skybox = nullptr;
 
 	delete camera;
 	camera = nullptr;
-
-	for (auto* obj : objects3d_) { delete obj; }
-	objects3d_.clear();
 }

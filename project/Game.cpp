@@ -3,6 +3,7 @@
 #include "ModelManager.h"
 #include "ParticleManager.h"
 #include "SrvManager.h"
+#include "SceneFactory.h"
 
 void Game::Initialize()
 {
@@ -11,12 +12,13 @@ void Game::Initialize()
 	// 基盤マネージャーの初期化
 	TextureManager::GetInstance()->Initialize(DirectXCommon::GetInstance(), SrvManager::GetInstance());
 	ModelManager::GetInstance()->Initialize(DirectXCommon::GetInstance());
-	ParticleManager::GetInstance()->Initialize(DirectXCommon::GetInstance(),SrvManager::GetInstance());
+	ParticleManager::GetInstance()->Initialize(DirectXCommon::GetInstance(),SrvManager::GetInstance());;
 
-	//ゲームプレイシーンの生成
-	scene_ = new GamePlayScene();
-	//ゲームプレイシーンの初期化
-	scene_->Initialize();
+	// シーンマネージャの生成と初期化
+	sceneFactory_ = new SceneFactory();
+	SceneManager::GetInstance()->SetSceneFactory(sceneFactory_);
+
+	SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
 }
 
 void Game::Update()
@@ -24,23 +26,20 @@ void Game::Update()
 	//基底クラスの更新処理
 	Framework::Update();
 
-	//シーンの更新処理
-	scene_->Update();
+	// シーンマネージャの更新処理
+	SceneManager::GetInstance()->Update();
 }
 
 void Game::Draw()
 {
-	//シーン描画
-	scene_->Draw();
+	// シーンマネージャの描画処理
+	SceneManager::GetInstance()->Draw();
 }
 
 void Game::Finalize()
 {
-	//シーンの終了処理
-	scene_->Finalize();
-	//シーンの解放
-	delete scene_;
-	scene_ = nullptr;
+	delete sceneFactory_;
+	sceneFactory_ = nullptr;
 
 	//各種マネジャーの終了処理
 	TextureManager::GetInstance()->Finalize();

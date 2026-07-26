@@ -64,4 +64,5 @@ void Framework::Finalize()
 		ImGuiManager::GetInstance()->Finalize();
 	}
 #endif
+	delete sceneFactory_;
 }

@@ -14,6 +14,7 @@
 #include "WinApp.h"
 #include "DirectXCommon.h"
 #include "SrvManager.h"
+#include "AbstractSceneFactory.h"
 #ifdef USE_IMGUI
 #include "ImGuiManager.h"
 #endif
@@ -36,5 +37,7 @@ public:
 protected:
 	//ゲーム終了フラグ
 	bool endRequst_ = false;
+	//シーンファクトリー
+	AbstractSceneFactory* sceneFactory_ = nullptr;
 };
 

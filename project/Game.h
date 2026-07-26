@@ -1,7 +1,7 @@
 #pragma once
-
 #include "Framework.h"
-#include "GamePlayScene.h"
+#include "SceneManager.h"
+#include "AbstractSceneFactory.h"
 
 class Game:public Framework
 {
@@ -12,7 +12,7 @@ public:
 	void Draw()override;
 
 private:
-	//シーン
-	GamePlayScene* scene_ = nullptr;
+	//シーンファクトリー
+	AbstractSceneFactory* sceneFactory_ = nullptr;
 };
 
