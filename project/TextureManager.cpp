@@ -11,17 +11,13 @@ uint32_t TextureManager::kSRVIndexTop = 1;
 // シングルトンインスタンスの取得
 TextureManager* TextureManager::GetInstance()
 {
-	if (instance == nullptr)
-	{
-		instance = new TextureManager;
-	}
-	return instance;
+	static TextureManager instance;
+	return &instance;
 }
 
 // 終了処理
 void TextureManager::Finalize()
 {
-	delete instance;
 	instance = nullptr;
 }
 

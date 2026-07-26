@@ -11,7 +11,6 @@
 #include <d3d12.h>
 #include <wrl.h>
 
-class Object3dCommon;
 class Model; //Modelクラスを使うための先行宣言
 class ModelManager;
 class Camera;
@@ -40,7 +39,7 @@ public://インナークラス
 
 public://メンバ関数
 	//初期化
-	void Initialize(Object3dCommon* object3dCommon);
+	void Initialize();
 	//更新
 	void Update();
 	//描画
@@ -74,8 +73,6 @@ private:// 非公開メンバ関数
 	void CreateDirectionalLightData(); //平行光源データ作成用の関数
 
 private://
-	Object3dCommon* object3dCommon = nullptr;
-
 	//このオブジェクトが描画するモデルのポインタ
 	Model* model = nullptr;
 

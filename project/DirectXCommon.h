@@ -29,7 +29,13 @@ using namespace Microsoft::WRL;
 
 class DirectXCommon
 {
-public://メンバ関数
+public:
+	static DirectXCommon* GetInstance();
+
+	DirectXCommon(const DirectXCommon&) = delete;
+	DirectXCommon& operator=(const DirectXCommon&) = delete;
+	
+	//メンバ関数
 	//初期化
 	void Initialize(WinApp* winApp);
 
@@ -120,6 +126,9 @@ public://メンバ関数
 
 	size_t GetSwapChainResourceNums() const { return std::size(renderTargets_); }
 private:
+	DirectXCommon() = default;
+	~DirectXCommon() = default;
+
 	//DirectX12デバイス
 	Microsoft::WRL::ComPtr<ID3D12Device> device_;
 	//DXGIファクトリ

@@ -1,6 +1,12 @@
 #include "DirectXCommon.h"
 #include "externals/DirectXTex/d3dx12.h"
 
+DirectXCommon* DirectXCommon::GetInstance()
+{
+	static DirectXCommon instance;
+	return &instance;
+}
+
 void DirectXCommon::Initialize(WinApp* winApp)
 {
 	//FPS固定初期化

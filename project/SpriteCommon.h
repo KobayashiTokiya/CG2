@@ -7,7 +7,13 @@
 //スプライト共通部
 class SpriteCommon
 {
-public://メンバ関数
+public:
+	static SpriteCommon* GetInstance();
+
+	SpriteCommon(const SpriteCommon&) = delete;
+	SpriteCommon& operator=(const SpriteCommon&) = delete;
+	
+	//メンバ関数
 	//初期化
 	void Initialize(DirectXCommon* dxCommon);
 
@@ -30,6 +36,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12RootSignature>rootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState>graphicsPipelineState;
 
-	
+	SpriteCommon() = default;
+	~SpriteCommon() = default;
 };
 

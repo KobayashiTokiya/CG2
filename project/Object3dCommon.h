@@ -10,7 +10,13 @@ class Camera;
 //3Dオブジェクト
 class Object3dCommon
 {
-public://メンバ関数
+public:
+	static Object3dCommon* GetInstance();
+
+	Object3dCommon(const Object3dCommon&) = delete;
+	Object3dCommon& operator=(const Object3dCommon&) = delete;
+
+	//メンバ関数
 	//初期化
 	void Initialize(DirectXCommon* dxCommon);
 	//更新
@@ -39,6 +45,9 @@ public://getterとsetter
 	ID3D12PipelineState* GetPipelinestate(BlendMode mode) { return graphicsPipelineState[static_cast<int>(mode)].Get(); }
 	D3D12_BLEND_DESC GetBlendDesc(BlendMode mode);
 private:
+	Object3dCommon() = default;
+	~Object3dCommon() = default;
+
 	DirectXCommon* dxCommon_ = nullptr;
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature>rootSignature;

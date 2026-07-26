@@ -77,8 +77,13 @@ public:
 	//インスタンスを取得する関数
 	static ParticleManager* GetInstance();
 
+	ParticleManager(const ParticleManager&) = delete;
+	ParticleManager& operator=(const ParticleManager&) = delete;
+
 	//初期化
 	void Initialize(DirectXCommon* dxCommon, SrvManager* srvManager);
+	//終了処理
+	void Finalize();
 	//更新
 	void Update(Camera* camera);
 	//描画
@@ -116,8 +121,6 @@ private:
 private:
 	ParticleManager() = default;
 	~ParticleManager()= default;
-	ParticleManager(const ParticleManager&) = delete;
-	ParticleManager& operator=(const ParticleManager&) = delete;
 
 
 private:

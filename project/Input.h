@@ -9,6 +9,11 @@
 class Input
 {
 public:
+	static Input* GetInstance();
+
+	Input(const Input&) = delete;
+	Input& operator=(const Input&) = delete;
+
 	//namespace省略
 	template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
@@ -24,6 +29,9 @@ public:
 
 	bool ReleaseKey(BYTE keyNumber);
 private:
+	Input() = default;
+	~Input() = default;
+
 	//メンバ変数
 	//キーボードのデバイス
 	ComPtr<IDirectInputDevice8> keyboard;

@@ -25,7 +25,7 @@ private:
     };
 
 public:
-	void Initialize(SkyboxCommon* skyboxCommon, D3D12_GPU_DESCRIPTOR_HANDLE textureHandle);
+	void Initialize(D3D12_GPU_DESCRIPTOR_HANDLE textureHandle);
 	void Update(Camera* camera);
 	void Draw();
 
@@ -33,7 +33,6 @@ private://箱の生成
     void CreateCube();
 
 private:
-    SkyboxCommon* skyboxCommon_ = nullptr;
     Camera* camera_ = nullptr;
 
     // トランスフォーム

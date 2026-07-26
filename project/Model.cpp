@@ -189,10 +189,10 @@ void Model::CreateVertexData()
 
 void Model::CreateMaterialData()
 {
-	DirectXCommon* dxCommon = modelCommon_->GetDxCommon();
+	DirectXCommon::GetInstance();
 
 	//マテリアルリソースを作る
-	materialResource = dxCommon->CreateBufferResource(sizeof(Material));
+	materialResource = DirectXCommon::GetInstance()->CreateBufferResource(sizeof(Material));
 
 	//マテリアルリソースにデータを書き込むためのアドレスを取得してmaterialDataに割り当てる
 	materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));

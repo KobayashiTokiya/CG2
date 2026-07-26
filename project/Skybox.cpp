@@ -4,20 +4,16 @@
 #include "DirectXCommon.h"
 #include <algorithm>
 
-void Skybox::Initialize(SkyboxCommon* skyboxCommon, D3D12_GPU_DESCRIPTOR_HANDLE textureHandle)
+void Skybox::Initialize(D3D12_GPU_DESCRIPTOR_HANDLE textureHandle)
 {
     // 引数で受け取ったものをメンバ変数に記録
-    this->skyboxCommon_ = skyboxCommon;
     this->textureHandle_ = textureHandle;
 
     // 1. 箱のモデルデータ（頂点・インデックス）を生成
     CreateCube();
 
-    // 2. 定数バッファ(座標変換行列用)の生成
-    DirectXCommon* dxCommon = skyboxCommon_->GetDxCommon();
-
     // 変数名を transformationResource_ に統一
-    transformationResource_ = dxCommon->CreateBufferResource(sizeof(TransformationMatrix));
+    transformationResource_ = DirectXCommon::GetInstance()->CreateBufferResource(sizeof(TransformationMatrix));
 
     // マップ先のポインタも transformationMatrixData_ に統一
     transformationResource_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
@@ -54,7 +50,7 @@ void Skybox::Update(Camera* camera)
 
 void Skybox::Draw()
 {
-    ID3D12GraphicsCommandList* commandList = skyboxCommon_->GetDxCommon()->GetCommandList();
+    ID3D12GraphicsCommandList* commandList = SkyboxCommon::GetInstance()->GetDxCommon()->GetCommandList();
 
     // 安全装置：ハンドルが空なら描画をスキップ（クラッシュ防止）
     if (textureHandle_.ptr == 0) return;
@@ -75,7 +71,7 @@ void Skybox::Draw()
 
 void Skybox::CreateCube()
 {
-    DirectXCommon* dxCommon = skyboxCommon_->GetDxCommon();
+    DirectXCommon* dxCommon = DirectXCommon::GetInstance();
 
     // --- 1. 頂点データ (8つの角) ---
     VertexPos vertices[8] = {

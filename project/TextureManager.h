@@ -17,6 +17,10 @@ class TextureManager
 public:
 	// シングルトンインスタンスの取得
 	static TextureManager* GetInstance();
+
+	TextureManager(const TextureManager&) = delete;
+	TextureManager& operator=(const TextureManager&) = delete;
+
 	// 終了
 	void Finalize();
 
@@ -47,8 +51,6 @@ private:
 
 	TextureManager() = default;
 	~TextureManager() = default;
-	TextureManager(TextureManager&) = delete;
-	TextureManager& operator=(TextureManager&) = delete;
 
 	DirectXCommon* dxCommon = nullptr;
 	SrvManager* srvManager = nullptr;

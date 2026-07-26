@@ -82,11 +82,11 @@ void Sprite::Draw(ID3D12GraphicsCommandList* commandList, const D3D12_GPU_DESCRI
 
 void Sprite::CreateVertexData()
 {
-	DirectXCommon* dxCommon = spriteCommon->GetDxCommon();
+	DirectXCommon::GetInstance();
 
 	//頂点バッファの生成(6頂点分)
 
-	vertexResource = dxCommon->CreateBufferResource(sizeof(VertexData) * 6);
+	vertexResource = DirectXCommon::GetInstance()->CreateBufferResource(sizeof(VertexData) * 6);
 
 	//頂点データの書き込み用ポイントを作成
 	VertexData* vertexData = nullptr;
@@ -167,10 +167,10 @@ void Sprite::CreateVertexData()
 
 void Sprite::CreateMaterialData()
 {
-	DirectXCommon* dxCommon = spriteCommon->GetDxCommon();
+	DirectXCommon::GetInstance();
 
 	// マテリアルリソースを作る
-	materialResource = dxCommon->CreateBufferResource(sizeof(Material));
+	materialResource = DirectXCommon::GetInstance()->CreateBufferResource(sizeof(Material));
 
 	// データを書き込むためのポインタを取得
 	materialResource->Map(0, nullptr, reinterpret_cast<void**>(&materialData));
@@ -183,10 +183,10 @@ void Sprite::CreateMaterialData()
 
 void Sprite::CreateTransformationMatrixData()
 {
-	DirectXCommon* dxCommon = spriteCommon->GetDxCommon();
+	DirectXCommon::GetInstance();
 
 	// リソースを作る
-	transformationMatrixResource = dxCommon->CreateBufferResource(sizeof(TransformationMatrix));
+	transformationMatrixResource = DirectXCommon::GetInstance()->CreateBufferResource(sizeof(TransformationMatrix));
 
 	// データを書き込むためのポインタを取得
 	transformationMatrixResource->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData));
