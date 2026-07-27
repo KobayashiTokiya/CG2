@@ -64,19 +64,24 @@ void PostProcess::Initialize(DirectXCommon* dxCommon)
 	// 2. シェーダーのコンパイル (安定バージョン 6_5 へ引き上げ)
 	// =========================================================
 	Microsoft::WRL::ComPtr<IDxcBlob> vsBlob = dxCommon->CompileShader(L"Resource/shaders/Fullscreen.VS.hlsl", L"vs_6_5");
-	Microsoft::WRL::ComPtr<IDxcBlob> psBlob = dxCommon->CompileShader(L"Resource/shaders/GaussianFilter.PS.hlsl", L"ps_6_5");
-
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlobPostProcess = dxCommon->CompileShader(L"Resource/shaders/PostProcess.PS.hlsl", L"ps_6_5");
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlobGrayscale = dxCommon->CompileShader(L"Resource/shaders/Grayscale.PS.hlsl", L"ps_6_5");
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlobVignette = dxCommon->CompileShader(L"Resource/shaders/Vignette.PS.hlsl", L"ps_6_5");
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlobBoxFilter = dxCommon->CompileShader(L"Resource/shaders/BoxFilter.PS.hlsl", L"ps_6_5");
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlobGaussian = dxCommon->CompileShader(L"Resource/shaders/GaussianFilter.PS.hlsl", L"ps_6_5");
 	// シェーダーが正常に読み込めているか厳密にアサートチェック
 	assert(vsBlob != nullptr && vsBlob->GetBufferPointer() != nullptr);
-	assert(psBlob != nullptr && psBlob->GetBufferPointer() != nullptr);
-
+	assert(psBlobPostProcess != nullptr && psBlobPostProcess->GetBufferPointer() != nullptr);
+	assert(psBlobGrayscale != nullptr && psBlobGrayscale->GetBufferPointer() != nullptr);
+	assert(psBlobVignette != nullptr && psBlobVignette->GetBufferPointer() != nullptr);
+	assert(psBlobBoxFilter != nullptr && psBlobBoxFilter->GetBufferPointer() != nullptr);
+	assert(psBlobGaussian != nullptr && psBlobGaussian->GetBufferPointer() != nullptr);
 	// =========================================================
 	// 3. パイプライン状態オブジェクト (PSO) の作成
 	// =========================================================
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc{};
 	psoDesc.pRootSignature = rootSignature_.Get();
 	psoDesc.VS = { vsBlob->GetBufferPointer(), vsBlob->GetBufferSize() };
-	psoDesc.PS = { psBlob->GetBufferPointer(), psBlob->GetBufferSize() };
 
 	//頂点インプットレイアウトは「完全に無し（nullptr と 0）」が正解
 	psoDesc.InputLayout.pInputElementDescs = nullptr;
@@ -126,8 +131,26 @@ void PostProcess::Initialize(DirectXCommon* dxCommon)
 	psoDesc.SampleDesc.Count = 1;
 	psoDesc.SampleDesc.Quality = 0;
 
-	hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState_));
+	psoDesc.PS = { psBlobPostProcess->GetBufferPointer(), psBlobPostProcess->GetBufferSize() };
+	hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineStatePostProcess_));
 	assert(SUCCEEDED(hr));
+
+	psoDesc.PS = { psBlobGrayscale->GetBufferPointer(), psBlobGrayscale->GetBufferSize() };
+	hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineStateGrayscale_));
+	assert(SUCCEEDED(hr));
+
+	psoDesc.PS = { psBlobVignette->GetBufferPointer(), psBlobVignette->GetBufferSize() };
+	hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineStateVignette_));
+	assert(SUCCEEDED(hr));
+
+	psoDesc.PS = { psBlobBoxFilter->GetBufferPointer(), psBlobBoxFilter->GetBufferSize() };
+	hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineStateBoxFilter_));
+	assert(SUCCEEDED(hr));
+
+	psoDesc.PS = { psBlobGaussian->GetBufferPointer(), psBlobGaussian->GetBufferSize() };
+	hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineStateGaussian_));
+	assert(SUCCEEDED(hr));
+
 
 	uint32_t sizeCB = (sizeof(PostProcessData) + 0xFF) & ~0xFF; // 256バイトアライメント
 	D3D12_HEAP_PROPERTIES heapProps{};
@@ -159,7 +182,24 @@ void PostProcess::Draw(ID3D12GraphicsCommandList* commandList, RenderTexture* re
 
 	// 各種シグネチャとPSOのセット
 	commandList->SetGraphicsRootSignature(rootSignature_.Get());
-	commandList->SetPipelineState(pipelineState_.Get());
+	
+	if (!enable)
+	{
+		commandList->SetPipelineState(pipelineStatePostProcess_.Get());
+	}
+	else
+	{
+		switch (effectModel)
+		{
+		case 0: commandList->SetPipelineState(pipelineStatePostProcess_.Get()); break;
+		case 1: commandList->SetPipelineState(pipelineStateGrayscale_.Get()); break;
+		case 2: commandList->SetPipelineState(pipelineStateVignette_.Get()); break;
+		case 3: commandList->SetPipelineState(pipelineStateBoxFilter_.Get()); break;
+		case 4: commandList->SetPipelineState(pipelineStateGaussian_.Get()); break;
+		default: commandList->SetPipelineState(pipelineStatePostProcess_.Get()); break;
+		}
+	}
+
 
 	//頂点バッファなしで3頂点（画面全体を覆う巨大な三角形1枚）を描画する
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

@@ -18,6 +18,16 @@ class PostProcess;
 class GamePlayScene:public BaseScene
 {
 public:
+	enum PostEffectType
+	{
+		None = 0,         // 0: 通常（ポストプロセスなし）
+		Grayscale = 1,    // 1: グレースケール
+		Vignette = 2,     // 2: ヴィネット
+		BoxFilter = 3,    // 3: ボックスフィルタ（ぼかし）
+		GaussianFilter = 4// 4: ガウスフィルタ（ぼかし）
+	};
+
+public:
 	GamePlayScene() = default;
 	~GamePlayScene()override = default;
 
@@ -58,8 +68,12 @@ private:
 	Vector3 cameraRotate = { 0.0f, 0.0f, 0.0f };
 
 	bool skydomeSwitch = false;
-	bool postProcessEnable = false;
-	int effectMode = 0;
-	Vector3 colorScale = { 100.0f, 0.0f, 0.0f };
+	
+	//ポストエフェクト
+	bool postProcessEnable = true;         
+	int effectMode = PostEffectType::None;
+	Vector3 colorScale = { 1.0f, 1.0f, 1.0f }; 
+
+
 };
 

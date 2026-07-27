@@ -12,8 +12,11 @@ public:
 	void Draw(ID3D12GraphicsCommandList* commandList, RenderTexture* renderTexture,bool enable,int effectModel,const Vector3& colorScale);
 private:
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
-
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineStatePostProcess_; // 通常 / 複合用
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineStateGrayscale_;   // グレースケール
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineStateVignette_;    // ビネット
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineStateBoxFilter_;  // ボックスフィルター
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineStateGaussian_;   // ガウシアンブラー
 	struct PostProcessData
 	{
 		int32_t enable;
