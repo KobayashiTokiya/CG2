@@ -71,7 +71,7 @@ private:
 	
 	//ポストエフェクト
 	bool postProcessEnable = true;         
-	int effectMode = PostEffectType::None;
+	int effectMode = PostEffectType::Grayscale;
 	Vector3 colorScale = { 1.0f, 1.0f, 1.0f }; 
 
 
