@@ -137,21 +137,17 @@ void ImGuiManager::UpdateUI(
 	ImGui::Text("PostProcess");
 	ImGui::Checkbox("PostProcess ON/OFF", &postProcessEnable);
 
-	// ラジオボタンを2つ並べることで、effectMode の値を 0 と 1 で切り替えられるようにします
+	// ラジオボタンで effectMode の値を 0 〜 4 で切り替えられるように変更
 	if (postProcessEnable)
 	{
-		ImGui::RadioButton("Background Color Change", &effectMode, 0);
-		ImGui::RadioButton("Grayscale", &effectMode, 1);
+		ImGui::RadioButton("0: Copy (Normal)", &effectMode, 0);
+		ImGui::RadioButton("1: Grayscale", &effectMode, 1);
+		ImGui::RadioButton("2: Vignette", &effectMode, 2);
+		ImGui::RadioButton("3: Box Filter", &effectMode, 3);
+		ImGui::RadioButton("4: Gaussian Filter", &effectMode, 4);
 
-		// 現在選択されているモードに応じて、表示するスライダーを完全に切り替える
-		if (effectMode == 0)
-		{
-			ImGui::SliderFloat3("BG Color (RGB)", &colorScale.x, 0.0f, 100.0f);
-		}
-		else
-		{
-			ImGui::SliderFloat("Grayscale Strength", &colorScale.x, 0.0f, 100.0f); // X値だけを使う
-		}
+		// 必要に応じて調整用パラメータを表示
+		ImGui::SliderFloat3("Color Scale (RGB)", &colorScale.x, 0.0f, 1.0f);
 	}
 
 	ImGui::End(); // ウィンドウの終わり

@@ -125,6 +125,12 @@ void GamePlayScene::Update()
 		postProcessEnable, effectMode, colorScale);
 #endif
 
+	if (Input::GetInstance()->TriggerKey(DIK_1)) { effectMode = 0; }
+	if (Input::GetInstance()->TriggerKey(DIK_2)) { effectMode = 1; }
+	if (Input::GetInstance()->TriggerKey(DIK_3)) { effectMode = 2; }
+	if (Input::GetInstance()->TriggerKey(DIK_4)) { effectMode = 3; }
+	if (Input::GetInstance()->TriggerKey(DIK_5)) { effectMode = 4; }
+
 	// パラメータの反映
 	ParticleManager::GetInstance()->DrawImGui();
 
