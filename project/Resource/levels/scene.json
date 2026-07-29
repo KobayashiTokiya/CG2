@@ -2,41 +2,6 @@
     "name": "scene",
     "objects": [
         {
-            "type": "MESH",
-            "name": "Cube",
-            "transform": {
-                "translation": [
-                    0.0,
-                    -5.972680568695068,
-                    -0.6801320910453796
-                ],
-                "rotation": [
-                    0.0,
-                    -0.0,
-                    0.0
-                ],
-                "scaling": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            },
-            "file_name": "cube",
-            "collider": {
-                "type": "BOX",
-                "center": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "size": [
-                    2.0,
-                    2.0,
-                    2.0
-                ]
-            }
-        },
-        {
             "type": "LIGHT",
             "name": "Light",
             "transform": {
@@ -80,12 +45,12 @@
         },
         {
             "type": "MESH",
-            "name": "Cube.001",
+            "name": "立方体",
             "transform": {
                 "translation": [
                     0.0,
-                    5.997303485870361,
-                    2.1510918140411377
+                    10.0,
+                    0.0
                 ],
                 "rotation": [
                     0.0,
@@ -98,7 +63,7 @@
                     1.0
                 ]
             },
-            "file_name": "cube",
+            "file_name": "enemy",
             "collider": {
                 "type": "BOX",
                 "center": [
@@ -115,12 +80,12 @@
         },
         {
             "type": "MESH",
-            "name": "球",
+            "name": "立方体.001",
             "transform": {
                 "translation": [
-                    -9.106438636779785,
-                    0.0,
-                    -1.21848726272583
+                    10.0,
+                    0.40073585510253906,
+                    0.0
                 ],
                 "rotation": [
                     0.0,
@@ -133,7 +98,7 @@
                     1.0
                 ]
             },
-            "file_name": "sphere",
+            "file_name": "enemy",
             "collider": {
                 "type": "BOX",
                 "center": [
@@ -150,12 +115,12 @@
         },
         {
             "type": "MESH",
-            "name": "球.001",
+            "name": "立方体.003",
             "transform": {
                 "translation": [
-                    7.06461238861084,
                     0.0,
-                    0.1480773687362671
+                    -10.0,
+                    0.0
                 ],
                 "rotation": [
                     0.0,
@@ -168,18 +133,18 @@
                     1.0
                 ]
             },
-            "file_name": "sphere",
+            "file_name": "hurman",
             "collider": {
                 "type": "BOX",
                 "center": [
                     0.0,
-                    0.0,
-                    0.0
+                    -0.2200000137090683,
+                    3.8399999141693115
                 ],
                 "size": [
                     2.0,
-                    2.0,
-                    2.0
+                    7.379999160766602,
+                    7.319999694824219
                 ]
             }
         }
