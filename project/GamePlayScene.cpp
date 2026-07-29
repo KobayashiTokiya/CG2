@@ -53,6 +53,7 @@ void GamePlayScene::Initialize()
 	TextureManager::GetInstance()->LoadTexture("Resource/white.png");
 
 	uint32_t uvCheckerTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/uvChecker.png");
+	uint32_t whiteTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/white.png");
 	uint32_t envTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/rostock_laage_airport_4k.dds");
 
 	ModelManager::GetInstance()->LoadModel("axis.obj");
@@ -97,7 +98,7 @@ void GamePlayScene::Initialize()
 		Object3d* newObj = new Object3d();
 		newObj->Initialize();
 		newObj->SetModel(modelFileName);
-		newObj->SetTextureIndex(uvCheckerTexIndex);
+		newObj->SetTextureIndex(whiteTexIndex);
 		newObj->SetEnvironmentTexture(envTexIndex);
 
 		//JSONで指定されたトランスフォームをセット

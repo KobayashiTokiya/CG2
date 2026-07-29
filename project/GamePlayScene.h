@@ -70,7 +70,7 @@ private:
 	bool skydomeSwitch = false;
 	
 	//ポストエフェクト
-	bool postProcessEnable = true;         
+	bool postProcessEnable = false;         
 	int effectMode = PostEffectType::Grayscale;
 	Vector3 colorScale = { 1.0f, 1.0f, 1.0f }; 
 
