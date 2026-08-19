@@ -59,5 +59,7 @@ private:
 	bool postProcessEnable = true;
 	int effectMode = 0;
 	Vector3 colorScale = { 100.0f, 0.0f, 0.0f };
+
+	int score = 0;
 };
 

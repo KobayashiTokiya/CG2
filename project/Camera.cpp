@@ -25,6 +25,19 @@ Camera::Camera()
 
 }
 
+void Camera::TargetUpdate(const Vector3& targetPosition)
+{ 
+	transform.translate.x = targetPosition.x + offset_.x;
+	transform.translate.y = targetPosition.y + offset_.y;
+	transform.translate.z = targetPosition.z + offset_.z;
+
+	transform.rotate.x = 0.3f;
+	transform.rotate.y = 0.0f;
+	transform.rotate.z = 0.0f;
+
+	Update();
+}
+
 void Camera::DebugUpdate(Input* input)
 {
 	// ─── 1. 矢印キーでカメラの回転（向き）を変更 ───

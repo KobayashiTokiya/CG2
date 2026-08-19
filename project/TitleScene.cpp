@@ -94,7 +94,9 @@ void TitleScene::Update()
 		object3dTranslate, object3dRotate, object3dScale,
 		cameraTranslate, cameraRotate,
 		skydomeSwitch,
-		postProcessEnable, effectMode, colorScale);
+		postProcessEnable, effectMode, colorScale,
+		score
+	);
 #endif
 
 	// パラメータの反映

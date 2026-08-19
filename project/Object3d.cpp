@@ -11,7 +11,7 @@ void Object3d::Initialize()
 	CreateDirectionalLightData(); //平行光源データ
 
 	// --- モデルの初期位置・大きさ ---
-	transform.scale = { 1.0f, 1.0f, 1.0f };      // 大きさを1倍（等倍）にする
+	transform.scale = { 2.0f, 2.0f, 2.0f };      // 大きさを2倍にする
 	transform.rotate = { 0.0f, 0.0f, 0.0f };     // 回転なし
 	transform.translate = { 0.0f, 0.0f, 0.0f };  // 原点(0,0,0)に配置
 

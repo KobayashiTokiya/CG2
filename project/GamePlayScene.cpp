@@ -14,9 +14,16 @@
 #include "Sprite.h"
 #include "RenderTexture.h"
 #include "PostProcess.h"
+#include "CollisionManager.h"
+
 #ifdef USE_IMGUI
 #include "ImGuiManager.h"
 #endif
+
+#include "Coins.h"
+#include <cmath>
+#include <cstdlib>
+#include <ctime>
 
 void GamePlayScene::Initialize()
 {
@@ -51,6 +58,7 @@ void GamePlayScene::Initialize()
 	TextureManager::GetInstance()->LoadTexture("Resource/rostock_laage_airport_4k.dds");
 	TextureManager::GetInstance()->LoadTexture("Resource/lightning.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/white.png");
+	TextureManager::GetInstance()->LoadTexture("Resource/CoinShadow.png");
 
 	uint32_t uvCheckerTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/uvChecker.png");
 	uint32_t whiteTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/white.png");
@@ -59,10 +67,22 @@ void GamePlayScene::Initialize()
 	ModelManager::GetInstance()->LoadModel("axis.obj");
 	ModelManager::GetInstance()->LoadModel("plane.obj");
 	ModelManager::GetInstance()->LoadModel("sphere.obj");
+	ModelManager::GetInstance()->LoadModel("Coin.obj");
+	ModelManager::GetInstance()->LoadModel("player.obj");
+
+	// プレイヤーの生成と初期化
+	player_ = std::make_unique<Player>();
+	player_->Initialize("player.obj");
+
+	// コインの生成と初期化
+	std::srand(static_cast<unsigned int>(std::time(nullptr)));
+	auto coin = std::make_unique<Coin100>();
+	coin->Initialize("Coin.obj", { 0.0f, 20.0f, 0.0f },{ 1.0f, 1.0f, 1.0f }, 100);
+	coins_.push_back(std::move(coin));
 
 	// オブジェクトにモデルをセットする
-	object3d->SetModel("sphere.obj");
-	object3d->SetTextureIndex(uvCheckerTexIndex);
+	object3d->SetModel("plane.obj");
+	object3d->SetTextureIndex(whiteTexIndex);
 	object3d->SetEnvironmentTexture(envTexIndex);
 
 	ringTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/circle.png");
@@ -123,7 +143,8 @@ void GamePlayScene::Update()
 		object3dTranslate, object3dRotate, object3dScale,
 		cameraTranslate, cameraRotate,
 		skydomeSwitch,
-		postProcessEnable, effectMode, colorScale);
+		postProcessEnable, effectMode, colorScale,
+		score);
 #endif
 
 	if (Input::GetInstance()->TriggerKey(DIK_1)) { effectMode = 0; }
@@ -140,17 +161,130 @@ void GamePlayScene::Update()
 	sprite->SetSize(spriteSize);
 	sprite->SetColor(spriteColor);
 
-	object3d->SetTranslate(object3dTranslate);
-	object3d->SetRotate(object3dRotate);
-	object3d->SetScale(object3dScale);
+	//地面
+	Vector3 floorTranslate = { 0.0f, -1.0f, 0.0f };   // プレイヤーの足元（Y = -1.0f や 0.0f など）
+	Vector3 floorRotate = { 1.57f, 0.0f, 0.0f };   // 板ポリゴンを横に倒して水平にする（X軸に90度/約1.57ラジアン回転）
+	Vector3 floorScale = { 100.0f, 100.0f, 0.2f };// XとZ（またはY）を大きく広げる
+	object3d->SetTranslate(floorTranslate);
+	object3d->SetRotate(floorRotate);
+	object3d->SetScale(floorScale);
 
-	camera->DebugUpdate(Input::GetInstance());
-
+	//camera->DebugUpdate(Input::GetInstance());
+	//camera->Update();
+	
 	// 各種更新（行列計算など）
 	skybox->Update(camera);
 	object3d->Update();
 	sprite->Update();
 	ParticleManager::GetInstance()->Update(camera);
+
+	//カメラモード切替
+	if (Input::GetInstance()->TriggerKey(DIK_TAB))
+	{
+		isDebugCamera_ = !isDebugCamera_;
+	}
+
+	// プレイヤーの更新
+	if (player_)
+	{
+		player_->Update();
+	}
+
+	// 1. コインの更新 ＆ 当たり判定
+	for (auto& coin : coins_)
+	{
+		if (coin && !coin->IsDead())
+		{
+			coin->Update();
+
+			if (player_)
+			{
+				Vector3 pPos = player_->GetPosition();
+				Vector3 cPos = coin->GetPosition();
+
+				Vector3 bounceDir{};
+				Vector3 pushedPos{};
+
+				// 1. 壁（フチ）に当たったか？
+				if (CollisionManager::CheckCupWallAndGetBounce(pPos, cPos, 2.0f, 1.0f, 0.4f, bounceDir, pushedPos))
+				{
+					// めり込まないように外側に位置を補正
+					coin->SetPosition(pushedPos);
+
+					// 外側に向けて弾く！
+					coin->OnBounce(bounceDir);
+				}
+				// 2. 底に入ったか？
+				else if (CollisionManager::CheckCupBottom(pPos, cPos, 2.0f, 1.0f))
+				{
+					score += coin->GetScore();
+					coin->OnCollect(); // スコア獲得！
+				}
+			}
+		}
+	}
+
+	// 2. 画面外（地下 -10.0f）に落ちた、またはプレイヤーに触れて IsDead() が true になったコインを削除
+	coins_.erase(
+		std::remove_if(
+			coins_.begin(),
+			coins_.end(),
+			[](const std::unique_ptr<Coin>& coin)
+			{
+				return coin->IsDead();
+			}
+		),
+		coins_.end()
+	);
+
+	const size_t kMaxCoins = 5;
+
+	// 3. コインが消えたら（＝リストが空になったら）同じ場所で再生成
+	while (coins_.size() < kMaxCoins)
+	{
+		std::unique_ptr<Coin> newCoin=nullptr;
+		int randomVal = rand() % 100;
+
+		if (randomVal<15)
+		{
+			newCoin = std::make_unique<Coin500>();
+		}
+		else if (randomVal < 45)
+		{
+			newCoin = std::make_unique<Coin100>();
+		}
+		else if (randomVal < 80)
+		{
+			newCoin = std::make_unique<Coin10>();
+		}
+		else
+		{
+			newCoin = std::make_unique<CoinMinus500>();
+		}
+		
+		float spawnX = static_cast<float>(rand() % 21 - 10);
+		float spawnZ = static_cast<float>(rand() % 21 - 10);
+		Vector3 spawnPos = { spawnX ,20.0f,spawnZ };
+
+		// 生成・初期化
+		newCoin->Initialize("Coin.obj",spawnPos ,{ 1.0f, 1.0f, 1.0f }, 0);
+		newCoin->Update();
+		coins_.push_back(std::move(newCoin));
+	}
+
+
+	if (camera)
+	{
+		if (isDebugCamera_)
+		{
+			camera->DebugUpdate(Input::GetInstance());
+			camera->Update();
+		}
+		else if (player_)
+		{
+			camera->TargetUpdate(player_->GetPosition());
+		}
+	}
 
 	for (auto* obj : objects3d_) { obj->Update(); }
 }
@@ -190,7 +324,19 @@ void GamePlayScene::Draw()
 	//object3d->Draw();
 
 	Object3dCommon::GetInstance()->CommonDrawSettings();
-	for (auto* obj : objects3d_) { obj->Draw(); }
+	//for (auto* obj : objects3d_) { obj->Draw(); }
+
+	// プレイヤーの描画
+	if (player_)
+	{
+		player_->Draw();
+	}
+
+	//Coin
+	for (auto& coin : coins_)
+	{
+		coin->Draw();
+	}
 
 	// 3. スカイボックスの描画
 	SkyboxCommon::GetInstance()->CommonDrawSettings(DirectXCommon::GetInstance()->GetCommandList());

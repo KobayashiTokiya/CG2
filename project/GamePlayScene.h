@@ -1,11 +1,17 @@
 #pragma once
 
 #include <d3d12.h>
-#include<string>
+#include <string>
+#include <memory>
+#include <algorithm>
+#include <cstdlib>
+
 #include "DirectXCommon.h"
 #include "Vector.h"
 #include "BaseScene.h"
 #include "LevelLoader.h"
+#include "Player.h"
+#include "Coin.h"
 
 // 前方宣言
 class Camera;
@@ -64,16 +70,25 @@ private:
 	Vector3 object3dRotate = { 0.0f, 0.0f, 0.0f };
 	Vector3 object3dScale = { 1.0f, 1.0f, 1.0f };
 
+	bool isDebugCamera_ = false;
 	Vector3 cameraTranslate = { 0.0f, 0.0f, -100.0f };
 	Vector3 cameraRotate = { 0.0f, 0.0f, 0.0f };
 
 	bool skydomeSwitch = false;
 	
+	//スコア
+	int score = 0;
+
 	//ポストエフェクト
 	bool postProcessEnable = false;         
 	int effectMode = PostEffectType::Grayscale;
 	Vector3 colorScale = { 1.0f, 1.0f, 1.0f }; 
 
+	std::unique_ptr<Player> player_;
+	std::vector<std::unique_ptr<Coin>> coins_;
 
+	// コイン生成用タイマー
+	int coinSpawnTimer_ = 0;             
+	const int coinSpawnInterval_ = 60;   
 };
 

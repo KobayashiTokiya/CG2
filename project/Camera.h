@@ -18,6 +18,9 @@ public://メンバ変数に
 	// 自由移動用の更新関数を追加
 	void DebugUpdate(Input* input);
 
+	//ターゲット(プレイヤー)を追従する更新処理
+	void TargetUpdate(const Vector3& targetPosition);
+
 	//コントラスト
 	Camera();
 public:
@@ -55,5 +58,8 @@ private:
 	//デバック用速度設定
 	float moveSpeed = 0.2f;
 	float rotateSpeed = 0.02f;
+
+	//三人称用
+	Vector3 offset_ = { 0.0f,10.0f,-25.0f };
 };
 
