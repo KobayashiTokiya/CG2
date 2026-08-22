@@ -20,7 +20,7 @@ void Coin::Initialize(const std::string& modelFilePath, const Vector3& position,
 	uint32_t envTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/rostock_laage_airport_4k.dds");
 
 	object3d_->SetTextureIndex(uvCheckerTexIndex);
-	object3d_->SetEnvironmentTexture(envTexIndex);
+	//object3d_->SetEnvironmentTexture(envTexIndex);
 
 	object3d_->SetScale(scale_);
 
@@ -31,12 +31,24 @@ void Coin::Initialize(const std::string& modelFilePath, const Vector3& position,
 
 	uint32_t shadowTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/CoinShadow.png");
 	shadowObject3d_->SetTextureIndex(shadowTexIndex);
+
+	// ランダムな回転速度を設定 (X, Y, Z軸それぞれに違う回転を与える)
+	float rx = (static_cast<float>(rand() % 100) / 100.0f - 0.5f) * 0.1f;
+	float ry = (static_cast<float>(rand() % 100) / 100.0f - 0.5f) * 0.1f;
+	float rz = (static_cast<float>(rand() % 100) / 100.0f - 0.5f) * 0.1f;
+	rotationSpeed_ = { rx, ry, rz };
+
 }
 
 void Coin::Update()
 {
-	//rotate_.x += rotateSpeed_;
+	// 毎フレーム各軸ごとに回転を進める
+	rotate_.x += rotationSpeed_.x;
+	rotate_.y += rotationSpeed_.y;
+	rotate_.z += rotationSpeed_.z;
 	
+	velocity_.y -= 0.001f;
+
 	// 1. 速度を位置に反映
 	position_.x += velocity_.x;
 	position_.y += velocity_.y;
@@ -84,16 +96,22 @@ void Coin::Update()
 // 壁（フチ）に当たった時に外部（GamePlayScene）から呼ばれる処理
 void Coin::OnBounce(const Vector3& bounceDir)
 {
-	// 弾かれた方向（外向き）に速度を与える
-	velocity_.x = bounceDir.x * 0.25f;
-	velocity_.z = bounceDir.z * 0.25f;
-	velocity_.y = 0.08f; // 少し上にポンッと跳ね上がる
+	// 1. 弾く力を小さくして「フチに引っかかってこぼれ落ちる」程度にする
+	velocity_.x = bounceDir.x * 0.05f; // 0.25f → 0.05f に弱める
+	velocity_.z = bounceDir.z * 0.05f;
+
+	// 2. 上に跳ね上げず、そのまま下へ（跳ね返り感を減らしスムーズに落とす）
+	velocity_.y = -0.02f;
+
+	// 3. 接触したインパクトで回転にランダムなブレを与える
+	rotationSpeed_.x = (static_cast<float>(rand() % 100) / 100.0f - 0.5f) * 0.2f;
+	rotationSpeed_.z = (static_cast<float>(rand() % 100) / 100.0f - 0.5f) * 0.2f;
 }
 
 void Coin::Draw()
 {
 	// 影を先に描画
-	if (shadowObject3d_ && !isDead_)
+	if (shadowObject3d_ && position_.y > 0)
 	{
 		shadowObject3d_->Draw();
 	}

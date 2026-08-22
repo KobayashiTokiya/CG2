@@ -28,7 +28,7 @@ void Player::Initialize(const std::string& modelFilePath)
 	uint32_t envTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/rostock_laage_airport_4k.dds");
 
 	object3d_->SetTextureIndex(uvCheckerTexIndex);
-	object3d_->SetEnvironmentTexture(envTexIndex);
+	//object3d_->SetEnvironmentTexture(envTexIndex);
 }
 
 void Player::Update()

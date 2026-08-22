@@ -27,21 +27,18 @@ bool CollisionManager::CheckCupBottom(const Vector3& cupPos, const Vector3& coin
 
 bool CollisionManager::CheckCupWall(const Vector3& cupPos, const Vector3& coinPos, float cupHeight, float innerRadius, float wallThickness)
 {
-	// 高さの判定（コップの側面の高さ範囲内にあるか）
-	if (coinPos.y < cupPos.y || coinPos.y > cupPos.y + cupHeight)
-	{
-		return false;
-	}
+    if (coinPos.y < cupPos.y - 0.5f || coinPos.y > cupPos.y + cupHeight + 1.0f)
+    {
+        return false;
+    }
 
-	// XZ平面での距離計算
-	float dx = coinPos.x - cupPos.x;
-	float dz = coinPos.z - cupPos.z;
-	float distanceSq = dx * dx + dz * dz;
+    // XZ平面での距離計算（影と重なっているか）
+    float dx = coinPos.x - cupPos.x;
+    float dz = coinPos.z - cupPos.z;
+    float distanceSq = dx * dx + dz * dz;
 
-	float outerRadius = innerRadius + wallThickness;
-
-	// 内径と外径の間にコインがあれば「壁にヒット」
-	return (distanceSq >= innerRadius * innerRadius) && (distanceSq <= outerRadius * outerRadius);
+    // コップの内径に入っていれば即キャッチ成立
+    return distanceSq <= (innerRadius * innerRadius);
 }
 
 bool CollisionManager::CheckCupWallAndGetBounce(
@@ -49,7 +46,14 @@ bool CollisionManager::CheckCupWallAndGetBounce(
     float cupHeight, float innerRadius, float wallThickness,
     Vector3& outBounceDir, Vector3& outPushPos)
 {
-    // 高さの判定（コップの側面の高さ範囲内にあるか）
+    // ★修正: コップの口（上端から0.4fの範囲）を通過しているときは壁として扱わない（上からの進入を許可）
+    float openTopY = cupPos.y + cupHeight - 0.4f;
+    if (coinPos.y >= openTopY)
+    {
+        return false;
+    }
+
+    // 高さの判定（側面部分のみ）
     if (coinPos.y < cupPos.y || coinPos.y > cupPos.y + cupHeight)
     {
         return false;
@@ -61,12 +65,11 @@ bool CollisionManager::CheckCupWallAndGetBounce(
 
     float outerRadius = innerRadius + wallThickness;
 
-    // 内径と外径の間にコインがあれば「壁にヒット」
+    // 内径と外径の間にコインがあれば「壁（側面）にヒット」
     if (distanceSq >= (innerRadius * innerRadius) && distanceSq <= (outerRadius * outerRadius))
     {
         float distXZ = std::sqrt(distanceSq);
 
-        // 弾く方向（コップの中心から外側へ）
         if (distXZ > 0.001f)
         {
             outBounceDir.x = dx / distXZ;
@@ -75,10 +78,9 @@ bool CollisionManager::CheckCupWallAndGetBounce(
         }
         else
         {
-            outBounceDir = { 1.0f, 0.0f, 0.0f }; // 真上などで計算できない場合の予備
+            outBounceDir = { 1.0f, 0.0f, 0.0f };
         }
 
-        // 壁の外側に押し出す位置を計算（貫通防止）
         outPushPos = coinPos;
         outPushPos.x = cupPos.x + outBounceDir.x * (outerRadius + 0.1f);
         outPushPos.z = cupPos.z + outBounceDir.z * (outerRadius + 0.1f);

@@ -59,9 +59,11 @@ void GamePlayScene::Initialize()
 	TextureManager::GetInstance()->LoadTexture("Resource/lightning.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/white.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/CoinShadow.png");
+	TextureManager::GetInstance()->LoadTexture("Resource/floor.png");
 
 	uint32_t uvCheckerTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/uvChecker.png");
 	uint32_t whiteTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/white.png");
+	uint32_t floorTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/floor.png");
 	uint32_t envTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/rostock_laage_airport_4k.dds");
 
 	ModelManager::GetInstance()->LoadModel("axis.obj");
@@ -77,13 +79,14 @@ void GamePlayScene::Initialize()
 	// コインの生成と初期化
 	std::srand(static_cast<unsigned int>(std::time(nullptr)));
 	auto coin = std::make_unique<Coin100>();
-	coin->Initialize("Coin.obj", { 0.0f, 20.0f, 0.0f },{ 1.0f, 1.0f, 1.0f }, 100);
+	coin->Initialize("Coin.obj", { 0.0f, 100.0f, 0.0f },{ 1.0f, 1.0f, 1.0f }, 100);
 	coins_.push_back(std::move(coin));
 
 	// オブジェクトにモデルをセットする
 	object3d->SetModel("plane.obj");
-	object3d->SetTextureIndex(whiteTexIndex);
-	object3d->SetEnvironmentTexture(envTexIndex);
+	object3d->SetTextureIndex(floorTexIndex);
+	//object3d->SetEnvironmentTexture(envTexIndex);
+
 
 	ringTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/circle.png");
 	cylinderTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/gradationLine.png");
@@ -145,13 +148,41 @@ void GamePlayScene::Update()
 		skydomeSwitch,
 		postProcessEnable, effectMode, colorScale,
 		score);
+	
+	if (postProcessEnable)
+	{
+		if (Input::GetInstance()->TriggerKey(DIK_1)) { effectMode = 0; }
+		if (Input::GetInstance()->TriggerKey(DIK_2)) { effectMode = 1; }
+		if (Input::GetInstance()->TriggerKey(DIK_3)) { effectMode = 2; }
+		if (Input::GetInstance()->TriggerKey(DIK_4)) { effectMode = 3; }
+		if (Input::GetInstance()->TriggerKey(DIK_5)) { effectMode = 4; }
+	}
 #endif
+	// プレイヤーの更新
+	if (player_)
+	{
+		player_->Update();
+	}
 
-	if (Input::GetInstance()->TriggerKey(DIK_1)) { effectMode = 0; }
-	if (Input::GetInstance()->TriggerKey(DIK_2)) { effectMode = 1; }
-	if (Input::GetInstance()->TriggerKey(DIK_3)) { effectMode = 2; }
-	if (Input::GetInstance()->TriggerKey(DIK_4)) { effectMode = 3; }
-	if (Input::GetInstance()->TriggerKey(DIK_5)) { effectMode = 4; }
+	if (Input::GetInstance()->TriggerKey(DIK_1)) { camera->SetMode(Camera::Mode::Normal); }
+	if (Input::GetInstance()->TriggerKey(DIK_2)) { camera->SetMode(Camera::Mode::TopDown); }
+	if (Input::GetInstance()->TriggerKey(DIK_3)) { camera->SetMode(Camera::Mode::BottomUp); }
+
+	if (camera && player_)
+	{
+		switch (camera->GetMode())
+		{
+		case Camera::Mode::Normal:
+			camera->TargetUpdate(player_->GetPosition());
+			break;
+		case Camera::Mode::TopDown:
+			camera->TopDownUpdate(player_->GetPosition());
+			break;
+		case Camera::Mode::BottomUp:
+			camera->BottomUpUpdate(player_->GetPosition());
+			break;
+		}
+	}
 
 	// パラメータの反映
 	ParticleManager::GetInstance()->DrawImGui();
@@ -164,7 +195,7 @@ void GamePlayScene::Update()
 	//地面
 	Vector3 floorTranslate = { 0.0f, -1.0f, 0.0f };   // プレイヤーの足元（Y = -1.0f や 0.0f など）
 	Vector3 floorRotate = { 1.57f, 0.0f, 0.0f };   // 板ポリゴンを横に倒して水平にする（X軸に90度/約1.57ラジアン回転）
-	Vector3 floorScale = { 100.0f, 100.0f, 0.2f };// XとZ（またはY）を大きく広げる
+	Vector3 floorScale = { 50.0f, 50.0f, 0.2f };// XとZ（またはY）を大きく広げる
 	object3d->SetTranslate(floorTranslate);
 	object3d->SetRotate(floorRotate);
 	object3d->SetScale(floorScale);
@@ -184,11 +215,6 @@ void GamePlayScene::Update()
 		isDebugCamera_ = !isDebugCamera_;
 	}
 
-	// プレイヤーの更新
-	if (player_)
-	{
-		player_->Update();
-	}
 
 	// 1. コインの更新 ＆ 当たり判定
 	for (auto& coin : coins_)
@@ -205,20 +231,22 @@ void GamePlayScene::Update()
 				Vector3 bounceDir{};
 				Vector3 pushedPos{};
 
-				// 1. 壁（フチ）に当たったか？
-				if (CollisionManager::CheckCupWallAndGetBounce(pPos, cPos, 2.0f, 1.0f, 0.4f, bounceDir, pushedPos))
-				{
-					// めり込まないように外側に位置を補正
-					coin->SetPosition(pushedPos);
+				// パラメータ調整
+				float cupHeight = 2.0f;      // コップの高さ
+				float innerRadius = 1.2f;    // ★内径（これを大きくすると影が重なった時に確実に入る）
+				float wallThickness = 0.2f;  // 壁の厚み（薄くして外に弾かれにくくする）
 
-					// 外側に向けて弾く！
-					coin->OnBounce(bounceDir);
-				}
-				// 2. 底に入ったか？
-				else if (CollisionManager::CheckCupBottom(pPos, cPos, 2.0f, 1.0f))
+				// ★順番を変更: まず「中に入っているか（影が重なっているか）」を判定！
+				if (CollisionManager::CheckCupBottom(pPos, cPos, cupHeight, innerRadius))
 				{
 					score += coin->GetScore();
 					coin->OnCollect(); // スコア獲得！
+				}
+				// 中に入っていない時だけ、側面（フチ）の弾き判定を行う
+				else if (CollisionManager::CheckCupWallAndGetBounce(pPos, cPos, cupHeight, innerRadius, wallThickness, bounceDir, pushedPos))
+				{
+					coin->SetPosition(pushedPos);
+					coin->OnBounce(bounceDir);
 				}
 			}
 		}
@@ -264,27 +292,16 @@ void GamePlayScene::Update()
 		
 		float spawnX = static_cast<float>(rand() % 21 - 10);
 		float spawnZ = static_cast<float>(rand() % 21 - 10);
-		Vector3 spawnPos = { spawnX ,20.0f,spawnZ };
+		Vector3 spawnPos = { spawnX ,100.0f,spawnZ };
 
 		// 生成・初期化
-		newCoin->Initialize("Coin.obj",spawnPos ,{ 1.0f, 1.0f, 1.0f }, 0);
+		newCoin->Initialize("Coin.obj", spawnPos,{ 1.0f, 1.0f, 1.0f }, 100);
 		newCoin->Update();
 		coins_.push_back(std::move(newCoin));
 	}
 
 
-	if (camera)
-	{
-		if (isDebugCamera_)
-		{
-			camera->DebugUpdate(Input::GetInstance());
-			camera->Update();
-		}
-		else if (player_)
-		{
-			camera->TargetUpdate(player_->GetPosition());
-		}
-	}
+
 
 	for (auto* obj : objects3d_) { obj->Update(); }
 }
@@ -321,7 +338,7 @@ void GamePlayScene::Draw()
 
 	// 2. 3Dオブジェクトの描画
 	Object3dCommon::GetInstance()->CommonDrawSettings();
-	//object3d->Draw();
+	object3d->Draw();
 
 	Object3dCommon::GetInstance()->CommonDrawSettings();
 	//for (auto* obj : objects3d_) { obj->Draw(); }

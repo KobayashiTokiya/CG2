@@ -49,7 +49,7 @@ private:
 	float fallSpeed_ = 0.05f;  
 	
 	//回転速度
-	float rotateSpeed_ = 0.03f;
+	Vector3 rotationSpeed_ = { 0.0f, 0.0f, 0.0f };
 	
 	bool isDead_ = false; 
 

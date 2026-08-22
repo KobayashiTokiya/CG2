@@ -11,15 +11,33 @@ class Input;
 // カメラ
 class Camera
 {
+public://カメラモード
+	enum class Mode
+	{
+		Normal,
+		TopDown,
+		BottomUp,
+		Debug
+	};
+
+	void SetMode(Mode mode) { mode_ = mode; }
+	Mode GetMode() const { return mode_; }
+
 public://メンバ変数に
 	//更新
 	void Update();
 
-	// 自由移動用の更新関数を追加
+	// 自由移動用の更新関数
 	void DebugUpdate(Input* input);
 
 	//ターゲット(プレイヤー)を追従する更新処理
 	void TargetUpdate(const Vector3& targetPosition);
+
+	//上からのカメラ用の更新処理
+	void TopDownUpdate(const Vector3& targetPosition);
+
+	//下からのカメラ用
+	void BottomUpUpdate(const Vector3& targetPosition);
 
 	//コントラスト
 	Camera();
@@ -61,5 +79,8 @@ private:
 
 	//三人称用
 	Vector3 offset_ = { 0.0f,10.0f,-25.0f };
+
+	Mode mode_ = Mode::Normal;
+	float topDownHeight_ = 30.0f;
 };
 

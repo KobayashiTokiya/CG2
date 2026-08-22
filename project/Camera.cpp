@@ -38,6 +38,32 @@ void Camera::TargetUpdate(const Vector3& targetPosition)
 	Update();
 }
 
+void Camera::TopDownUpdate(const Vector3& targetPosition)
+{
+	transform.translate.x = targetPosition.x;
+	transform.translate.y = 40.0f;
+	transform.translate.z = targetPosition.z;
+
+	transform.rotate.x = 1.5708f;
+	transform.rotate.y = 0.0f;
+	transform.rotate.z = 0.0f;
+
+	Update();
+}
+
+void Camera::BottomUpUpdate(const Vector3& targetPosition)
+{
+	transform.translate.x = targetPosition.x;
+	transform.translate.y = 7.0f;
+	transform.translate.z = targetPosition.z;
+
+	transform.rotate.x = -1.5708f;
+	transform.rotate.y = 0.0f;
+	transform.rotate.z = 0.0f;
+
+	Update();
+}
+
 void Camera::DebugUpdate(Input* input)
 {
 	// ─── 1. 矢印キーでカメラの回転（向き）を変更 ───
