@@ -90,5 +90,8 @@ private:
 	// コイン生成用タイマー
 	int coinSpawnTimer_ = 0;             
 	const int coinSpawnInterval_ = 60;   
+
+	//レティクル
+	Sprite* reticleSprite_ = nullptr;
 };
 

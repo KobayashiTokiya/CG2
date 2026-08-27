@@ -60,6 +60,7 @@ void GamePlayScene::Initialize()
 	TextureManager::GetInstance()->LoadTexture("Resource/white.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/CoinShadow.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/floor.png");
+	TextureManager::GetInstance()->LoadTexture("Resource/reticle.png");
 
 	uint32_t uvCheckerTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/uvChecker.png");
 	uint32_t whiteTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/white.png");
@@ -75,6 +76,7 @@ void GamePlayScene::Initialize()
 	// プレイヤーの生成と初期化
 	player_ = std::make_unique<Player>();
 	player_->Initialize("player.obj");
+	player_->SetCamera(camera);
 
 	// コインの生成と初期化
 	std::srand(static_cast<unsigned int>(std::time(nullptr)));
@@ -106,6 +108,23 @@ void GamePlayScene::Initialize()
 	// スプライト
 	sprite = new Sprite();
 	sprite->Initialize(SpriteCommon::GetInstance(), "Resource/uvChecker.png");
+
+	reticleSprite_ = new Sprite();
+	reticleSprite_->Initialize(SpriteCommon::GetInstance(), "Resource/reticle.png");
+
+	// 1. レティクルのサイズを設定（例えば 64x64 や 128x128 などお好みの大きさに）
+	Vector2 reticleSize = { 640.0f, 640.0f };
+	reticleSprite_->SetSize(reticleSize);
+
+	// 2. 画面中央 (640, 360) から「画像の半分のサイズ」を引いて左上座標を計算する
+	Vector2 screenCenter = { 640.0f, 360.0f };
+	Vector2 position = {
+		screenCenter.x - (reticleSize.x * 0.5f),
+		screenCenter.y - (reticleSize.y * 0.5f)
+	};
+
+	// 3. 最後に座標をセットする（SetSizeの後に呼ぶ）
+	reticleSprite_->SetPosition(position);
 
 	// 1. JSON のロード
 	LevelData* levelData = LevelLoader::LoadLevelFile("scene");
@@ -207,6 +226,10 @@ void GamePlayScene::Update()
 	skybox->Update(camera);
 	object3d->Update();
 	sprite->Update();
+	if (reticleSprite_)
+	{
+		reticleSprite_->Update();
+	}
 	ParticleManager::GetInstance()->Update(camera);
 
 	//カメラモード切替
@@ -369,6 +392,12 @@ void GamePlayScene::Draw()
 		sprite->Draw(DirectXCommon::GetInstance()->GetCommandList(), lightningTexHandle);
 	}
 
+	if (camera->GetMode() == Camera::Mode::BottomUp && reticleSprite_)
+	{
+		D3D12_GPU_DESCRIPTOR_HANDLE reticleTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/reticle.png");
+		reticleSprite_->Draw(DirectXCommon::GetInstance()->GetCommandList(), reticleTexHandle);
+	}
+
 	// 5. バックバッファへ描画＆ポストプロセス
 	renderTexture->ChangeState(DirectXCommon::GetInstance()->GetCommandList(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
@@ -405,6 +434,9 @@ void GamePlayScene::Finalize()
 
 	delete camera;
 	camera = nullptr;
+
+	delete reticleSprite_;
+	reticleSprite_ = nullptr;
 
 	for (auto* obj : objects3d_) { delete obj; }
 	objects3d_.clear();

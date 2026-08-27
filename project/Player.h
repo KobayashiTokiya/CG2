@@ -4,6 +4,7 @@
 #include "Vector.h"
 
 class Object3d;
+class Camera;
 
 class Player
 {
@@ -16,6 +17,8 @@ public:
 	void Draw();
 
 	const Vector3& GetPosition() const { return position_; }
+
+	void SetCamera(Camera* camera) { camera_ = camera; }
 private:
 	Vector3 position_;
 	float speed_;
@@ -26,5 +29,6 @@ private:
 	bool isJumping_ = false;
 
 	std::unique_ptr<Object3d> object3d_ = nullptr;
+	Camera* camera_ = nullptr;
 };
 

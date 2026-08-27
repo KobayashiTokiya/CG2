@@ -3,6 +3,7 @@
 #include "ModelManager.h"
 #include "Model.h"
 #include "Object3d.h"
+#include "camera.h"
 
 Player::Player()
 {
@@ -33,42 +34,53 @@ void Player::Initialize(const std::string& modelFilePath)
 
 void Player::Update()
 {
+	Vector3 move = { 0.0f, 0.0f, 0.0f };
+
 	if (Input::GetInstance()->PushKey(DIK_W))
 	{
-		position_.z += speed_;
+		move.z += speed_;
 	}
 	if (Input::GetInstance()->PushKey(DIK_A))
 	{
-		position_.x -= speed_;
+		move.x -= speed_;
 	}
 	if (Input::GetInstance()->PushKey(DIK_S))
 	{
-		position_.z -= speed_;
+		move.z -= speed_;
 	}
 	if (Input::GetInstance()->PushKey(DIK_D))
 	{
-		position_.x += speed_;
+		move.x += speed_;
 	}
-	if (Input::GetInstance()->PushKey(DIK_SPACE)&&!isJumping_)
+
+	// BottomUp モードの時だけ Z移動（WSキー）を反転する
+	if (camera_ && camera_->GetMode() == Camera::Mode::BottomUp)
+	{
+		move.z *= -1.0f;
+	}
+
+	// 移動量を座標に加算
+	position_ += move;
+
+	// ジャンプ処理
+	if (Input::GetInstance()->PushKey(DIK_SPACE) && !isJumping_)
 	{
 		velocityY_ = jumpInitialSpeed_;
 		isJumping_ = true;
 	}
+
 	if (isJumping_)
 	{
 		velocityY_ -= gravity_;
 
 		position_.y += velocityY_;
-		if (position_.y<=0.0f)
+		if (position_.y <= 0.0f)
 		{
 			position_.y = 0.0f;
 			velocityY_ = 0.0f;
 			isJumping_ = false;
 		}
 	}
-	
-
-
 
 	if (object3d_)
 	{
