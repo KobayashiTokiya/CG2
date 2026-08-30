@@ -93,5 +93,14 @@ private:
 
 	//レティクル
 	Sprite* reticleSprite_ = nullptr;
+
+	//スコア
+	static const int kMaxScoreDigits = 6;
+	Sprite* scoreSprites_[kMaxScoreDigits] = {};
+	D3D12_GPU_DESCRIPTOR_HANDLE numberTexHandles_[10];
+
+	//マイナス記号用のメンバを追加
+	Sprite* minusSprite_ = nullptr;
+	D3D12_GPU_DESCRIPTOR_HANDLE minusTexHandle_{};
 };
 

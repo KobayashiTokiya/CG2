@@ -81,7 +81,7 @@ void GamePlayScene::Initialize()
 	// コインの生成と初期化
 	std::srand(static_cast<unsigned int>(std::time(nullptr)));
 	auto coin = std::make_unique<Coin100>();
-	coin->Initialize("Coin.obj", { 0.0f, 100.0f, 0.0f },{ 1.0f, 1.0f, 1.0f }, 100);
+	coin->Initialize("Coin.obj", { 0.0f, 100.0f, 0.0f },{ 1.0f, 1.0f, 1.0f });
 	coins_.push_back(std::move(coin));
 
 	// オブジェクトにモデルをセットする
@@ -125,6 +125,38 @@ void GamePlayScene::Initialize()
 
 	// 3. 最後に座標をセットする（SetSizeの後に呼ぶ）
 	reticleSprite_->SetPosition(position);
+
+	// スコア用スプライトの初期化（6桁分）
+	// 0〜9のテクスチャをあらかじめロード
+	for (int i = 0; i < 10; ++i)
+	{
+		std::string path = "Resource/number/" + std::to_string(i) + ".png";
+		TextureManager::GetInstance()->LoadTexture(path);
+		numberTexHandles_[i] = TextureManager::GetInstance()->GetSrvHandleGPU(path);
+	}
+
+	//マイナス記号用テクスチャのロード（"Resource/number/minus.png" を配置してください）
+	TextureManager::GetInstance()->LoadTexture("Resource/number/minus.png");
+	minusTexHandle_ = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/number/minus.png");
+
+	//マイナス用スプライトの生成
+	minusSprite_ = new Sprite();
+	minusSprite_->Initialize(SpriteCommon::GetInstance(), "Resource/number/minus.png");
+	minusSprite_->SetSize({ 32.0f, 64.0f });
+
+	// 6桁分のスプライトインスタンスを作成し、固定位置を割り当てる
+	Vector2 basePos = { 1200.0f, 40.0f }; // 1の位（右端）の位置
+	float digitWidth = 32.0f;             // 桁間のスペース（狭くしたい場合は24.0fなどに調整）
+
+	for (int i = 0; i < kMaxScoreDigits; ++i)
+	{
+		scoreSprites_[i] = new Sprite();
+		// 初期画像は "0.png" で生成
+		scoreSprites_[i]->Initialize(SpriteCommon::GetInstance(), "Resource/number/0.png");
+		scoreSprites_[i]->SetSize({ 32.0f, 64.0f });
+		// 右から左へ各桁の座標を設定 (i=0が1の位, i=1が10の位...)
+		scoreSprites_[i]->SetPosition({ basePos.x - (i * digitWidth), basePos.y });
+	}
 
 	// 1. JSON のロード
 	LevelData* levelData = LevelLoader::LoadLevelFile("scene");
@@ -318,12 +350,12 @@ void GamePlayScene::Update()
 		Vector3 spawnPos = { spawnX ,100.0f,spawnZ };
 
 		// 生成・初期化
-		newCoin->Initialize("Coin.obj", spawnPos,{ 1.0f, 1.0f, 1.0f }, 100);
+		newCoin->Initialize("Coin.obj", spawnPos, { 1.0f, 1.0f, 1.0f });
 		newCoin->Update();
 		coins_.push_back(std::move(newCoin));
 	}
 
-
+	
 
 
 	for (auto* obj : objects3d_) { obj->Update(); }
@@ -397,6 +429,62 @@ void GamePlayScene::Draw()
 		D3D12_GPU_DESCRIPTOR_HANDLE reticleTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/reticle.png");
 		reticleSprite_->Draw(DirectXCommon::GetInstance()->GetCommandList(), reticleTexHandle);
 	}
+	
+	auto commandList = DirectXCommon::GetInstance()->GetCommandList(); // ★ コマンドリストを短縮変数に
+	// -------------------------------------------------------------
+	// スコアの描画（6桁表示）
+	// -------------------------------------------------------------
+	bool isNegative = (score < 0);
+	int tempScoreDraw = std::abs(score);
+
+	Vector2 basePos = { 1200.0f, 40.0f }; // 1の位（右端）の位置
+	float digitWidth = 32.0f;             // 桁間隔
+
+	// 有効桁数を計算（0の時は1桁）
+	int activeDigits = 1;
+	int checkVal = tempScoreDraw;
+	while (checkVal >= 10)
+	{
+		checkVal /= 10;
+		activeDigits++;
+	}
+
+	for (int i = 0; i < kMaxScoreDigits; ++i)
+	{
+		int digit = tempScoreDraw % 10;
+		tempScoreDraw /= 10;
+
+		// ★ 有効桁数を超えた桁（上の桁の不要な0）は描画しない
+		if (i >= activeDigits)
+		{
+			continue;
+		}
+
+		if (scoreSprites_[i])
+		{
+			// マイナス時は文字を「赤っぽく」、通常時は「白」にする演出
+			if (isNegative)
+			{
+				scoreSprites_[i]->SetColor({ 1.0f, 0.3f, 0.3f, 1.0f });
+			}
+			else
+			{
+				scoreSprites_[i]->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+			}
+
+			scoreSprites_[i]->Update();
+			scoreSprites_[i]->Draw(commandList, numberTexHandles_[digit]);
+		}
+	}
+
+	// 負の数の場合、有効数字の1つ左隣にマイナス記号を描画
+	if (isNegative && minusSprite_)
+	{
+		minusSprite_->SetPosition({ basePos.x - (activeDigits * digitWidth), basePos.y });
+		minusSprite_->SetColor({ 1.0f, 0.3f, 0.3f, 1.0f });
+		minusSprite_->Update();
+		minusSprite_->Draw(commandList, minusTexHandle_);
+	}
 
 	// 5. バックバッファへ描画＆ポストプロセス
 	renderTexture->ChangeState(DirectXCommon::GetInstance()->GetCommandList(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
@@ -425,6 +513,17 @@ void GamePlayScene::Finalize()
 
 	delete sprite;
 	sprite = nullptr;
+
+	// スコア用スプライトの解放（6桁分）
+	for (int i = 0; i < kMaxScoreDigits; ++i)
+	{
+		delete scoreSprites_[i];
+		scoreSprites_[i] = nullptr;
+	}
+
+	// マイナス用スプライトの解放
+	delete minusSprite_;
+	minusSprite_ = nullptr;
 
 	delete object3d;
 	object3d = nullptr;

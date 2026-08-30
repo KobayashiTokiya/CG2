@@ -10,7 +10,7 @@ public:
 	Coin() = default;
 	virtual ~Coin() = default;
 
-	virtual void Initialize(const std::string& modelFilePath, const Vector3& position, const Vector3& scale, int score);
+	virtual void Initialize(const std::string& modelFilePath, const Vector3& position, const Vector3& scale, int score=0);
 	virtual void Update();
 	virtual void Draw();
 
