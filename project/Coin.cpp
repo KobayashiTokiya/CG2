@@ -8,8 +8,12 @@ void Coin::Initialize(const std::string& modelFilePath, const Vector3& position,
 	score_ = score;
 	isDead_ = false;
 
+	float minSpeed = -0.03f;
+	float maxSpeed = -0.12f;
+	float randomY = minSpeed + (static_cast<float>(rand()) / RAND_MAX) * (maxSpeed - minSpeed);
+
 	// 初期速度（真下にゆっくり落ちる）
-	velocity_ = { 0.0f, -0.05f, 0.0f };
+	velocity_ = { 0.0f, randomY, 0.0f };
 
 	object3d_ = std::make_unique<Object3d>();
 	object3d_->Initialize();

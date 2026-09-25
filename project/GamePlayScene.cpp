@@ -15,7 +15,7 @@
 #include "RenderTexture.h"
 #include "PostProcess.h"
 #include "CollisionManager.h"
-
+#include "SceneManager.h"
 #ifdef USE_IMGUI
 #include "ImGuiManager.h"
 #endif
@@ -25,6 +25,10 @@
 #include <cstdlib>
 #include <ctime>
 
+GamePlayScene::~GamePlayScene()
+{
+	Finalize();
+}
 void GamePlayScene::Initialize()
 {
 	// スプライト共通部の初期化
@@ -61,6 +65,7 @@ void GamePlayScene::Initialize()
 	TextureManager::GetInstance()->LoadTexture("Resource/CoinShadow.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/floor.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/reticle.png");
+	TextureManager::GetInstance()->LoadTexture("Resource/UI/CameraUI.png");
 
 	uint32_t uvCheckerTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/uvChecker.png");
 	uint32_t whiteTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/white.png");
@@ -111,6 +116,11 @@ void GamePlayScene::Initialize()
 
 	reticleSprite_ = new Sprite();
 	reticleSprite_->Initialize(SpriteCommon::GetInstance(), "Resource/reticle.png");
+
+	cameraUISprite_ = new Sprite();
+	cameraUISprite_->Initialize(SpriteCommon::GetInstance(),"Resource/UI/CameraUI.png");
+	cameraUISprite_->SetSize({ 256.0f, 64.0f });
+	cameraUISprite_->SetPosition({ 20.0f, 30.0f });
 
 	// 1. レティクルのサイズを設定（例えば 64x64 や 128x128 などお好みの大きさに）
 	Vector2 reticleSize = { 640.0f, 640.0f };
@@ -208,6 +218,11 @@ void GamePlayScene::Update()
 		if (Input::GetInstance()->TriggerKey(DIK_4)) { effectMode = 3; }
 		if (Input::GetInstance()->TriggerKey(DIK_5)) { effectMode = 4; }
 	}
+
+	if(Input::GetInstance()->TriggerKey(DIK_RETURN))
+	{
+		SceneManager::GetInstance()->ChangeScene("RESULT");
+	}
 #endif
 	// プレイヤーの更新
 	if (player_)
@@ -262,6 +277,11 @@ void GamePlayScene::Update()
 	{
 		reticleSprite_->Update();
 	}
+	if (cameraUISprite_)
+	{
+		cameraUISprite_->Update();
+	}
+
 	ParticleManager::GetInstance()->Update(camera);
 
 	//カメラモード切替
@@ -320,7 +340,7 @@ void GamePlayScene::Update()
 		coins_.end()
 	);
 
-	const size_t kMaxCoins = 5;
+	const size_t kMaxCoins = 10;
 
 	// 3. コインが消えたら（＝リストが空になったら）同じ場所で再生成
 	while (coins_.size() < kMaxCoins)
@@ -429,6 +449,13 @@ void GamePlayScene::Draw()
 		D3D12_GPU_DESCRIPTOR_HANDLE reticleTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/reticle.png");
 		reticleSprite_->Draw(DirectXCommon::GetInstance()->GetCommandList(), reticleTexHandle);
 	}
+
+	//カメラUIの描画
+	if (cameraUISprite_)
+	{
+		D3D12_GPU_DESCRIPTOR_HANDLE cameraUITexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/UI/CameraUI.png");
+		cameraUISprite_->Draw(DirectXCommon::GetInstance()->GetCommandList(), cameraUITexHandle);
+	}
 	
 	auto commandList = DirectXCommon::GetInstance()->GetCommandList(); // ★ コマンドリストを短縮変数に
 	// -------------------------------------------------------------
@@ -491,7 +518,10 @@ void GamePlayScene::Draw()
 
 	DirectXCommon::GetInstance()->PreDraw();
 
-	postProcess->Draw(DirectXCommon::GetInstance()->GetCommandList(), renderTexture, postProcessEnable, effectMode, colorScale);
+	if (postProcess)
+	{
+		postProcess->Draw(DirectXCommon::GetInstance()->GetCommandList(), renderTexture, postProcessEnable, effectMode, colorScale);
+	}
 
 	// ImGui描画
 #ifdef USE_IMGUI
@@ -505,38 +535,76 @@ void GamePlayScene::Draw()
 
 void GamePlayScene::Finalize()
 {
-	delete postProcess;
-	postProcess = nullptr;
-
-	delete renderTexture;
-	renderTexture = nullptr;
-
-	delete sprite;
-	sprite = nullptr;
-
-	// スコア用スプライトの解放（6桁分）
-	for (int i = 0; i < kMaxScoreDigits; ++i)
+	if (postProcess)
 	{
-		delete scoreSprites_[i];
-		scoreSprites_[i] = nullptr;
+		delete postProcess;
+		postProcess = nullptr;
 	}
 
-	// マイナス用スプライトの解放
-	delete minusSprite_;
-	minusSprite_ = nullptr;
+	if (renderTexture)
+	{
+		delete renderTexture;
+		renderTexture = nullptr;
+	}
 
-	delete object3d;
-	object3d = nullptr;
+	if (sprite)
+	{
+		delete sprite;
+		sprite = nullptr;
+	}
 
-	delete skybox;
-	skybox = nullptr;
+	for (int i = 0; i < kMaxScoreDigits; ++i)
+	{
+		if (scoreSprites_[i])
+		{
+			delete scoreSprites_[i];
+			scoreSprites_[i] = nullptr;
+		}
+	}
 
-	delete camera;
-	camera = nullptr;
+	if (minusSprite_)
+	{
+		delete minusSprite_;
+		minusSprite_ = nullptr;
+	}
 
-	delete reticleSprite_;
-	reticleSprite_ = nullptr;
+	if (object3d)
+	{
+		delete object3d;
+		object3d = nullptr;
+	}
 
-	for (auto* obj : objects3d_) { delete obj; }
+	if (skybox)
+	{
+		delete skybox;
+		skybox = nullptr;
+	}
+
+	if (camera)
+	{
+		delete camera;
+		camera = nullptr;
+	}
+
+	if (reticleSprite_)
+	{
+		delete reticleSprite_;
+		reticleSprite_ = nullptr;
+	}
+
+	if (cameraUISprite_)
+	{
+		delete cameraUISprite_;
+		cameraUISprite_ = nullptr;
+	}
+
+	for (auto* obj : objects3d_)
+	{
+		delete obj;
+	}
 	objects3d_.clear();
+
+	// プレイヤーやコインのスマートポインタも明示的にクリア
+	player_.reset();
+	coins_.clear();
 }

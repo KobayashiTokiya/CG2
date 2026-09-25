@@ -40,6 +40,8 @@ public:
 	void OnBounce(const Vector3& bounceDir);
 	
 	void SetPosition(const Vector3& pos) { position_ = pos; }
+
+	void SetFallSpeed(float speed) { fallSpeed_ = speed; }
 private:
 	Vector3 position_ = { 0.0f, 0.0f, 0.0f };
 	Vector3 rotate_ = { 0.0f, 0.0f, 0.0f };

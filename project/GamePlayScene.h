@@ -35,7 +35,7 @@ public:
 
 public:
 	GamePlayScene() = default;
-	~GamePlayScene()override = default;
+	~GamePlayScene()override;
 
 	void Initialize()override;
 	void Finalize()override;
@@ -102,5 +102,8 @@ private:
 	//マイナス記号用のメンバを追加
 	Sprite* minusSprite_ = nullptr;
 	D3D12_GPU_DESCRIPTOR_HANDLE minusTexHandle_{};
+
+	//cameraUI
+	Sprite* cameraUISprite_ = nullptr;
 };
 
