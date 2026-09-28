@@ -16,6 +16,7 @@
 #include "PostProcess.h"
 #include "CollisionManager.h"
 #include "SceneManager.h"
+#include "ScoreManager.h"
 #ifdef USE_IMGUI
 #include "ImGuiManager.h"
 #endif
@@ -31,12 +32,9 @@ GamePlayScene::~GamePlayScene()
 }
 void GamePlayScene::Initialize()
 {
-	// スプライト共通部の初期化
-	SpriteCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
-
 	// オフスクリーンレンダリング
 	renderTexture = new RenderTexture();
-	renderTexture->Create(DirectXCommon::GetInstance(), SrvManager::GetInstance(), 1280, 720, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, rtClearColor);
+	renderTexture->Create(DirectXCommon::GetInstance(), SrvManager::GetInstance(), 1280, 720, DXGI_FORMAT_R8G8B8A8_UNORM, rtClearColor);
 
 	postProcess = new PostProcess();
 	postProcess->Initialize(DirectXCommon::GetInstance());
@@ -48,7 +46,6 @@ void GamePlayScene::Initialize()
 
 	// 3Dオブジェクト共通部＆生成
 	Object3dCommon::GetInstance();
-	Object3dCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
 	Object3dCommon::GetInstance()->SetDefaultCamera(camera);
 
 	object3d = new Object3d();
@@ -101,7 +98,6 @@ void GamePlayScene::Initialize()
 	lightningTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/white.png");
 
 	// スカイボックス
-	SkyboxCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
 	SkyboxCommon::GetInstance()->SetDefaultCamera(camera);
 
 	std::string skyboxDDSPath = "Resource/rostock_laage_airport_4k.dds";
@@ -218,12 +214,8 @@ void GamePlayScene::Update()
 		if (Input::GetInstance()->TriggerKey(DIK_4)) { effectMode = 3; }
 		if (Input::GetInstance()->TriggerKey(DIK_5)) { effectMode = 4; }
 	}
-
-	if(Input::GetInstance()->TriggerKey(DIK_RETURN))
-	{
-		SceneManager::GetInstance()->ChangeScene("RESULT");
-	}
 #endif
+
 	// プレイヤーの更新
 	if (player_)
 	{
@@ -375,10 +367,19 @@ void GamePlayScene::Update()
 		coins_.push_back(std::move(newCoin));
 	}
 
-	
-
-
 	for (auto* obj : objects3d_) { obj->Update(); }
+
+	timeLimit_ -= 1.0f / 60.0f;	
+
+	if (timeLimit_<=0.0f||Input::GetInstance()->TriggerKey(DIK_RETURN))
+	{
+		ScoreManager::SetScore(score);
+#ifdef USE_IMGUI
+		ImGuiManager::GetInstance()->End();
+#endif
+		SceneManager::GetInstance()->ChangeScene("RESULT");
+		return;
+	}
 }
 
 void GamePlayScene::Draw()

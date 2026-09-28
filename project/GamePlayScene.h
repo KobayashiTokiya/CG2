@@ -75,13 +75,10 @@ private:
 	Vector3 cameraRotate = { 0.0f, 0.0f, 0.0f };
 
 	bool skydomeSwitch = false;
-	
-	//スコア
-	int score = 0;
 
 	//ポストエフェクト
 	bool postProcessEnable = false;         
-	int effectMode = PostEffectType::Grayscale;
+	int effectMode = PostEffectType::None;
 	Vector3 colorScale = { 1.0f, 1.0f, 1.0f }; 
 
 	std::unique_ptr<Player> player_;
@@ -95,9 +92,10 @@ private:
 	Sprite* reticleSprite_ = nullptr;
 
 	//スコア
+	int score = 0;
 	static const int kMaxScoreDigits = 6;
 	Sprite* scoreSprites_[kMaxScoreDigits] = {};
-	D3D12_GPU_DESCRIPTOR_HANDLE numberTexHandles_[10];
+	D3D12_GPU_DESCRIPTOR_HANDLE numberTexHandles_[10]={};
 
 	//マイナス記号用のメンバを追加
 	Sprite* minusSprite_ = nullptr;
@@ -105,5 +103,8 @@ private:
 
 	//cameraUI
 	Sprite* cameraUISprite_ = nullptr;
+
+	//制限時間
+	float timeLimit_ = 60.0f;
 };
 

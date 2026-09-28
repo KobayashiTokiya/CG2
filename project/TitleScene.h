@@ -27,7 +27,7 @@ public:
 
 private:
 	// 描画関連ポインタ
-	//Sprite* sprite = nullptr;
+	Sprite* sprite = nullptr;
 	//Object3d* object3d = nullptr;
 	Skybox* skybox = nullptr;
 	Camera* camera = nullptr;
@@ -44,7 +44,7 @@ private:
 	Vector4 rtClearColor = { 0.1f, 0.2f, 0.5f, 1.0f };
 	Vector2 spritePosition = { 0.0f, 0.0f };
 	float spriteRotation = 0.0f;
-	Vector2 spriteSize = { 640.0f, 360.0f };
+	Vector2 spriteSize = { 1280.0f, 720.0f };
 	Vector4 spriteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 	bool spriteSwitch = true;
 	
@@ -55,8 +55,8 @@ private:
 	Vector3 cameraTranslate = { 0.0f, 0.0f, -100.0f };
 	Vector3 cameraRotate = { 0.0f, 0.0f, 0.0f };
 
-	bool skydomeSwitch = true;
-	bool postProcessEnable = true;
+	bool skydomeSwitch = false;
+	bool postProcessEnable = false;
 	int effectMode = 0;
 	Vector3 colorScale = { 100.0f, 0.0f, 0.0f };
 

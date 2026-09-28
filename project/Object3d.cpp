@@ -22,9 +22,7 @@ void Object3d::Update()
 {
 	// TransformからWorldMatrixを作る
 	Matrix4x4 worldMatrix = MatrixMath::MakeAffineMatrix(transform.scale, transform.rotate, transform.translate);
-	// --- 行列の合成と転送 ---
 
-	// transformationMatrixData->WVP = worldMatrix*viewMatrix*projectionMatrix
 	Matrix4x4 worldViewProjectionMatrix;
 
 	if (camera)
@@ -32,41 +30,58 @@ void Object3d::Update()
 		const Matrix4x4& viewProjectionMatrix = camera->GetViewProjectionMatrix();
 		worldViewProjectionMatrix = MatrixMath::Multiply(worldMatrix, viewProjectionMatrix);
 
-		Vector3 camPos = camera->GetTranslate();
-		directionalLightData->cameraWorldPosition = Vector4(camPos.x, camPos.y, camPos.z, 1.0f);
+		// ★ directionalLightData のヌルチェックを追加
+		if (directionalLightData)
+		{
+			Vector3 camPos = camera->GetTranslate();
+			directionalLightData->cameraWorldPosition = Vector4(camPos.x, camPos.y, camPos.z, 1.0f);
+		}
 	}
 	else
 	{
 		worldViewProjectionMatrix = worldMatrix;
-		directionalLightData->cameraWorldPosition = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+
+		// ★ directionalLightData のヌルチェックを追加
+		if (directionalLightData)
+		{
+			directionalLightData->cameraWorldPosition = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+		}
 	}
 
 	// 定数バッファに書き込む
-	transformationMatrixData->WVP = worldViewProjectionMatrix;
-	// transformationMatrixData->World = worldMatrix
-	transformationMatrixData->World = worldMatrix;
+	if (transformationMatrixData)
+	{
+		transformationMatrixData->WVP = worldViewProjectionMatrix;
+		transformationMatrixData->World = worldMatrix;
+	}
 }
 
 void Object3d::Draw()
 {
+	// ★ ここを追加（未初期化や生成失敗時は描画をスキップしてクラッシュを防ぐ）
+	if (!transformationResource || !directionalLightResource || !model)
+	{
+		return;
+	}
+
 	auto common = Object3dCommon::GetInstance();
 	ID3D12GraphicsCommandList* commandList = common->GetDxCommon()->GetCommandList();
 
 	commandList->SetPipelineState(common->GetPipelinestate(blendMode_));
-	// Object3dの担当：座標変換行列（位置）と 平行光源（光）のセットだけ！
+
 	// 座標変換行列CBufferの場所を設定 (番号:1)
-	commandList->SetGraphicsRootConstantBufferView(1, transformationResource.Get()->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(1, transformationResource->GetGPUVirtualAddress());
 
 	D3D12_GPU_DESCRIPTOR_HANDLE textureGPUHandle = TextureManager::GetInstance()->GetSrvHandleGPU(textureIndex_);
 	commandList->SetGraphicsRootDescriptorTable(2, textureGPUHandle);
 
 	// 平行光源CBufferの場所を設定 (番号:3)
-	commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource.Get()->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(3, directionalLightResource->GetGPUVirtualAddress());
 
 	D3D12_GPU_DESCRIPTOR_HANDLE envTexureGPUHandle = TextureManager::GetInstance()->GetSrvHandleGPU(environmentTextureIndex_);
 	commandList->SetGraphicsRootDescriptorTable(4, envTexureGPUHandle);
 
-	//3Dモデルが割り当てられていれば描画する
+	// 3Dモデルが割り当てられていれば描画する
 	if (model)
 	{
 		model->Draw();
@@ -76,33 +91,39 @@ void Object3d::Draw()
 #pragma region 初期化用データ作成関数群
 void Object3d::CreateTransformationData()
 {
-	DirectXCommon::GetInstance();
+	// ★ sizeof(*transformationMatrixData) で構造体実体のサイズを安全に取得
+	size_t sizeInBytes = (sizeof(*transformationMatrixData) + 0xFF) & ~0xFF;
+	transformationResource = DirectXCommon::GetInstance()->CreateBufferResource(sizeInBytes);
 
-	//座標変換行列リソースを作る
-	transformationResource = DirectXCommon::GetInstance()->CreateBufferResource(sizeof(TransformationMatrix));
+	if (!transformationResource)
+	{
+		assert(false && "transformationResource の作成に失敗しました");
+		return;
+	}
 
-	//座標変換行列リソースにデータを書き込むためのアドレスを取得してtransformationMatrixDataに割り当てる
 	transformationResource->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData));
 
-	//単位行列を書き込んでおく
 	transformationMatrixData->WVP = MatrixMath::MakeIdentity4x4();
 	transformationMatrixData->World = MatrixMath::MakeIdentity4x4();
 }
 
 void Object3d::CreateDirectionalLightData()
 {
-	DirectXCommon::GetInstance();
+	// ★ sizeof(*directionalLightData) とすることで型名違いのコンパイルエラーを完全に防ぎます
+	size_t sizeInBytes = (sizeof(*directionalLightData) + 0xFF) & ~0xFF;
+	directionalLightResource = DirectXCommon::GetInstance()->CreateBufferResource(sizeInBytes);
 
-	//平行光源リソースを作る
-	directionalLightResource = DirectXCommon::GetInstance()->CreateBufferResource(sizeof(DirectionalLight));
+	if (!directionalLightResource)
+	{
+		assert(false && "directionalLightResource の生成に失敗しました");
+		return;
+	}
 
-	//平行光源リソースにデータを書き込むためのアドレスを取得してdirectionalLightDataに割り当てる
 	directionalLightResource->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData));
 
-	//デフォルト値を書き込んでおく
-	directionalLightData->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f); // 白色
-	directionalLightData->direction = Vector3(0.0f, -1.0f, 0.0f);  // 真下に向いて照らす
-	directionalLightData->intensity = 1.0f;                        // 明るさ（1.0が基本）
+	directionalLightData->color = { 1.0f, 1.0f, 1.0f, 1.0f };
+	directionalLightData->direction = { 0.0f, -1.0f, 0.0f };
+	directionalLightData->intensity = 1.0f;
 }
 #pragma endregion
 

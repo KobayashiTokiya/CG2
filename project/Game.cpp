@@ -4,6 +4,9 @@
 #include "ParticleManager.h"
 #include "SrvManager.h"
 #include "SceneFactory.h"
+#include "SpriteCommon.h"
+#include "Object3dCommon.h"
+#include "SkyboxCommon.h"
 
 void Game::Initialize()
 {
@@ -14,11 +17,15 @@ void Game::Initialize()
 	ModelManager::GetInstance()->Initialize(DirectXCommon::GetInstance());
 	ParticleManager::GetInstance()->Initialize(DirectXCommon::GetInstance(),SrvManager::GetInstance());;
 
+	SpriteCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
+	Object3dCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
+	SkyboxCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
+
 	// シーンマネージャの生成と初期化
 	sceneFactory_ = new SceneFactory();
 	SceneManager::GetInstance()->SetSceneFactory(sceneFactory_);
 
-	SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
+	SceneManager::GetInstance()->ChangeScene("TITLE");
 }
 
 void Game::Update()

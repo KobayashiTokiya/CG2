@@ -187,6 +187,7 @@
     <ClCompile Include="ResultScene.cpp" />
     <ClCompile Include="SceneFactory.cpp" />
     <ClCompile Include="SceneManager.cpp" />
+    <ClCompile Include="ScoreManager.cpp" />
     <ClCompile Include="Skybox.cpp" />
     <ClCompile Include="SkyboxCommon.cpp" />
     <ClCompile Include="Sprite.cpp" />
@@ -320,6 +321,7 @@
     <ClInclude Include="ResultScene.h" />
     <ClInclude Include="SceneFactory.h" />
     <ClInclude Include="SceneManager.h" />
+    <ClInclude Include="ScoreManager.h" />
     <ClInclude Include="Sprite.h" />
     <ClInclude Include="SpriteCommon.h" />
     <ClInclude Include="SrvManager.h" />
