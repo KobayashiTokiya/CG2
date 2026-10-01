@@ -45,10 +45,17 @@ void RenderTexture::Create(DirectXCommon* dxCommon, SrvManager* srvManager, uint
 		&clearValue,
 		IID_PPV_ARGS(&resource)
 	);
-	assert(SUCCEEDED(hr));
+	// Release ビルドで生成失敗時にそのまま進んでクラッシュするのを防ぐ
+	if (FAILED(hr))
+	{
+		assert(false && "RenderTexture の生成に失敗しました");
+		return;
+	}
 
 	// 4. RTV (RenderTargetView) の作成
-	uint32_t rtvIndex = 2;
+	// バックバッファ(0, 1)の次のインデックス"2"から生成順に自動で進める
+	static uint32_t useRtvIndex = 2;
+	uint32_t rtvIndex = useRtvIndex++;
 	rtvHandle = dxCommon->GetRTVCPUDescriptorHandle(rtvIndex);
 
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};

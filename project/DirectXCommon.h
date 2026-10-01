@@ -208,4 +208,6 @@ public:
 	void PreDraw();
 	//描画後処理
 	void PostDraw();
+
+	void WaitForGpu();
 };

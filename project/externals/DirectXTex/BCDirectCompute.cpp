@@ -392,7 +392,7 @@ HRESULT GPUCompressBC::Compress(const Image& srcImage, const Image& destImage)
         return E_POINTER;
 
     // We need to avoid the hardware doing additional colorspace conversion
-    const DXGI_FORMAT inputFormat = (m_srcformat == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB) ? DXGI_FORMAT_R8G8B8A8_UNORM : m_srcformat;
+    const DXGI_FORMAT inputFormat = (m_srcformat == DXGI_FORMAT_R8G8B8A8_UNORM) ? DXGI_FORMAT_R8G8B8A8_UNORM : m_srcformat;
 
     ComPtr<ID3D11Texture2D> sourceTex;
     {

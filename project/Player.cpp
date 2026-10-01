@@ -25,7 +25,7 @@ void Player::Initialize(const std::string& modelFilePath)
 	// 2. モデルとテクスチャのセット
 	object3d_->SetModel(modelFilePath);
 
-	uint32_t uvCheckerTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/uvChecker.png");
+	uint32_t uvCheckerTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/player.png");
 	uint32_t envTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/rostock_laage_airport_4k.dds");
 
 	object3d_->SetTextureIndex(uvCheckerTexIndex);

@@ -23,6 +23,7 @@ private:
 		int32_t effectMode;
 		float padding[2];
 		Vector3 colorScale;
+		float padding2;
 	};
 	Microsoft::WRL::ComPtr<ID3D12Resource> constBuffer_;
 	PostProcessData* cBufferData_ = nullptr;

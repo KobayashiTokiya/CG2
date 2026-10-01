@@ -100,14 +100,18 @@ void TitleScene::Update()
 	// ENTERキーを押したら
 	if (Input::GetInstance()->TriggerKey(DIK_RETURN))
 	{
+#ifdef USE_IMGUI
+		ImGuiManager::GetInstance()->End(); // ★ シーン切り替え前にImGuiフレームを安全に終了
+#endif
 		// シーン切り換え依頼
 		SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
+		return;
 	}
 }
 
 void TitleScene::Draw()
 {
-	// 描画先の変更・クリア
+	// 描画先の変更・クリア（オフスクリーン描画）
 	renderTexture->ChangeState(DirectXCommon::GetInstance()->GetCommandList(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = renderTexture->GetRtvHandle();
@@ -123,7 +127,7 @@ void TitleScene::Draw()
 	DirectXCommon::GetInstance()->GetCommandList()->RSSetViewports(1, &viewport);
 	DirectXCommon::GetInstance()->GetCommandList()->RSSetScissorRects(1, &scissor);
 
-	// SRVヒープの再セット
+	// SRVヒープのセット（オフスクリーン用）
 	SrvManager::GetInstance()->PreDraw();
 
 	// 1. パーティクル描画
@@ -149,7 +153,6 @@ void TitleScene::Draw()
 	SpriteCommon::GetInstance()->CommonDrawSettings();
 	if (spriteSwitch)
 	{
-		// title.png の GPU ハンドルを取得して描画に渡す
 		D3D12_GPU_DESCRIPTOR_HANDLE titleTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/UI/title.png");
 		sprite->Draw(DirectXCommon::GetInstance()->GetCommandList(), titleTexHandle);
 	}
@@ -157,7 +160,11 @@ void TitleScene::Draw()
 	// 5. バックバッファへ描画＆ポストプロセス
 	renderTexture->ChangeState(DirectXCommon::GetInstance()->GetCommandList(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
+	// バックバッファ準備
 	DirectXCommon::GetInstance()->PreDraw();
+
+	// ★【最重要】バックバッファ描画用にSRVディスクリプタヒープを再バインドする！
+	SrvManager::GetInstance()->PreDraw();
 
 	postProcess->Draw(DirectXCommon::GetInstance()->GetCommandList(), renderTexture, postProcessEnable, effectMode, colorScale);
 

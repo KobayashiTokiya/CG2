@@ -489,7 +489,7 @@ void ParticleManager::CreateGraphicsPipelineState()
 	pipelineDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
 	pipelineDesc.RasterizerState = rasterizerDesc;
 	pipelineDesc.NumRenderTargets = 1;
-	pipelineDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	pipelineDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	pipelineDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	pipelineDesc.SampleDesc.Count = 1;
 	pipelineDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;

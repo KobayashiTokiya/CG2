@@ -38,82 +38,72 @@ void DirectXCommon::DeviceInitialize()
 {
 	HRESULT hr;
 
-	// デバックレイヤーをオンに
 #ifdef _DEBUG
 	Microsoft::WRL::ComPtr debugController = nullptr;
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
 	{
 		debugController->EnableDebugLayer();
 	}
-#endif // _DEBUG
+#endif
 
 	hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory_));
 	assert(SUCCEEDED(hr));
 
-	// アダプターの列挙（ComPtr で安全に管理）
 	Microsoft::WRL::ComPtr<IDXGIAdapter4> useAdapter = nullptr;
+
+	// ---------------------------------------------------------------
+	// 1. まず 12.2 に対応している GPU (GeForce等) を探してデバイスを作る
+	// ---------------------------------------------------------------
 	for (UINT i = 0; dxgiFactory_->EnumAdapterByGpuPreference(i,
-		DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&useAdapter)) !=
-		DXGI_ERROR_NOT_FOUND; ++i)
+		DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&useAdapter)) != DXGI_ERROR_NOT_FOUND; ++i)
 	{
 		DXGI_ADAPTER_DESC3 adapterDesc{};
-		hr = useAdapter->GetDesc3(&adapterDesc);
-		assert(SUCCEEDED(hr));
+		useAdapter->GetDesc3(&adapterDesc);
 
-		if (!(adapterDesc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE))
+		// ソフトウェアアダプターはスキップ
+		if (adapterDesc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE) {
+			useAdapter = nullptr;
+			continue;
+		}
+
+		// 試しに 12.2 で作ってみる
+		hr = D3D12CreateDevice(useAdapter.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&device_));
+		if (SUCCEEDED(hr))
 		{
-			Logger::Log(
-				StringUtility::ConvertString(
-					std::format(L"Use Adapter:{}\n", adapterDesc.Description)
-				)
-			);
+			// 12.2 で作成成功！この GPU を採用してループを抜ける
+			Logger::Log(StringUtility::ConvertString(
+				std::format(L"Selected GPU (FeatureLevel 12.2): {}\n", adapterDesc.Description)
+			));
 			break;
 		}
+
 		useAdapter = nullptr;
 	}
 
-	// 対応機能レベルの順にデバイス作成を試みる
-	D3D_FEATURE_LEVEL featureLevels[] =
-	{
-		D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0
-	};
-	const char* featureLevelStrings[] = { "12.2", "12.1", "12.0" };
-
-	// 1. 指定アダプターでデバイス生成を試行
-	for (size_t i = 0; i < _countof(featureLevels); ++i)
-	{
-		hr = D3D12CreateDevice(useAdapter.Get(), featureLevels[i], IID_PPV_ARGS(&device_));
-		if (SUCCEEDED(hr))
-		{
-			Logger::Log(std::format("FeatureLevel : {}\n", featureLevelStrings[i]));
-			break;
-		}
-	}
-
-	// 2. 万が一失敗した場合、デフォルトアダプター（nullptr）で再試行
+	// ---------------------------------------------------------------
+	// 2. もし 12.2 対応 GPU が無かった場合（Intel等のみの場合）は 12.1 で作る
+	// ---------------------------------------------------------------
 	if (!device_)
 	{
-		for (size_t i = 0; i < _countof(featureLevels); ++i)
+		for (UINT i = 0; dxgiFactory_->EnumAdapterByGpuPreference(i,
+			DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&useAdapter)) != DXGI_ERROR_NOT_FOUND; ++i)
 		{
-			hr = D3D12CreateDevice(nullptr, featureLevels[i], IID_PPV_ARGS(&device_));
+			hr = D3D12CreateDevice(useAdapter.Get(), D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&device_));
 			if (SUCCEEDED(hr))
 			{
-				Logger::Log(std::format("Default Adapter Fallback - FeatureLevel : {}\n", featureLevelStrings[i]));
+				DXGI_ADAPTER_DESC3 adapterDesc{};
+				useAdapter->GetDesc3(&adapterDesc);
+				Logger::Log(StringUtility::ConvertString(
+					std::format(L"Selected GPU (Fallback 12.1): {}\n", adapterDesc.Description)
+				));
 				break;
 			}
+			useAdapter = nullptr;
 		}
 	}
 
-	// 完全にデバイス生成に失敗した場合はログを出して安全に停止
-	if (!device_)
-	{
-		Logger::Log("Failed to create D3D12 Device!\n");
-		assert(false && "D3D12Device の生成に失敗しました。");
-	}
-
-	Logger::Log("Complete create D3D12Device!!!\n");
+	assert(device_ && "D3D12Device の生成に失敗しました。");
 }
-#pragma endregion
 
 #pragma region コマンド関連初期化
 void DirectXCommon::CommandInitialize()
@@ -208,7 +198,7 @@ void DirectXCommon::CreatingVariousDescriptorTeaps()
 	descriptorSizeDSV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
 	//DSV用のヒープでディスクリプタの数は１。DSVはShader内で触るものではないので、ShaderVisibleはfalse
-	rtvDescriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 3, false);
+	rtvDescriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 12, false);
 	srvDscriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
 	dsvDescriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
 	// DescriptorSizeを取得
@@ -222,7 +212,7 @@ void DirectXCommon::RenderTargetViewInitializing()
 {
 	// レンダ―ターゲットビューの設定
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
-	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
 	// RTVハンドルの要素を２個に変更する
@@ -486,8 +476,9 @@ void DirectXCommon::PostDraw()
 	commandQueue_->ExecuteCommandLists(1, commandLists);
 
 	// GPU画面の交換を通知
-	swapChain_->Present(1, 0);
 
+	swapChain_->Present(1, 0);
+	
 	// Fenceの値を更新
 	fenceValue_++;
 
@@ -846,3 +837,21 @@ void DirectXCommon::UpdateFixFPS()
 	//現在の時間を記録する
 	referece_ = std::chrono::steady_clock::now();
 }
+
+#pragma region GPUの処理完了待ち
+void DirectXCommon::WaitForGpu()
+{
+	// Fenceの値を更新
+	fenceValue_++;
+
+	// コマンドキューにシグナルを送る
+	commandQueue_->Signal(fence_.Get(), fenceValue_);
+
+	// コマンド実行完了まで待機
+	if (fence_->GetCompletedValue() < fenceValue_)
+	{
+		fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
+		WaitForSingleObject(fenceEvent_, INFINITE);
+	}
+}
+#pragma endregion

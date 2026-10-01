@@ -63,6 +63,7 @@ void GamePlayScene::Initialize()
 	TextureManager::GetInstance()->LoadTexture("Resource/floor.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/reticle.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/UI/CameraUI.png");
+	TextureManager::GetInstance()->LoadTexture("Resource/player.png");
 
 	uint32_t uvCheckerTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/uvChecker.png");
 	uint32_t whiteTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/white.png");
@@ -377,7 +378,7 @@ void GamePlayScene::Update()
 #ifdef USE_IMGUI
 		ImGuiManager::GetInstance()->End();
 #endif
-		SceneManager::GetInstance()->ChangeScene("RESULT");
+		SceneManager::GetInstance()->ChangeScene("TITLE");
 		return;
 	}
 }
