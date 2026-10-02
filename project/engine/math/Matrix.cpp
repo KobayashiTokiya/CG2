@@ -262,3 +262,33 @@ Vector3 MatrixMath::Normalize(const Vector3& v)
 
 	return result;
 };
+
+Matrix4x4 MatrixMath::MakeLookAtMatrix(const Vector3& eye, const Vector3& target, const Vector3& up)
+{
+	// 1. 視線方向 (Z軸) : target - eye を演算子で計算
+	Vector3 zAxis = Normalize(target - eye);
+
+	// 2. 右方向 (X軸)
+	Vector3 xAxis = Normalize(Cross(up, zAxis));
+
+	// 3. 上方向 (Y軸)
+	Vector3 yAxis = Cross(zAxis, xAxis);
+
+	// 内積（Dot）の計算ラムダ式（または直接計算）
+	auto Dot = [](const Vector3& a, const Vector3& b)
+		{
+			return a.x * b.x + a.y * b.y + a.z * b.z;
+		};
+
+	Matrix4x4 result;
+	result.m[0][0] = xAxis.x; result.m[0][1] = yAxis.x; result.m[0][2] = zAxis.x; result.m[0][3] = 0.0f;
+	result.m[1][0] = xAxis.y; result.m[1][1] = yAxis.y; result.m[1][2] = zAxis.y; result.m[1][3] = 0.0f;
+	result.m[2][0] = xAxis.z; result.m[2][1] = yAxis.z; result.m[2][2] = zAxis.z; result.m[2][3] = 0.0f;
+
+	result.m[3][0] = -Dot(xAxis, eye);
+	result.m[3][1] = -Dot(yAxis, eye);
+	result.m[3][2] = -Dot(zAxis, eye);
+	result.m[3][3] = 1.0f;
+
+	return result;
+}

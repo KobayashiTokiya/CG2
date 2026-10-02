@@ -73,7 +73,7 @@ void Sprite::Draw(ID3D12GraphicsCommandList* commandList, const D3D12_GPU_DESCRI
 
 	//SRV（テクスチャ）のDescriptorTableを設定
 	// シェーダーのパラメータ番号2番に設定
-	commandList->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetSrvHandleGPU(this->textureFilePath));
+	commandList->SetGraphicsRootDescriptorTable(2,textureSrvHandle);
 
 	//描画！(DrawCall)
 	// 6頂点（三角形2枚分）を描画する

@@ -21,12 +21,9 @@
 
 void TitleScene::Initialize()
 {
-	// スプライト共通部の初期化
-	SpriteCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
-
 	// オフスクリーンレンダリング
 	renderTexture = new RenderTexture();
-	renderTexture->Create(DirectXCommon::GetInstance(), SrvManager::GetInstance(), 1280, 720, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, rtClearColor);
+	renderTexture->Create(DirectXCommon::GetInstance(), SrvManager::GetInstance(), 1280, 720, DXGI_FORMAT_R8G8B8A8_UNORM, rtClearColor);
 
 	postProcess = new PostProcess();
 	postProcess->Initialize(DirectXCommon::GetInstance());
@@ -38,51 +35,37 @@ void TitleScene::Initialize()
 
 	// 3Dオブジェクト共通部＆生成
 	Object3dCommon::GetInstance();
-	Object3dCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
 	Object3dCommon::GetInstance()->SetDefaultCamera(camera);
 
-	//object3d = new Object3d();
-	//object3d->Initialize();
-
 	// アセットロード
-	TextureManager::GetInstance()->LoadTexture("Resource/monsterBall.png");
-	TextureManager::GetInstance()->LoadTexture("Resource/uvChecker.png");
+	TextureManager::GetInstance()->LoadTexture("Resource/UI/title.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/circle.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/gradationLine.png");
-	TextureManager::GetInstance()->LoadTexture("Resource/rostock_laage_airport_4k.dds");
-	TextureManager::GetInstance()->LoadTexture("Resource/lightning.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/white.png");
 
-	uint32_t uvCheckerTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/uvChecker.png");
-	uint32_t envTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/rostock_laage_airport_4k.dds");
+	// パーティクル用 GPUハンドルの取得
+	ringTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/circle.png");
+	cylinderTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/gradationLine.png");
+	sphereTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/white.png");
+	lightningTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/white.png");
 
 	ModelManager::GetInstance()->LoadModel("axis.obj");
 	ModelManager::GetInstance()->LoadModel("plane.obj");
 	ModelManager::GetInstance()->LoadModel("sphere.obj");
 
-	// オブジェクトにモデルをセットする
-	//object3d->SetModel("sphere.obj");
-	//object3d->SetTextureIndex(uvCheckerTexIndex);
-	//object3d->SetEnvironmentTexture(envTexIndex);
-
-	//ringTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/circle.png");
-	//cylinderTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/gradationLine.png");
-	//sphereTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/white.png");
-	//lightningTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/white.png");
-
 	// スカイボックス
-	SkyboxCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
 	SkyboxCommon::GetInstance()->SetDefaultCamera(camera);
 
 	std::string skyboxDDSPath = "Resource/rostock_laage_airport_4k.dds";
+	TextureManager::GetInstance()->LoadTexture(skyboxDDSPath);
 	D3D12_GPU_DESCRIPTOR_HANDLE skyboxSRVHandleGPU = TextureManager::GetInstance()->GetSrvHandleGPU(skyboxDDSPath);
 
 	skybox = new Skybox();
 	skybox->Initialize(skyboxSRVHandleGPU);
 
 	// スプライト
-	//sprite = new Sprite();
-	//sprite->Initialize(SpriteCommon::GetInstance(), "Resource/uvChecker.png");
+	sprite = new Sprite();
+	sprite->Initialize(SpriteCommon::GetInstance(), "Resource/UI/title.png");
 }
 
 void TitleScene::Update()
@@ -94,40 +77,41 @@ void TitleScene::Update()
 		object3dTranslate, object3dRotate, object3dScale,
 		cameraTranslate, cameraRotate,
 		skydomeSwitch,
-		postProcessEnable, effectMode, colorScale);
+		postProcessEnable, effectMode, colorScale,
+		score
+	);
 #endif
 
 	// パラメータの反映
 	ParticleManager::GetInstance()->DrawImGui();
 
-	//sprite->SetPosition(spritePosition);
-	//sprite->SetRotation(spriteRotation);
-	//sprite->SetSize(spriteSize);
-	//sprite->SetColor(spriteColor);
-	//
-	//object3d->SetTranslate(object3dTranslate);
-	//object3d->SetRotate(object3dRotate);
-	//object3d->SetScale(object3dScale);
+	sprite->SetPosition(spritePosition);
+	sprite->SetRotation(spriteRotation);
+	sprite->SetSize(spriteSize);
+	sprite->SetColor(spriteColor);
 
 	camera->DebugUpdate(Input::GetInstance());
 
 	// 各種更新（行列計算など）
 	skybox->Update(camera);
-	//object3d->Update();
-	//sprite->Update();
+	sprite->Update();
 	ParticleManager::GetInstance()->Update(camera);
 
-	//ENTERキーを押したら
+	// ENTERキーを押したら
 	if (Input::GetInstance()->TriggerKey(DIK_RETURN))
 	{
-		//シーン切り換え依頼
+#ifdef USE_IMGUI
+		ImGuiManager::GetInstance()->End(); // ★ シーン切り替え前にImGuiフレームを安全に終了
+#endif
+		// シーン切り換え依頼
 		SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
+		return;
 	}
 }
 
 void TitleScene::Draw()
 {
-	// 描画先の変更・クリア
+	// 描画先の変更・クリア（オフスクリーン描画）
 	renderTexture->ChangeState(DirectXCommon::GetInstance()->GetCommandList(), D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = renderTexture->GetRtvHandle();
@@ -143,7 +127,7 @@ void TitleScene::Draw()
 	DirectXCommon::GetInstance()->GetCommandList()->RSSetViewports(1, &viewport);
 	DirectXCommon::GetInstance()->GetCommandList()->RSSetScissorRects(1, &scissor);
 
-	// SRVヒープの再セット
+	// SRVヒープのセット（オフスクリーン用）
 	SrvManager::GetInstance()->PreDraw();
 
 	// 1. パーティクル描画
@@ -157,7 +141,6 @@ void TitleScene::Draw()
 
 	// 2. 3Dオブジェクトの描画
 	Object3dCommon::GetInstance()->CommonDrawSettings();
-	//object3d->Draw();
 
 	// 3. スカイボックスの描画
 	SkyboxCommon::GetInstance()->CommonDrawSettings(DirectXCommon::GetInstance()->GetCommandList());
@@ -170,13 +153,18 @@ void TitleScene::Draw()
 	SpriteCommon::GetInstance()->CommonDrawSettings();
 	if (spriteSwitch)
 	{
-		//sprite->Draw(DirectXCommon::GetInstance()->GetCommandList(), lightningTexHandle);
+		D3D12_GPU_DESCRIPTOR_HANDLE titleTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/UI/title.png");
+		sprite->Draw(DirectXCommon::GetInstance()->GetCommandList(), titleTexHandle);
 	}
 
 	// 5. バックバッファへ描画＆ポストプロセス
 	renderTexture->ChangeState(DirectXCommon::GetInstance()->GetCommandList(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
+	// バックバッファ準備
 	DirectXCommon::GetInstance()->PreDraw();
+
+	// ★【最重要】バックバッファ描画用にSRVディスクリプタヒープを再バインドする！
+	SrvManager::GetInstance()->PreDraw();
 
 	postProcess->Draw(DirectXCommon::GetInstance()->GetCommandList(), renderTexture, postProcessEnable, effectMode, colorScale);
 
@@ -198,11 +186,8 @@ void TitleScene::Finalize()
 	delete renderTexture;
 	renderTexture = nullptr;
 
-	//delete sprite;
-	//sprite = nullptr;
-	//
-	//delete object3d;
-	//object3d = nullptr;
+	delete sprite;
+	sprite = nullptr;
 
 	delete skybox;
 	skybox = nullptr;

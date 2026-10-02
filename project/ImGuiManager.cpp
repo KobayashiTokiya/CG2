@@ -35,7 +35,7 @@ void ImGuiManager::Initialize([[maybe_unused]]WinApp* winApp, [[maybe_unused]]Di
 	initInfo.Device = dxCommon_->GetDevice();
 	initInfo.CommandQueue = dxCommon_->GetCommandQueue();
 	initInfo.NumFramesInFlight =dxCommon_->GetBackBufferCount();
-	initInfo.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	initInfo.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	initInfo.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 	initInfo.UserData = srvManager;
@@ -101,7 +101,8 @@ void ImGuiManager::UpdateUI(
 	Vector2& spritePosition, float& spriteRotate, Vector2& spriteSize, Vector4& spriteColor, bool& spriteSwich,
 	Vector3& object3dTranslate, Vector3& object3dRotate, Vector3& object3dScale,
 	Vector3& cameraTranslate, Vector3& cameraRotate,
-	bool& skydomeSwith, bool& postProcessEnable, int& effectMode, Vector3& colorScale
+	bool& skydomeSwith, bool& postProcessEnable, int& effectMode, Vector3& colorScale,
+	int score
 )
 {
 	// ===============================
@@ -149,6 +150,8 @@ void ImGuiManager::UpdateUI(
 		// 必要に応じて調整用パラメータを表示
 		ImGui::SliderFloat3("Color Scale (RGB)", &colorScale.x, 0.0f, 1.0f);
 	}
+
+	ImGui::Text("Score: %d", score);
 
 	ImGui::End(); // ウィンドウの終わり
 }

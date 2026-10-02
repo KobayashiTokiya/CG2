@@ -38,6 +38,8 @@ namespace MatrixMath
 	Matrix4x4 MakeIdentity4x4();
 
 	Vector3 Normalize(const Vector3& v);
+
+	Matrix4x4 MakeLookAtMatrix(const Vector3& eye, const Vector3& target, const Vector3& up);
 };
 
 

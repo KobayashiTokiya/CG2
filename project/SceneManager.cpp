@@ -1,4 +1,5 @@
 #include "SceneManager.h"
+#include "DirectXCommon.h"
 #include <cassert>
 SceneManager* SceneManager::GetInstance()
 {
@@ -8,28 +9,27 @@ SceneManager* SceneManager::GetInstance()
 
 void SceneManager::Update()
 {
-	//次シーンの予約があるなら
+	// 次シーンの予約があるなら
 	if (nextScene_)
 	{
-		//旧シーンの終了
+		// 旧シーンの終了
 		if (scene_)
 		{
+			// ★ GPUの描画が完了するまで待つ（これでDevice Removedを防ぐ）
+			DirectXCommon::GetInstance()->WaitForGpu();
+
 			scene_->Finalize();
 			delete scene_;
 		}
 
-		//シーン切り換え
+		// シーン切り換え
 		scene_ = nextScene_;
 		nextScene_ = nullptr;
-		
-		//シーンマネージャをセット
-		scene_->SetSceneManager(this);
 
-		//次シーンを初期化する
+		scene_->SetSceneManager(this);
 		scene_->Initialize();
 	}
 
-	//実行中シーンを更新する
 	scene_->Update();
 }
 

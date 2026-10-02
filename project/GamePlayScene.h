@@ -1,11 +1,17 @@
 #pragma once
 
 #include <d3d12.h>
-#include<string>
+#include <string>
+#include <memory>
+#include <algorithm>
+#include <cstdlib>
+
 #include "DirectXCommon.h"
 #include "Vector.h"
 #include "BaseScene.h"
 #include "LevelLoader.h"
+#include "Player.h"
+#include "Coin.h"
 
 // 前方宣言
 class Camera;
@@ -29,7 +35,7 @@ public:
 
 public:
 	GamePlayScene() = default;
-	~GamePlayScene()override = default;
+	~GamePlayScene()override;
 
 	void Initialize()override;
 	void Finalize()override;
@@ -64,16 +70,41 @@ private:
 	Vector3 object3dRotate = { 0.0f, 0.0f, 0.0f };
 	Vector3 object3dScale = { 1.0f, 1.0f, 1.0f };
 
+	bool isDebugCamera_ = false;
 	Vector3 cameraTranslate = { 0.0f, 0.0f, -100.0f };
 	Vector3 cameraRotate = { 0.0f, 0.0f, 0.0f };
 
 	bool skydomeSwitch = false;
-	
+
 	//ポストエフェクト
 	bool postProcessEnable = false;         
-	int effectMode = PostEffectType::Grayscale;
+	int effectMode = PostEffectType::None;
 	Vector3 colorScale = { 1.0f, 1.0f, 1.0f }; 
 
+	std::unique_ptr<Player> player_;
+	std::vector<std::unique_ptr<Coin>> coins_;
 
+	// コイン生成用タイマー
+	int coinSpawnTimer_ = 0;             
+	const int coinSpawnInterval_ = 60;   
+
+	//レティクル
+	Sprite* reticleSprite_ = nullptr;
+
+	//スコア
+	int score = 0;
+	static const int kMaxScoreDigits = 6;
+	Sprite* scoreSprites_[kMaxScoreDigits] = {};
+	D3D12_GPU_DESCRIPTOR_HANDLE numberTexHandles_[10]={};
+
+	//マイナス記号用のメンバを追加
+	Sprite* minusSprite_ = nullptr;
+	D3D12_GPU_DESCRIPTOR_HANDLE minusTexHandle_{};
+
+	//cameraUI
+	Sprite* cameraUISprite_ = nullptr;
+
+	//制限時間
+	float timeLimit_ = 60.0f;
 };
 

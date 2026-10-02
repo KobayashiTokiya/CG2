@@ -36,82 +36,74 @@ void DirectXCommon::Initialize(WinApp* winApp)
 #pragma region デバイスの初期化
 void DirectXCommon::DeviceInitialize()
 {
-
 	HRESULT hr;
 
-	//デバックレイヤーをオンに
 #ifdef _DEBUG
-	Microsoft::WRL::ComPtr<ID3D12Debug1> debugController = nullptr;
+	Microsoft::WRL::ComPtr debugController = nullptr;
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
 	{
 		debugController->EnableDebugLayer();
-
-		debugController->SetEnableGPUBasedValidation(TRUE);
 	}
+#endif
 
-#endif // _DEBUG
-	//HRESULTはWindows系のエラーコードであり、
-	//関数が成功したかどうかをSUCCEEDEDマクロで判定できる
 	hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory_));
-	//初期化の根本的な部分でエラーか出た場合はプログラムが間違っているか、
-	// どうにもできない場合が多いのでassertにしておく
 	assert(SUCCEEDED(hr));
 
+	Microsoft::WRL::ComPtr<IDXGIAdapter4> useAdapter = nullptr;
 
-	// アダプターの列挙
-	//使用するアダプタ(GPU)を決定する
-	IDXGIAdapter4* useAdarter = nullptr;
-	//良い順にアダプタを頼む
+	// ---------------------------------------------------------------
+	// 1. まず 12.2 に対応している GPU (GeForce等) を探してデバイスを作る
+	// ---------------------------------------------------------------
 	for (UINT i = 0; dxgiFactory_->EnumAdapterByGpuPreference(i,
-		DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&useAdarter)) !=
-		DXGI_ERROR_NOT_FOUND; ++i)
+		DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&useAdapter)) != DXGI_ERROR_NOT_FOUND; ++i)
 	{
-		//アダプターの情報を取得する
 		DXGI_ADAPTER_DESC3 adapterDesc{};
-		hr = useAdarter->GetDesc3(&adapterDesc);
-		assert(SUCCEEDED(hr));//取得できないのは一大事
-		//ソフトウェアアダプタでなければ採用！
-		if (!(adapterDesc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE))
-		{
-			//採用したアダプタの情報をログに出力。wstringの方なので注意
-			Logger::Log(
-				StringUtility::ConvertString(
-					std::format(
-						L"Use Adapater:{}\n", adapterDesc.Description
-					)
-				)
-			);
-			break;
-		}
-		useAdarter = nullptr;//ソフトウェアアダプタの場合は見なかったことにする
-	}
-	//適切なアダプタが見つからなかったので起動できない
-	assert(useAdarter != nullptr);
+		useAdapter->GetDesc3(&adapterDesc);
 
-	// デバイス生成
-	D3D_FEATURE_LEVEL featureLevels[] =
-	{
-		D3D_FEATURE_LEVEL_12_2,D3D_FEATURE_LEVEL_12_1,D3D_FEATURE_LEVEL_12_0
-	};
-	const char* featureLevelStrings[] = { "12.2","12.1","12.0" };
-	for (size_t i = 0; i < _countof(featureLevels); ++i)
-	{
-		hr = D3D12CreateDevice(useAdarter, featureLevels[i], IID_PPV_ARGS(&device_));
+		// ソフトウェアアダプターはスキップ
+		if (adapterDesc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE) {
+			useAdapter = nullptr;
+			continue;
+		}
+
+		// 試しに 12.2 で作ってみる
+		hr = D3D12CreateDevice(useAdapter.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&device_));
 		if (SUCCEEDED(hr))
 		{
-			Logger::Log(
-				std::format("FeatureLevel : {}\n", featureLevelStrings[i]));
+			// 12.2 で作成成功！この GPU を採用してループを抜ける
+			Logger::Log(StringUtility::ConvertString(
+				std::format(L"Selected GPU (FeatureLevel 12.2): {}\n", adapterDesc.Description)
+			));
 			break;
+		}
+
+		useAdapter = nullptr;
+	}
+
+	// ---------------------------------------------------------------
+	// 2. もし 12.2 対応 GPU が無かった場合（Intel等のみの場合）は 12.1 で作る
+	// ---------------------------------------------------------------
+	if (!device_)
+	{
+		for (UINT i = 0; dxgiFactory_->EnumAdapterByGpuPreference(i,
+			DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&useAdapter)) != DXGI_ERROR_NOT_FOUND; ++i)
+		{
+			hr = D3D12CreateDevice(useAdapter.Get(), D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&device_));
+			if (SUCCEEDED(hr))
+			{
+				DXGI_ADAPTER_DESC3 adapterDesc{};
+				useAdapter->GetDesc3(&adapterDesc);
+				Logger::Log(StringUtility::ConvertString(
+					std::format(L"Selected GPU (Fallback 12.1): {}\n", adapterDesc.Description)
+				));
+				break;
+			}
+			useAdapter = nullptr;
 		}
 	}
 
-	assert(device_ != nullptr);
-
-
-	// エラー時にブレークを発生させる設定
-	Logger::Log("Complete create D3D12Device!!!\n");
+	assert(device_ && "D3D12Device の生成に失敗しました。");
 }
-#pragma endregion
 
 #pragma region コマンド関連初期化
 void DirectXCommon::CommandInitialize()
@@ -206,7 +198,7 @@ void DirectXCommon::CreatingVariousDescriptorTeaps()
 	descriptorSizeDSV_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
 	//DSV用のヒープでディスクリプタの数は１。DSVはShader内で触るものではないので、ShaderVisibleはfalse
-	rtvDescriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 3, false);
+	rtvDescriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 12, false);
 	srvDscriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
 	dsvDescriptorHeap_ = CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
 	// DescriptorSizeを取得
@@ -220,7 +212,7 @@ void DirectXCommon::RenderTargetViewInitializing()
 {
 	// レンダ―ターゲットビューの設定
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
-	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
 	// RTVハンドルの要素を２個に変更する
@@ -484,8 +476,9 @@ void DirectXCommon::PostDraw()
 	commandQueue_->ExecuteCommandLists(1, commandLists);
 
 	// GPU画面の交換を通知
-	swapChain_->Present(1, 0);
 
+	swapChain_->Present(1, 0);
+	
 	// Fenceの値を更新
 	fenceValue_++;
 
@@ -589,30 +582,35 @@ DirectXCommon::CompileShader(
 #pragma endregion
 
 #pragma region バッファリソース生成関数
-Microsoft::WRL::ComPtr<ID3D12Resource>DirectXCommon::CreateBufferResource(size_t sizeInBytes)
+Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCommon::CreateBufferResource(size_t sizeInBytes)
 {
-	//ヒープ設定(Upload)
-	D3D12_HEAP_PROPERTIES heapProperties{};
-	heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;///
-	
-	//リソース設定(Buffer)
-	D3D12_RESOURCE_DESC resourceDesc{};
-	//
-	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	resourceDesc.Width = sizeInBytes;//
-	//
-	resourceDesc.Height = 1;
-	resourceDesc.DepthOrArraySize = 1;
-	resourceDesc.MipLevels = 1;
-	resourceDesc.SampleDesc.Count = 1;
-	//
-	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	//
+	// ★ 定数バッファに必要な 256 バイトアライメントを強制適用
+	size_t alignedSize = (sizeInBytes + 0xFF) & ~0xFF;
+
+	D3D12_HEAP_PROPERTIES heapProps{};
+	heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
+
+	D3D12_RESOURCE_DESC resDesc{};
+	resDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resDesc.Width = alignedSize;
+	resDesc.Height = 1;
+	resDesc.DepthOrArraySize = 1;
+	resDesc.MipLevels = 1;
+	resDesc.Format = DXGI_FORMAT_UNKNOWN;
+	resDesc.SampleDesc.Count = 1;
+	resDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
 	Microsoft::WRL::ComPtr<ID3D12Resource> bufferResource;
-	HRESULT hr = device_->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE,
-		&resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
-		IID_PPV_ARGS(&bufferResource));
+	HRESULT hr = device_->CreateCommittedResource(
+		&heapProps,
+		D3D12_HEAP_FLAG_NONE,
+		&resDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&bufferResource)
+	);
 	assert(SUCCEEDED(hr));
+
 	return bufferResource;
 }
 #pragma endregion
@@ -727,6 +725,12 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCommon::UploadTextureData(const Mi
 */
 Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCommon::UploadTextureData(const Microsoft::WRL::ComPtr<ID3D12Resource>& texture, const DirectX::ScratchImage& mipImage)
 {
+	if (!texture)
+	{
+		assert(false && "テクスチャリソースが nullptr です。テクスチャファイルのパスまたは読み込み処理を確認してください。");
+		return nullptr;
+	}
+
 	std::vector<D3D12_SUBRESOURCE_DATA> subresources;
 	DirectX::PrepareUpload(device_.Get(), mipImage.GetImages(), mipImage.GetImageCount(), mipImage.GetMetadata(), subresources);
 
@@ -755,7 +759,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> DirectXCommon::UploadTextureData(const Mi
 	);
 
 	// =================================================================
-	// ✨【修正の要】メインの commandList_ を汚さないよう、使い捨てのリストを作る
+	// メインの commandList_ を汚さないよう、使い捨てのリストを作る
 	// =================================================================
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> tempAllocator;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> tempCommandList;
@@ -833,3 +837,21 @@ void DirectXCommon::UpdateFixFPS()
 	//現在の時間を記録する
 	referece_ = std::chrono::steady_clock::now();
 }
+
+#pragma region GPUの処理完了待ち
+void DirectXCommon::WaitForGpu()
+{
+	// Fenceの値を更新
+	fenceValue_++;
+
+	// コマンドキューにシグナルを送る
+	commandQueue_->Signal(fence_.Get(), fenceValue_);
+
+	// コマンド実行完了まで待機
+	if (fence_->GetCompletedValue() < fenceValue_)
+	{
+		fence_->SetEventOnCompletion(fenceValue_, fenceEvent_);
+		WaitForSingleObject(fenceEvent_, INFINITE);
+	}
+}
+#pragma endregion

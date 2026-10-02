@@ -55,6 +55,8 @@ void Skybox::Draw()
     // 安全装置：ハンドルが空なら描画をスキップ（クラッシュ防止）
     if (textureHandle_.ptr == 0) return;
 
+    SkyboxCommon::GetInstance()->CommonDrawSettings(commandList);
+
     commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
     commandList->IASetIndexBuffer(&indexBufferView_);
 
@@ -87,6 +89,8 @@ void Skybox::CreateCube()
 
     // 頂点バッファの生成
     vertexBuffer_ = dxCommon->CreateBufferResource(sizeof(VertexPos) * 8);
+    assert(vertexBuffer_ != nullptr && "Skybox: 頂点バッファの生成に失敗しました（GPUデバイスが切断された可能性があります）");
+    
     VertexPos* vertexMap = nullptr;
     vertexBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&vertexMap));
     std::copy(std::begin(vertices), std::end(vertices), vertexMap);
@@ -109,6 +113,8 @@ void Skybox::CreateCube()
 
     // インデックスバッファの生成
     indexBuffer_ = dxCommon->CreateBufferResource(sizeof(uint16_t) * 36);
+    assert(indexBuffer_ != nullptr && "Skybox: インデックスバッファの生成に失敗しました");
+    
     uint16_t* indexMap = nullptr;
     indexBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&indexMap));
     std::copy(std::begin(indices), std::end(indices), indexMap);

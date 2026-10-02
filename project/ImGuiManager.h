@@ -36,7 +36,8 @@ public:
 		Vector2& spritePosition, float& spriteRotate, Vector2& spriteSize, Vector4& spriteColor, bool& spriteSwich,
 		Vector3& object3dTranslate, Vector3& object3dRotate, Vector3& object3dScale,
 		Vector3& cameraTranslate, Vector3& cameraRotate,
-		bool& skydomeSwith, bool& postProcessEnable, int& effectMode, Vector3& colorScale
+		bool& skydomeSwith, bool& postProcessEnable, int& effectMode, Vector3& colorScale,
+		int score
 	);
 
 private:
