@@ -338,24 +338,24 @@ void ParticleManager::EmitComboExplosion(const Vector3& position)
 void ParticleManager::DrawImGui()
 {
 #ifdef USE_IMGUI
-	ImGui::Begin("Particle Manager");
-	ImGui::DragFloat3("Position", &base.transform.translate.x, 0.01f);
-	ImGui::DragFloat3("Rotation", &base.transform.rotate.x, 0.01f);
-	ImGui::DragFloat3("Scale", &base.transform.scale.x, 0.01f);
-
-	ImGui::DragFloat3("EmitterTranslate", &emitter.transform.translate.x, 0.01f, -100.0f, 100.0f);
-
-	if (ImGui::Button("Add Particle"))
-	{
-		particles.splice(particles.end(), Emit(emitter, randomEngine_));
-	}
-
-	if (ImGui::Button("Emit Combo Explosion!!"))
-	{
-		// エミッタの現在位置にコンボエフェクトを発生させる
-		EmitComboExplosion(emitter.transform.translate);
-	}
-	ImGui::End();
+	//ImGui::Begin("Particle Manager");
+	//ImGui::DragFloat3("Position", &base.transform.translate.x, 0.01f);
+	//ImGui::DragFloat3("Rotation", &base.transform.rotate.x, 0.01f);
+	//ImGui::DragFloat3("Scale", &base.transform.scale.x, 0.01f);
+	//
+	//ImGui::DragFloat3("EmitterTranslate", &emitter.transform.translate.x, 0.01f, -100.0f, 100.0f);
+	//
+	//if (ImGui::Button("Add Particle"))
+	//{
+	//	particles.splice(particles.end(), Emit(emitter, randomEngine_));
+	//}
+	//
+	//if (ImGui::Button("Emit Combo Explosion!!"))
+	//{
+	//	// エミッタの現在位置にコンボエフェクトを発生させる
+	//	EmitComboExplosion(emitter.transform.translate);
+	//}
+	//ImGui::End();
 #endif // USE_IMGUI
 }
 

@@ -113,41 +113,55 @@ Model::ModelData Model::LoadObjFile(const std::string& directoryPath, const std:
 			s >> normal.x >> normal.y >> normal.z;
 			normals.push_back(normal);
 		}
-		//三角形を作る
 		else if (identifier == "f")
 		{
-			VertexData triangle[3];
-			//面を三角形限定。その他は未対応
-			for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex)
-			{
-				std::string vertexDefinition;
-				s >> vertexDefinition;
-				//頂点の要素へのIndexは「位置/UV/法線」で格納されているので、分解してIndexを取得する
-				std::istringstream v(vertexDefinition);
-				uint32_t elementIndices[3];
-				for (int32_t element = 0; element < 3; ++element)
-				{
-					std::string index;
-					std::getline(v, index, '/');// /区切りでインデックスを読んでいく
-					elementIndices[element] = std::stoi(index);
-				}
-				//要素へのIndexから、実際の要素の値を取得して、頂点を構築する
-				Vector4 position = positions[elementIndices[0] - 1];
-				Vector2 texcoord = texcoords[elementIndices[1] - 1];
-				Vector3 normal = normals[elementIndices[2] - 1];
-				//VertexData vertex = { position,texcoord,normal };
-				//modelData.vertices.push_back(vertex);
+			std::vector<VertexData> faceVertices;
+			std::string vertexDefinition;
 
+			// 1行に含まれる頂点（v/vt/vn）をすべて取得
+			while (s >> vertexDefinition)
+			{
+				std::istringstream v(vertexDefinition);
+				std::string indexStr;
+
+				uint32_t posIndex = 0;
+				uint32_t uvIndex = 0;
+				uint32_t normIndex = 0;
+
+				// 位置/UV/法線インデックスを解析（空文字チェック付き）
+				if (std::getline(v, indexStr, '/') && !indexStr.empty())
+				{
+					posIndex = std::stoi(indexStr);
+				}
+				if (std::getline(v, indexStr, '/') && !indexStr.empty())
+				{
+					uvIndex = std::stoi(indexStr);
+				}
+				if (std::getline(v, indexStr, '/') && !indexStr.empty())
+				{
+					normIndex = std::stoi(indexStr);
+				}
+
+				// 要素を取得（1-based index を 0-based に変換）
+				Vector4 position = (posIndex > 0) ? positions[posIndex - 1] : Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+				Vector2 texcoord = (uvIndex > 0) ? texcoords[uvIndex - 1] : Vector2(0.0f, 0.0f);
+				Vector3 normal = (normIndex > 0) ? normals[normIndex - 1] : Vector3(0.0f, 0.0f, 1.0f);
+
+				// 座標系・UVの変換
 				position.x *= -1.0f;
 				normal.x *= -1.0f;
 				texcoord.y = 1.0f - texcoord.y;
 
-				triangle[faceVertex] = { position,texcoord,normal };
+				faceVertices.push_back({ position, texcoord, normal });
 			}
-			//頂点を逆順で登録することで、回り順を逆にする
-			modelData.vertices.push_back(triangle[2]);
-			modelData.vertices.push_back(triangle[1]);
-			modelData.vertices.push_back(triangle[0]);
+
+			// 多角形（4頂点以上）を三角形に分割（Triangle Fan）して時計回り順で登録
+			for (size_t i = 1; i + 1 < faceVertices.size(); ++i)
+			{
+				modelData.vertices.push_back(faceVertices[i + 1]);
+				modelData.vertices.push_back(faceVertices[i]);
+				modelData.vertices.push_back(faceVertices[0]);
+			}
 		}
 		else if (identifier == "mtllib")
 		{
