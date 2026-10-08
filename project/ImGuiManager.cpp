@@ -129,8 +129,8 @@ void ImGuiManager::UpdateUI(
 
 	// camera用
 	ImGui::Text("Camera");
-	ImGui::DragFloat3("Translate", &cameraTranslate.x, 0.01f);
-	ImGui::DragFloat3("Rotate", &cameraRotate.x, 0.01f);
+	ImGui::DragFloat3("CTranslate", &cameraTranslate.x, 0.01f);
+	ImGui::DragFloat3("CRotate", &cameraRotate.x, 0.01f);
 	//スカイドーム
 	ImGui::Text("Skydome");
 	ImGui::Checkbox("Skydome Switch", &skydomeSwith);
@@ -153,6 +153,61 @@ void ImGuiManager::UpdateUI(
 
 	ImGui::Text("Score: %d", score);
 
+	ImGui::End(); // ウィンドウの終わり
+}
+
+void ImGuiManager::UpdateTitleUI(
+	Vector2& spritePosition, float& spriteRotate, Vector2& spriteSize, Vector4& spriteColor, bool& spriteSwich,
+	Vector3 titleTranslates[3], Vector3 titleRotates[3], Vector3 titleScales[3],
+	Vector3& startTranslate, Vector3& startRotate, Vector3& startScale,
+	Vector3& endTranslate, Vector3& endRotate, Vector3& endScale,
+	Vector3& cameraTranslate, Vector3& cameraRotate, bool& skydomeSwith
+)
+{
+	// スプライト用
+	ImGui::Begin("Controller"); // ウィンドウのタイトル
+	ImGui::Checkbox("SpriteSwitch", &spriteSwich);
+	if (spriteSwich)
+	{
+		ImGui::DragFloat2("Position", &spritePosition.x, 1.0f);	//座標
+		ImGui::DragFloat("Rotation", &spriteRotate, 0.01f);	//回転
+		ImGui::DragFloat2("Size", &spriteSize.x, 1.0f);		    //サイズ
+		ImGui::ColorEdit4("Color", &spriteColor.x);	            //色
+	}
+
+	// 3Dモデル用
+	for (int i = 0; i < 3; i++)
+	{
+		std::string label = "title" + std::to_string(i + 1);
+		ImGui::Text("%s", label.c_str());
+
+		// "Translate##0", "Translate##1" のように内部IDをユニークにする
+		ImGui::DragFloat3(("Translate##" + std::to_string(i)).c_str(), &titleTranslates[i].x, 0.01f);
+		ImGui::DragFloat3(("Rotate##" + std::to_string(i)).c_str(), &titleRotates[i].x, 0.01f);
+		ImGui::DragFloat3(("Scale##" + std::to_string(i)).c_str(), &titleScales[i].x, 0.01f);
+	}
+
+	// startオブジェクト用
+	ImGui::Text("Start Object");
+	ImGui::DragFloat3("STranslate", &startTranslate.x, 0.01f);
+	ImGui::DragFloat3("SRotate", &startRotate.x, 0.01f);
+	ImGui::DragFloat3("SScale", &startScale.x, 0.01f);
+
+	//endオブジェクト用
+	ImGui::Text("end Object");
+	ImGui::DragFloat3("ETranslate", &endTranslate.x, 0.01f);
+	ImGui::DragFloat3("ERotate", &endRotate.x, 0.01f);
+	ImGui::DragFloat3("EScale", &endScale.x, 0.01f);
+
+	// camera用
+	ImGui::Text("Camera");
+	ImGui::DragFloat3("CTranslate", &cameraTranslate.x, 0.01f);
+	ImGui::DragFloat3("CRotate", &cameraRotate.x, 0.01f);
+
+	//スカイドーム
+	ImGui::Text("Skydome");
+	ImGui::Checkbox("Skydome Switch", &skydomeSwith);
+	
 	ImGui::End(); // ウィンドウの終わり
 }
 #endif

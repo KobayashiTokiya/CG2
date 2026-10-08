@@ -40,6 +40,14 @@ public:
 		int score
 	);
 
+	void UpdateTitleUI(
+		Vector2& spritePosition, float& spriteRotate, Vector2& spriteSize, Vector4& spriteColor, bool& spriteSwich,
+		Vector3 titleTranslates[3], Vector3 titleRotates[3], Vector3 titleScales[3],
+		Vector3& startTranslate, Vector3& startRotate, Vector3& startScale,
+		Vector3& endTranslate, Vector3& endRotate, Vector3& endScale,
+		Vector3& cameraTranslate, Vector3& cameraRotate, bool& skydomeSwith
+	);
+
 private:
 	ImGuiManager() = default;
 	~ImGuiManager() = default;

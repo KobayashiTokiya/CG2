@@ -164,6 +164,7 @@
     <ClCompile Include="CollisionManager.cpp" />
     <ClCompile Include="D3DResourceLeakChecker.cpp" />
     <ClCompile Include="DirectXCommon.cpp" />
+    <ClCompile Include="Easing.cpp" />
     <ClCompile Include="Framework.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GamePlayScene.cpp" />
@@ -295,6 +296,7 @@
     <ClInclude Include="CollisionManager.h" />
     <ClInclude Include="D3DResourceLeakChecker.h" />
     <ClInclude Include="DirectXCommon.h" />
+    <ClInclude Include="Easing.h" />
     <ClInclude Include="engine\math\Matrix.h" />
     <ClInclude Include="engine\math\Transform.h" />
     <ClInclude Include="engine\math\Vector.h" />

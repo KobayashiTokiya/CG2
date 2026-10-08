@@ -57,7 +57,7 @@ void WinApp::Initialize()
 
 	hwnd = CreateWindow(
 		wc.lpszClassName,
-		L"CG2",
+		L"LE3C_09_コバヤシ_トキヤ_金が降る、そして拾う",
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
