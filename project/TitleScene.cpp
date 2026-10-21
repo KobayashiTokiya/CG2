@@ -19,6 +19,7 @@
 #endif
 #include "SceneManager.h"
 #include "Easing.h"
+#include "FadeManager.h"
 
 void TitleScene::Initialize()
 {
@@ -107,6 +108,7 @@ void TitleScene::Initialize()
 		titleTranslates[i].y = startY;
 	}
 
+	FadeManager::GetInstance()->StartFadeIn(0.5f);
 
 	// --- 降ってくるコインの初期化 ---
 	// 使用したいコインテクスチャのリスト
@@ -168,6 +170,8 @@ void TitleScene::Initialize()
 
 void TitleScene::Update()
 {
+	FadeManager::GetInstance()->Update();
+
 	// ImGuiのフレーム開始処理
 #ifdef USE_IMGUI
 	ImGuiManager::GetInstance()->Begin();
@@ -330,35 +334,41 @@ void TitleScene::Update()
 		selectCoinObj->Update();
 	}
 
-	// メニューが登場しきった後にキー入力受付を開始
+	// メニュー選択 & 決定キー判定
 	if (animationTimer >= menuStartTime + menuDuration)
 	{
-		// Wキー または 上矢印で「スタート」を選択
-		if (Input::GetInstance()->TriggerKey(DIK_W) || Input::GetInstance()->TriggerKey(DIK_UP))
+		if (!FadeManager::GetInstance()->IsFading())
 		{
-			currentMenu = MenuType::kStart;
-		}
-		// Sキー または 下矢印で「エンド」を選択
-		if (Input::GetInstance()->TriggerKey(DIK_S) || Input::GetInstance()->TriggerKey(DIK_DOWN))
-		{
-			currentMenu = MenuType::kEnd;
+			if (Input::GetInstance()->TriggerKey(DIK_W) || Input::GetInstance()->TriggerKey(DIK_UP))
+			{
+				currentMenu = MenuType::kStart;
+			}
+			if (Input::GetInstance()->TriggerKey(DIK_S) || Input::GetInstance()->TriggerKey(DIK_DOWN))
+			{
+				currentMenu = MenuType::kEnd;
+			}
+
+			// ENTER押下でフェードアウト（暗転）開始
+			if (Input::GetInstance()->TriggerKey(DIK_RETURN))
+			{
+				FadeManager::GetInstance()->StartFadeOut(0.5f);
+			}
 		}
 
-		// ENTERキーでの決定処理
-		if (Input::GetInstance()->TriggerKey(DIK_RETURN))
+		// 暗転が「完全に終わったら」シーンを切り替える
+		if (FadeManager::GetInstance()->GetStatus() == FadeManager::Status::kFadeOut &&
+			FadeManager::GetInstance()->IsFadeFinished())
 		{
 #ifdef USE_IMGUI
 			ImGuiManager::GetInstance()->End();
 #endif
 			if (currentMenu == MenuType::kStart)
 			{
-				// ゲームプレイシーンへ遷移
 				SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
 				return;
 			}
 			else if (currentMenu == MenuType::kEnd)
 			{
-				// ゲーム終了（Win32メッセージを発行）
 				PostQuitMessage(0);
 				return;
 			}
@@ -447,6 +457,9 @@ void TitleScene::Draw()
 	SrvManager::GetInstance()->PreDraw();
 
 	postProcess->Draw(DirectXCommon::GetInstance()->GetCommandList(), renderTexture, postProcessEnable, effectMode, colorScale);
+
+	//フェード
+	FadeManager::GetInstance()->Draw();
 
 	// ImGui描画
 #ifdef USE_IMGUI

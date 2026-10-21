@@ -13,6 +13,7 @@ class Skybox;
 class Sprite;
 class RenderTexture;
 class PostProcess;
+class FadeManager;
 
 class TitleScene :public BaseScene
 {

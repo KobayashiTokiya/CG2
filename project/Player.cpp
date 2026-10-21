@@ -96,3 +96,9 @@ void Player::Draw()
 		object3d_->Draw();
 	}
 }
+
+void Player::CountDownUpdate()
+{
+	object3d_->SetTranslate(position_);
+	object3d_->Update();
+};

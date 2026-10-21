@@ -17,6 +17,7 @@
 #include "CollisionManager.h"
 #include "SceneManager.h"
 #include "ScoreManager.h"
+#include "FadeManager.h"
 #ifdef USE_IMGUI
 #include "ImGuiManager.h"
 #endif
@@ -41,8 +42,7 @@ void GamePlayScene::Initialize()
 
 	// カメラ
 	camera = new Camera();
-	camera->SetRotate({ 0.0f, 0.0f, 0.0f });
-	camera->SetTranslate({ 0.0f, 0.0f, -50.0f });
+	camera->SetMode(Camera::Mode::Normal);
 
 	// 3Dオブジェクト共通部＆生成
 	Object3dCommon::GetInstance();
@@ -64,11 +64,13 @@ void GamePlayScene::Initialize()
 	TextureManager::GetInstance()->LoadTexture("Resource/reticle.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/UI/CameraUI.png");
 	TextureManager::GetInstance()->LoadTexture("Resource/player.png");
+	TextureManager::GetInstance()->LoadTexture("Resource/GO!.png");
 
 	uint32_t uvCheckerTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/uvChecker.png");
 	uint32_t whiteTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/white.png");
 	uint32_t floorTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/floor.png");
 	uint32_t envTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/rostock_laage_airport_4k.dds");
+	goTexHandle_ = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/GO!.png");
 
 	ModelManager::GetInstance()->LoadModel("axis.obj");
 	ModelManager::GetInstance()->LoadModel("plane.obj");
@@ -151,6 +153,19 @@ void GamePlayScene::Initialize()
 	minusSprite_->Initialize(SpriteCommon::GetInstance(), "Resource/number/minus.png");
 	minusSprite_->SetSize({ 32.0f, 64.0f });
 
+	//スタートカウント
+	countdownSprite_ = new Sprite();
+	countdownSprite_->Initialize(SpriteCommon::GetInstance(), "Resource/number/3.png");
+	
+	countdownOverlaySprite_ = new Sprite();
+	countdownOverlaySprite_->Initialize(SpriteCommon::GetInstance(), "Resource/white.png");
+	countdownOverlaySprite_->SetSize({ 1280.0f, 720.0f });
+	countdownOverlaySprite_->SetPosition({ 0.0f, 0.0f });
+	countdownOverlaySprite_->SetColor({ 0.0f, 0.0f, 0.0f, 0.5f }); // 半透明に設定
+
+	phase_ = Phase::kCountdown;
+	countdownTimer_ = 3.0f;
+
 	// 6桁分のスプライトインスタンスを作成し、固定位置を割り当てる
 	Vector2 basePos = { 1200.0f, 40.0f }; // 1の位（右端）の位置
 	float digitWidth = 32.0f;             // 桁間のスペース（狭くしたい場合は24.0fなどに調整）
@@ -193,193 +208,303 @@ void GamePlayScene::Initialize()
 	//使わなくなったlevelData は削除
 	delete levelData;
 
+	// 初回描画用に、まず1回プレイヤーとカメラの位置計算を行っておく！
+	if (player_)
+	{
+		player_->Update();
+		camera->TargetUpdate(player_->GetPosition());
+	}
+
+	// フェードイン（明転）開始
+	FadeManager::GetInstance()->StartFadeIn(0.5f);
+
 }
 
 void GamePlayScene::Update()
 {
-	// ImGuiのフレーム開始処理
-#ifdef USE_IMGUI
-	ImGuiManager::GetInstance()->Begin();
-	ImGuiManager::GetInstance()->UpdateUI(spritePosition, spriteRotation, spriteSize, spriteColor, spriteSwitch,
-		object3dTranslate, object3dRotate, object3dScale,
-		cameraTranslate, cameraRotate,
-		skydomeSwitch,
-		postProcessEnable, effectMode, colorScale,
-		score);
+	FadeManager::GetInstance()->Update();
+
+	if (phase_==Phase::kCountdown)
+	{
+		// 明転（フェードイン）が終わってからカウントダウンを開始する
+		if (!FadeManager::GetInstance()->IsFading())
+		{
+			countdownTimer_ -= 1.0f / 60.0f;
+		}
+
+		if (countdownTimer_<=-0.6f)
+		{
+			phase_ = Phase::kPlaying;
+		}
+
 	
-	if (postProcessEnable)
-	{
-		if (Input::GetInstance()->TriggerKey(DIK_1)) { effectMode = 0; }
-		if (Input::GetInstance()->TriggerKey(DIK_2)) { effectMode = 1; }
-		if (Input::GetInstance()->TriggerKey(DIK_3)) { effectMode = 2; }
-		if (Input::GetInstance()->TriggerKey(DIK_4)) { effectMode = 3; }
-		if (Input::GetInstance()->TriggerKey(DIK_5)) { effectMode = 4; }
-	}
-#endif
 
-	// プレイヤーの更新
-	if (player_)
-	{
-		player_->Update();
-	}
+		// 拡大ポップ演出の計算
+		float scaleFactor = 1.0f;
+		Vector2 curSize = { 256.0f, 256.0f };
 
-	if (Input::GetInstance()->TriggerKey(DIK_1)) { camera->SetMode(Camera::Mode::Normal); }
-	if (Input::GetInstance()->TriggerKey(DIK_2)) { camera->SetMode(Camera::Mode::TopDown); }
-	if (Input::GetInstance()->TriggerKey(DIK_3)) { camera->SetMode(Camera::Mode::BottomUp); }
-
-	if (camera && player_)
-	{
-		switch (camera->GetMode())
+		if (countdownTimer_ > 0.0f)
 		{
-		case Camera::Mode::Normal:
-			camera->TargetUpdate(player_->GetPosition());
-			break;
-		case Camera::Mode::TopDown:
-			camera->TopDownUpdate(player_->GetPosition());
-			break;
-		case Camera::Mode::BottomUp:
-			camera->BottomUpUpdate(player_->GetPosition());
-			break;
-		}
-	}
-
-	// パラメータの反映
-	ParticleManager::GetInstance()->DrawImGui();
-
-	sprite->SetPosition(spritePosition);
-	sprite->SetRotation(spriteRotation);
-	sprite->SetSize(spriteSize);
-	sprite->SetColor(spriteColor);
-
-	//地面
-	Vector3 floorTranslate = { 0.0f, -1.0f, 0.0f };   // プレイヤーの足元（Y = -1.0f や 0.0f など）
-	Vector3 floorRotate = { 1.57f, 0.0f, 0.0f };   // 板ポリゴンを横に倒して水平にする（X軸に90度/約1.57ラジアン回転）
-	Vector3 floorScale = { 50.0f, 50.0f, 0.2f };// XとZ（またはY）を大きく広げる
-	object3d->SetTranslate(floorTranslate);
-	object3d->SetRotate(floorRotate);
-	object3d->SetScale(floorScale);
-
-	//camera->DebugUpdate(Input::GetInstance());
-	//camera->Update();
-	
-	// 各種更新（行列計算など）
-	skybox->Update(camera);
-	object3d->Update();
-	sprite->Update();
-	if (reticleSprite_)
-	{
-		reticleSprite_->Update();
-	}
-	if (cameraUISprite_)
-	{
-		cameraUISprite_->Update();
-	}
-
-	ParticleManager::GetInstance()->Update(camera);
-
-	//カメラモード切替
-	if (Input::GetInstance()->TriggerKey(DIK_TAB))
-	{
-		isDebugCamera_ = !isDebugCamera_;
-	}
-
-
-	// 1. コインの更新 ＆ 当たり判定
-	for (auto& coin : coins_)
-	{
-		if (coin && !coin->IsDead())
-		{
-			coin->Update();
-
-			if (player_)
-			{
-				Vector3 pPos = player_->GetPosition();
-				Vector3 cPos = coin->GetPosition();
-
-				Vector3 bounceDir{};
-				Vector3 pushedPos{};
-
-				// パラメータ調整
-				float cupHeight = 2.0f;      // コップの高さ
-				float innerRadius = 1.2f;    // ★内径（これを大きくすると影が重なった時に確実に入る）
-				float wallThickness = 0.2f;  // 壁の厚み（薄くして外に弾かれにくくする）
-
-				// ★順番を変更: まず「中に入っているか（影が重なっているか）」を判定！
-				if (CollisionManager::CheckCupBottom(pPos, cPos, cupHeight, innerRadius))
-				{
-					score += coin->GetScore();
-					coin->OnCollect(); // スコア獲得！
-				}
-				// 中に入っていない時だけ、側面（フチ）の弾き判定を行う
-				else if (CollisionManager::CheckCupWallAndGetBounce(pPos, cPos, cupHeight, innerRadius, wallThickness, bounceDir, pushedPos))
-				{
-					coin->SetPosition(pushedPos);
-					coin->OnBounce(bounceDir);
-				}
-			}
-		}
-	}
-
-	// 2. 画面外（地下 -10.0f）に落ちた、またはプレイヤーに触れて IsDead() が true になったコインを削除
-	coins_.erase(
-		std::remove_if(
-			coins_.begin(),
-			coins_.end(),
-			[](const std::unique_ptr<Coin>& coin)
-			{
-				return coin->IsDead();
-			}
-		),
-		coins_.end()
-	);
-
-	const size_t kMaxCoins = 10;
-
-	// 3. コインが消えたら（＝リストが空になったら）同じ場所で再生成
-	while (coins_.size() < kMaxCoins)
-	{
-		std::unique_ptr<Coin> newCoin=nullptr;
-		int randomVal = rand() % 100;
-
-		if (randomVal<15)
-		{
-			newCoin = std::make_unique<Coin500>();
-		}
-		else if (randomVal < 45)
-		{
-			newCoin = std::make_unique<Coin100>();
-		}
-		else if (randomVal < 80)
-		{
-			newCoin = std::make_unique<Coin10>();
+			// --- 「3・2・1」の時の拡大計算 ---
+			float currentSecFraction = std::fmod(countdownTimer_, 1.0f);
+			if (currentSecFraction < 0.0f) currentSecFraction += 1.0f;
+			scaleFactor = 1.0f + (currentSecFraction * 0.5f); // 1.5倍 -> 1.0倍
+			curSize = { 256.0f * scaleFactor, 256.0f * scaleFactor };
 		}
 		else
 		{
-			newCoin = std::make_unique<CoinMinus500>();
+			// --- 「GO!」の時の拡大計算（少し横長・ドカンと大きく表示） ---
+			float goProgress = (0.0f - countdownTimer_) / 0.6f; // 0.0 -> 1.0
+			scaleFactor = 1.5f - (goProgress * 0.5f);           // 1.5倍 -> 1.0倍
+			curSize = { 384.0f * scaleFactor, 192.0f * scaleFactor }; // 横長サイズ（画像に合わせて調整可）
 		}
-		
-		float spawnX = static_cast<float>(rand() % 21 - 10);
-		float spawnZ = static_cast<float>(rand() % 21 - 10);
-		Vector3 spawnPos = { spawnX ,100.0f,spawnZ };
 
-		// 生成・初期化
-		newCoin->Initialize("Coin.obj", spawnPos, { 1.0f, 1.0f, 1.0f });
-		newCoin->Update();
-		coins_.push_back(std::move(newCoin));
+		if (countdownTimer_ > 0.0f)
+		{
+			int number = std::clamp(static_cast<int>(std::ceil(countdownTimer_)), 1, 3);
+			if (number == 3)      countdownSprite_->SetColor({ 0.2f, 0.8f, 1.0f, 1.0f }); // 3: 水色
+			else if (number == 2) countdownSprite_->SetColor({ 1.0f, 0.9f, 0.2f, 1.0f }); // 2: 黄色
+			else if (number == 1) countdownSprite_->SetColor({ 1.0f, 0.3f, 0.3f, 1.0f }); // 1: 赤色
+		}
+		else
+		{
+			countdownSprite_->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f }); // GO!: 白（元の画像の色）
+		}
+
+		//画面中央 (640, 360) にピッタリ収まるよう自動計算
+		Vector2 curPos = { 640.0f - (curSize.x * 0.5f), 360.0f - (curSize.y * 0.5f) };
+
+		countdownSprite_->SetSize(curSize);
+		countdownSprite_->SetPosition(curPos);
+		countdownSprite_->Update();
+
+		if (countdownOverlaySprite_)
+		{
+			countdownOverlaySprite_->Update();
+		}
+
+		// カメラをNormal視点で固定追従させて背景画面を確定させる
+		if (camera && player_)
+		{
+			camera->SetMode(Camera::Mode::Normal);
+			camera->TargetUpdate(player_->GetPosition());
+		}
+
+		// 地面や背景の変換行列を更新して静止画を作る
+		Vector3 floorTranslate = { 0.0f, -1.0f, 0.0f };
+		Vector3 floorRotate = { 1.57f, 0.0f, 0.0f };
+		Vector3 floorScale = { 50.0f, 50.0f, 0.2f };
+		object3d->SetTranslate(floorTranslate);
+		object3d->SetRotate(floorRotate);
+		object3d->SetScale(floorScale);
+
+		player_->CountDownUpdate(); // プレイヤーの位置を更新しておく（カメラ追従用）
+		skybox->Update(camera);
+		object3d->Update();
+		for (auto* obj : objects3d_) { obj->Update(); } // ★追加：マップモデルの計算
+		for (auto& coin : coins_) { coin->Update(); }   // ★追加：コインの静止表示の計算
+
+		if (reticleSprite_) reticleSprite_->Update();
+		if (cameraUISprite_) cameraUISprite_->Update();
+
+		// ★ カウントダウン中はプレイヤー・コイン・タイマーの更新を行わずに処理を抜ける
+		return;
 	}
 
-	for (auto* obj : objects3d_) { obj->Update(); }
-
-	timeLimit_ -= 1.0f / 60.0f;	
-
-	if (timeLimit_<=0.0f||Input::GetInstance()->TriggerKey(DIK_RETURN))
+	if (phase_==Phase::kPlaying)
 	{
-		ScoreManager::SetScore(score);
+		// ImGuiのフレーム開始処理
 #ifdef USE_IMGUI
-		ImGuiManager::GetInstance()->End();
+		ImGuiManager::GetInstance()->Begin();
+		ImGuiManager::GetInstance()->UpdateUI(spritePosition, spriteRotation, spriteSize, spriteColor, spriteSwitch,
+			object3dTranslate, object3dRotate, object3dScale,
+			cameraTranslate, cameraRotate,
+			skydomeSwitch,
+			postProcessEnable, effectMode, colorScale,
+			score);
+
+		if (postProcessEnable)
+		{
+			if (Input::GetInstance()->TriggerKey(DIK_1)) { effectMode = 0; }
+			if (Input::GetInstance()->TriggerKey(DIK_2)) { effectMode = 1; }
+			if (Input::GetInstance()->TriggerKey(DIK_3)) { effectMode = 2; }
+			if (Input::GetInstance()->TriggerKey(DIK_4)) { effectMode = 3; }
+			if (Input::GetInstance()->TriggerKey(DIK_5)) { effectMode = 4; }
+		}
 #endif
-		SceneManager::GetInstance()->ChangeScene("TITLE");
-		return;
+
+		// プレイヤーの更新
+		if (player_)
+		{
+			player_->Update();
+		}
+
+		if (Input::GetInstance()->TriggerKey(DIK_1)) { camera->SetMode(Camera::Mode::Normal); }
+		if (Input::GetInstance()->TriggerKey(DIK_2)) { camera->SetMode(Camera::Mode::TopDown); }
+		if (Input::GetInstance()->TriggerKey(DIK_3)) { camera->SetMode(Camera::Mode::BottomUp); }
+
+		if (camera && player_)
+		{
+			switch (camera->GetMode())
+			{
+			case Camera::Mode::Normal:
+				camera->TargetUpdate(player_->GetPosition());
+				break;
+			case Camera::Mode::TopDown:
+				camera->TopDownUpdate(player_->GetPosition());
+				break;
+			case Camera::Mode::BottomUp:
+				camera->BottomUpUpdate(player_->GetPosition());
+				break;
+			}
+		}
+
+		// パラメータの反映
+		ParticleManager::GetInstance()->DrawImGui();
+
+		sprite->SetPosition(spritePosition);
+		sprite->SetRotation(spriteRotation);
+		sprite->SetSize(spriteSize);
+		sprite->SetColor(spriteColor);
+
+		//地面
+		Vector3 floorTranslate = { 0.0f, -1.0f, 0.0f };   // プレイヤーの足元（Y = -1.0f や 0.0f など）
+		Vector3 floorRotate = { 1.57f, 0.0f, 0.0f };   // 板ポリゴンを横に倒して水平にする（X軸に90度/約1.57ラジアン回転）
+		Vector3 floorScale = { 50.0f, 50.0f, 0.2f };// XとZ（またはY）を大きく広げる
+		object3d->SetTranslate(floorTranslate);
+		object3d->SetRotate(floorRotate);
+		object3d->SetScale(floorScale);
+
+		//camera->DebugUpdate(Input::GetInstance());
+		//camera->Update();
+
+		// 各種更新（行列計算など）
+		skybox->Update(camera);
+		object3d->Update();
+		sprite->Update();
+		if (reticleSprite_)
+		{
+			reticleSprite_->Update();
+		}
+		if (cameraUISprite_)
+		{
+			cameraUISprite_->Update();
+		}
+
+		ParticleManager::GetInstance()->Update(camera);
+
+		//カメラモード切替
+		if (Input::GetInstance()->TriggerKey(DIK_TAB))
+		{
+			isDebugCamera_ = !isDebugCamera_;
+		}
+
+
+		// 1. コインの更新 ＆ 当たり判定
+		for (auto& coin : coins_)
+		{
+			if (coin && !coin->IsDead())
+			{
+				coin->Update();
+
+				if (player_)
+				{
+					Vector3 pPos = player_->GetPosition();
+					Vector3 cPos = coin->GetPosition();
+
+					Vector3 bounceDir{};
+					Vector3 pushedPos{};
+
+					// パラメータ調整
+					float cupHeight = 2.0f;      // コップの高さ
+					float innerRadius = 1.2f;    // ★内径（これを大きくすると影が重なった時に確実に入る）
+					float wallThickness = 0.2f;  // 壁の厚み（薄くして外に弾かれにくくする）
+
+					// ★順番を変更: まず「中に入っているか（影が重なっているか）」を判定！
+					if (CollisionManager::CheckCupBottom(pPos, cPos, cupHeight, innerRadius))
+					{
+						score += coin->GetScore();
+						coin->OnCollect(); // スコア獲得！
+					}
+					// 中に入っていない時だけ、側面（フチ）の弾き判定を行う
+					else if (CollisionManager::CheckCupWallAndGetBounce(pPos, cPos, cupHeight, innerRadius, wallThickness, bounceDir, pushedPos))
+					{
+						coin->SetPosition(pushedPos);
+						coin->OnBounce(bounceDir);
+					}
+				}
+			}
+		}
+
+		// 2. 画面外（地下 -10.0f）に落ちた、またはプレイヤーに触れて IsDead() が true になったコインを削除
+		coins_.erase(
+			std::remove_if(
+				coins_.begin(),
+				coins_.end(),
+				[](const std::unique_ptr<Coin>& coin)
+				{
+					return coin->IsDead();
+				}
+			),
+			coins_.end()
+		);
+
+		const size_t kMaxCoins = 10;
+
+		// 3. コインが消えたら（＝リストが空になったら）同じ場所で再生成
+		while (coins_.size() < kMaxCoins)
+		{
+			std::unique_ptr<Coin> newCoin = nullptr;
+			int randomVal = rand() % 100;
+
+			if (randomVal < 15)
+			{
+				newCoin = std::make_unique<Coin500>();
+			}
+			else if (randomVal < 45)
+			{
+				newCoin = std::make_unique<Coin100>();
+			}
+			else if (randomVal < 80)
+			{
+				newCoin = std::make_unique<Coin10>();
+			}
+			else
+			{
+				newCoin = std::make_unique<CoinMinus500>();
+			}
+
+			float spawnX = static_cast<float>(rand() % 21 - 10);
+			float spawnZ = static_cast<float>(rand() % 21 - 10);
+			Vector3 spawnPos = { spawnX ,100.0f,spawnZ };
+
+			// 生成・初期化
+			newCoin->Initialize("Coin.obj", spawnPos, { 1.0f, 1.0f, 1.0f });
+			newCoin->Update();
+			coins_.push_back(std::move(newCoin));
+		}
+
+		for (auto* obj : objects3d_) { obj->Update(); }
+
+		timeLimit_ -= 1.0f / 60.0f;
+
+		// 制限時間切れ、または ENTER キーで暗転（フェードアウト）開始
+		if ((timeLimit_ <= 0.0f || Input::GetInstance()->TriggerKey(DIK_RETURN)) && !FadeManager::GetInstance()->IsFading())
+		{
+			FadeManager::GetInstance()->StartFadeOut(0.5f);
+		}
+
+		// 暗転完了時にタイトルへ戻る
+		if (FadeManager::GetInstance()->GetStatus() == FadeManager::Status::kFadeOut &&
+			FadeManager::GetInstance()->IsFadeFinished())
+		{
+			ScoreManager::SetScore(score);
+#ifdef USE_IMGUI
+			ImGuiManager::GetInstance()->End();
+#endif
+			SceneManager::GetInstance()->ChangeScene("TITLE");
+			return;
+		}
 	}
 }
 
@@ -439,6 +564,17 @@ void GamePlayScene::Draw()
 		skybox->Draw();
 	}
 
+	//バックバッファへ描画＆ポストプロセス
+	renderTexture->ChangeState(DirectXCommon::GetInstance()->GetCommandList(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+	DirectXCommon::GetInstance()->PreDraw();
+
+	if (postProcess)
+	{
+		postProcess->Draw(DirectXCommon::GetInstance()->GetCommandList(), renderTexture, postProcessEnable, effectMode, colorScale);
+	}
+
+
 	// 4. スプライトの描画
 	SpriteCommon::GetInstance()->CommonDrawSettings();
 	if (spriteSwitch)
@@ -459,7 +595,7 @@ void GamePlayScene::Draw()
 		cameraUISprite_->Draw(DirectXCommon::GetInstance()->GetCommandList(), cameraUITexHandle);
 	}
 	
-	auto commandList = DirectXCommon::GetInstance()->GetCommandList(); // ★ コマンドリストを短縮変数に
+	auto commandList = DirectXCommon::GetInstance()->GetCommandList();
 	// -------------------------------------------------------------
 	// スコアの描画（6桁表示）
 	// -------------------------------------------------------------
@@ -515,15 +651,34 @@ void GamePlayScene::Draw()
 		minusSprite_->Draw(commandList, minusTexHandle_);
 	}
 
-	// 5. バックバッファへ描画＆ポストプロセス
-	renderTexture->ChangeState(DirectXCommon::GetInstance()->GetCommandList(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-	DirectXCommon::GetInstance()->PreDraw();
-
-	if (postProcess)
+	// カウントダウン中なら数字を描画
+	if (phase_ == Phase::kCountdown)
 	{
-		postProcess->Draw(DirectXCommon::GetInstance()->GetCommandList(), renderTexture, postProcessEnable, effectMode, colorScale);
+		// 1. 黒幕の描画
+		if (countdownOverlaySprite_)
+		{
+			D3D12_GPU_DESCRIPTOR_HANDLE whiteTexHandle = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/white.png");
+			countdownOverlaySprite_->Draw(commandList, whiteTexHandle);
+		}
+
+		// 2. 「3・2・1」または「GO!」の描画
+		if (countdownTimer_ > 0.0f)
+		{
+			// 数字（3, 2, 1）を描画
+			int number = std::clamp(static_cast<int>(std::ceil(countdownTimer_)), 1, 3);
+			countdownSprite_->Draw(commandList, numberTexHandles_[number]);
+		}
+		else
+		{
+			// 「GO!」を描画
+			countdownSprite_->Draw(commandList, goTexHandle_);
+		}
 	}
+
+	
+
+	//最前面にフェードを描画
+	FadeManager::GetInstance()->Draw();
 
 	// ImGui描画
 #ifdef USE_IMGUI
@@ -553,6 +708,18 @@ void GamePlayScene::Finalize()
 	{
 		delete sprite;
 		sprite = nullptr;
+	}
+
+	if (countdownSprite_)
+	{
+		delete countdownSprite_;
+		countdownSprite_ = nullptr;
+	}
+
+	if (countdownOverlaySprite_)
+	{
+		delete countdownOverlaySprite_;
+		countdownOverlaySprite_ = nullptr;
 	}
 
 	for (int i = 0; i < kMaxScoreDigits; ++i)
