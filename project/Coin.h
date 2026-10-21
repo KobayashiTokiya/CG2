@@ -37,6 +37,14 @@ public:
 		}
 	}
 
+	void SetEnvironmentTexture(uint32_t envTexIndex)
+	{
+		if (object3d_)
+		{
+			object3d_->SetEnvironmentTexture(envTexIndex);
+		}
+	}
+
 	void OnBounce(const Vector3& bounceDir);
 	
 	void SetPosition(const Vector3& pos) { position_ = pos; }

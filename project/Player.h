@@ -16,6 +16,9 @@ public:
 	void Update();
 	void Draw();
 
+	//プレイヤーをカウントダウンの時に表示するためのもの
+	void CountDownUpdate();
+
 	const Vector3& GetPosition() const { return position_; }
 
 	void SetCamera(Camera* camera) { camera_ = camera; }

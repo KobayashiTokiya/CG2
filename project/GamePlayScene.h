@@ -24,6 +24,12 @@ class PostProcess;
 class GamePlayScene:public BaseScene
 {
 public:
+	enum class Phase
+	{
+		kCountdown,
+		kPlaying,
+	};
+
 	enum PostEffectType
 	{
 		None = 0,         // 0: 通常（ポストプロセスなし）
@@ -106,5 +112,12 @@ private:
 
 	//制限時間
 	float timeLimit_ = 60.0f;
+
+	//カウントダウン用
+	Phase phase_ = Phase::kCountdown;
+	float countdownTimer_ = 3.0f;
+	Sprite* countdownSprite_ = nullptr;
+	Sprite* countdownOverlaySprite_ = nullptr;
+	D3D12_GPU_DESCRIPTOR_HANDLE goTexHandle_{};
 };
 
