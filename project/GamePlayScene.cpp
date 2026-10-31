@@ -502,7 +502,7 @@ void GamePlayScene::Update()
 #ifdef USE_IMGUI
 			ImGuiManager::GetInstance()->End();
 #endif
-			SceneManager::GetInstance()->ChangeScene("TITLE");
+			SceneManager::GetInstance()->ChangeScene("GAMEOVER");
 			return;
 		}
 	}
