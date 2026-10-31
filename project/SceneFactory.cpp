@@ -2,7 +2,7 @@
 
 #include "TitleScene.h"
 #include "GamePlayScene.h"
-#include "ResultScene.h"
+#include "GameoverScene.h"
 
 BaseScene* SceneFactory::CreateScene(const std::string& sceneName)
 {
@@ -17,9 +17,9 @@ BaseScene* SceneFactory::CreateScene(const std::string& sceneName)
 	{
 		newScene = new GamePlayScene();
 	}
-	else if (sceneName=="RESULT")
+	else if (sceneName=="GAMEOVER")
 	{
-		newScene = new ResultScene();
+		newScene = new GameoverScene();
 	}
 	return newScene;
 }

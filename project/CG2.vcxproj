@@ -187,7 +187,7 @@
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="PostProcess.cpp" />
     <ClCompile Include="RenderTexture.cpp" />
-    <ClCompile Include="ResultScene.cpp" />
+    <ClCompile Include="GameoverScene.cpp" />
     <ClCompile Include="SceneFactory.cpp" />
     <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="ScoreManager.cpp" />
@@ -323,7 +323,7 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="PostProcess.h" />
     <ClInclude Include="RenderTexture.h" />
-    <ClInclude Include="ResultScene.h" />
+    <ClInclude Include="GameoverScene.h" />
     <ClInclude Include="SceneFactory.h" />
     <ClInclude Include="SceneManager.h" />
     <ClInclude Include="ScoreManager.h" />
