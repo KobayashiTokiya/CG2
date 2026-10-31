@@ -53,8 +53,4 @@ private:
 	//カメラの演出(シェイク)
 	float shakeTimer_ = 0.0f;
 
-	//リセットUI
-	Sprite* resetSprite_ = nullptr;
-	D3D12_GPU_DESCRIPTOR_HANDLE resetHandle_{};
-
 };

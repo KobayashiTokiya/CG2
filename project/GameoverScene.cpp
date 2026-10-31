@@ -26,7 +26,7 @@ void GameoverScene::Initialize()
 
 	//スプライトで使用
 	backGroundHandle_ = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/white.png");
-	resetHandle_ = TextureManager::GetInstance()->GetSrvHandleGPU("Resource/UI/reset.png");
+	
 	
 	//モデルで使用
 	uint32_t whiteTexIndex = TextureManager::GetInstance()->GetSrvIndex("Resource/white.png");
@@ -106,13 +106,6 @@ void GameoverScene::Initialize()
 		}
 	}
 
-	//2d
-	//UI
-	resetSprite_ = new Sprite();
-	resetSprite_->Initialize(SpriteCommon::GetInstance(), "Resource/UI/reset.png");
-	resetSprite_->SetSize({ 160.0f, 32.0f });
-	resetSprite_->SetPosition({ 0.0f, 0.0f });
-	resetSprite_->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
 
 	//背景スプライトの生成
 	backGroundSprite_ = new Sprite();
@@ -133,11 +126,6 @@ void GameoverScene::Update()
 	{
 		backGroundSprite_->Update();
 	}
-	if (resetSprite_)
-	{
-		resetSprite_->Update();
-	}
-	
 
 	// 地面や背景の変換行列を更新して静止画を作る
 	Vector3 floorTranslate = { 0.0f, -0.65f, 0.0f };
@@ -342,10 +330,6 @@ void GameoverScene::Draw()
 		//backGroundSprite_->Draw(commandList, backGroundHandle_);
 	}
 
-	if (resetSprite_)
-	{
-		resetSprite_->Draw(commandList, resetHandle_);
-	}
 
 	// 4. 最前面にフェードを描画
 	FadeManager::GetInstance()->Draw();
@@ -361,11 +345,7 @@ void GameoverScene::Finalize()
 		delete backGroundSprite_;
 		backGroundSprite_ = nullptr;
 	}
-	if (resetSprite_)
-	{
-		delete resetSprite_;
-		resetSprite_ = nullptr;
-	}
+	
 
 	delete groundModel_;
 	groundModel_ = nullptr;
